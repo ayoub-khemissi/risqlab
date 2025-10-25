@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@config "../tailwind.config.js";
+
+.recharts-wrapper,
+.recharts-surface,
+.recharts-legend-wrapper,
+.recharts-pie,
+.recharts-sector {
+  outline: none !important;
+}
+
+.recharts-wrapper:focus,
+.recharts-surface:focus,
+.recharts-legend-wrapper:focus,
+.recharts-pie:focus,
+.recharts-sector:focus {
+  outline: none !important;
+}
