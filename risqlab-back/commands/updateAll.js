@@ -48,7 +48,7 @@ async function updateAll(options = {}) {
     log.info('╚════════════════════════════════════════════════════════════╝\n');
 
     let step = 1;
-    const totalSteps = 5 - (skipMetadata ? 1 : 0);
+    const totalSteps = 6 - (skipMetadata ? 1 : 0);
 
     // Step 1: Fetch cryptocurrency market data (500 cryptos)
     await executeCommand(
@@ -82,6 +82,12 @@ async function updateAll(options = {}) {
     await executeCommand(
       'commands/calculateRisqLab80.js',
       `Step ${step++}/${totalSteps}: Calculating RisqLab 80 Index`
+    );
+
+    // Step 6: Calculate Portfolio Volatility
+    await executeCommand(
+      'commands/updateVolatility.js',
+      `Step ${step++}/${totalSteps}: Calculating Portfolio Volatility`
     );
 
     const duration = Date.now() - startTime;

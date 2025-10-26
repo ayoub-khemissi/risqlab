@@ -6,6 +6,7 @@ import { CryptoTable } from "@/components/crypto-table";
 import { MetricsCards } from "@/components/metrics-cards";
 import { Cryptocurrency, CryptocurrencyResponse } from "@/types/cryptocurrency";
 import { MetricsResponse } from "@/types/metrics";
+import { PortfolioVolatilityResponse } from "@/types/volatility";
 import { BinancePricesProvider } from "@/contexts/BinancePricesContext";
 
 const API_HOSTNAME = process.env.NEXT_PUBLIC_RISQLAB_API_HOSTNAME || "localhost";
@@ -21,10 +22,12 @@ export default function Home() {
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>(null);
   const [metricsData, setMetricsData] = useState<MetricsResponse["data"] | null>(null);
+  const [volatilityData, setVolatilityData] = useState<PortfolioVolatilityResponse["data"] | null>(null);
 
   useEffect(() => {
     fetchCryptocurrencies();
     fetchMetrics();
+    fetchVolatility();
   }, [page, sortColumn, sortOrder]);
 
   // Scroll to crypto table if hash is present
@@ -85,6 +88,21 @@ export default function Home() {
     }
   };
 
+  const fetchVolatility = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/volatility/portfolio`);
+
+      if (!response.ok) {
+        return;
+      }
+
+      const result: PortfolioVolatilityResponse = await response.json();
+      setVolatilityData(result.data);
+    } catch (error) {
+      console.error("Error fetching volatility:", error);
+    }
+  };
+
   const symbols = useMemo(() => data.map(crypto => crypto.symbol), [data]);
 
   const handleSort = (column: string) => {
@@ -118,6 +136,7 @@ export default function Home() {
             indexData={metricsData.index}
             globalData={metricsData.global}
             fearGreedData={metricsData.fearGreed}
+            volatilityData={volatilityData}
           />
         )}
 

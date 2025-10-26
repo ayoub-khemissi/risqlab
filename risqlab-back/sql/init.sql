@@ -226,6 +226,71 @@ CREATE TABLE IF NOT EXISTS `fear_and_greed` (
     UNIQUE KEY `idx_timestamp_unique` (`timestamp`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+DROP TABLE IF EXISTS `crypto_log_returns`;
+CREATE TABLE IF NOT EXISTS `crypto_log_returns` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `crypto_id` INT UNSIGNED NOT NULL,
+    `date` DATE NOT NULL,
+    `log_return` DECIMAL(20, 12) NOT NULL COMMENT 'Logarithmic return: ln(Price_t / Price_t-1)',
+    `price_current` DECIMAL(30, 18) NOT NULL COMMENT 'Current day closing price',
+    `price_previous` DECIMAL(30, 18) NOT NULL COMMENT 'Previous day closing price',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY `fk_log_returns_crypto_idx` (`crypto_id`) REFERENCES `cryptocurrencies`(`id`) ON DELETE CASCADE,
+    UNIQUE KEY `idx_crypto_date` (`crypto_id`, `date`),
+    KEY `idx_date` (`date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `crypto_volatility`;
+CREATE TABLE IF NOT EXISTS `crypto_volatility` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `crypto_id` INT UNSIGNED NOT NULL,
+    `date` DATE NOT NULL COMMENT 'Date for which volatility is calculated',
+    `window_days` INT UNSIGNED NOT NULL DEFAULT 90 COMMENT 'Rolling window size in days',
+    `daily_volatility` DECIMAL(20, 12) NOT NULL COMMENT 'Daily volatility (standard deviation of log returns)',
+    `annualized_volatility` DECIMAL(20, 12) NOT NULL COMMENT 'Annualized volatility (daily_vol * sqrt(365))',
+    `num_observations` INT UNSIGNED NOT NULL COMMENT 'Number of data points used in calculation',
+    `mean_return` DECIMAL(20, 12) NOT NULL COMMENT 'Mean of log returns over the window',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY `fk_volatility_crypto_idx` (`crypto_id`) REFERENCES `cryptocurrencies`(`id`) ON DELETE CASCADE,
+    UNIQUE KEY `idx_crypto_date_window` (`crypto_id`, `date`, `window_days`),
+    KEY `idx_date` (`date`),
+    KEY `idx_annualized_volatility` (`annualized_volatility`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `portfolio_volatility`;
+CREATE TABLE IF NOT EXISTS `portfolio_volatility` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `index_config_id` INT UNSIGNED NOT NULL COMMENT 'Reference to the index configuration',
+    `date` DATE NOT NULL COMMENT 'Date for which portfolio volatility is calculated',
+    `window_days` INT UNSIGNED NOT NULL DEFAULT 90 COMMENT 'Rolling window size in days',
+    `daily_volatility` DECIMAL(20, 12) NOT NULL COMMENT 'Daily portfolio volatility',
+    `annualized_volatility` DECIMAL(20, 12) NOT NULL COMMENT 'Annualized portfolio volatility (daily_vol * sqrt(365))',
+    `num_constituents` INT UNSIGNED NOT NULL COMMENT 'Number of cryptocurrencies in the portfolio',
+    `total_market_cap_usd` DECIMAL(40, 8) NOT NULL COMMENT 'Total market cap of portfolio constituents',
+    `calculation_duration_ms` INT UNSIGNED NULL COMMENT 'Time taken to calculate volatility',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY `fk_portfolio_vol_index_config_idx` (`index_config_id`) REFERENCES `index_config`(`id`) ON DELETE CASCADE,
+    UNIQUE KEY `idx_index_date_window` (`index_config_id`, `date`, `window_days`),
+    KEY `idx_date` (`date`),
+    KEY `idx_annualized_volatility` (`annualized_volatility`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `portfolio_volatility_constituents`;
+CREATE TABLE IF NOT EXISTS `portfolio_volatility_constituents` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `portfolio_volatility_id` BIGINT UNSIGNED NOT NULL,
+    `crypto_id` INT UNSIGNED NOT NULL,
+    `weight` DECIMAL(10, 6) NOT NULL COMMENT 'Weight in portfolio (based on market cap)',
+    `daily_volatility` DECIMAL(20, 12) NOT NULL COMMENT 'Individual crypto daily volatility',
+    `annualized_volatility` DECIMAL(20, 12) NOT NULL COMMENT 'Individual crypto annualized volatility',
+    `market_cap_usd` DECIMAL(40, 8) NOT NULL COMMENT 'Market cap at time of calculation',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY `fk_pvol_constituents_pvol_idx` (`portfolio_volatility_id`) REFERENCES `portfolio_volatility`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY `fk_pvol_constituents_crypto_idx` (`crypto_id`) REFERENCES `cryptocurrencies`(`id`) ON DELETE CASCADE,
+    UNIQUE KEY `idx_pvol_crypto` (`portfolio_volatility_id`, `crypto_id`),
+    KEY `idx_crypto` (`crypto_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

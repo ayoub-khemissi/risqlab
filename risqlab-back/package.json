@@ -16,7 +16,12 @@
     "fetch-global-metrics": "node commands/fetchGlobalMetrics.js",
     "fetch-fear-and-greed": "node commands/fetchFearAndGreed.js",
     "calculate-index": "node commands/calculateRisqLab80.js",
-    "update-all": "node commands/updateAll.js"
+    "update-all": "node commands/updateAll.js",
+    "calculate-log-returns": "node commands/calculateLogReturns.js",
+    "calculate-crypto-volatility": "node commands/calculateCryptoVolatility.js",
+    "calculate-portfolio-volatility": "node commands/calculatePortfolioVolatility.js",
+    "update-volatility": "node commands/updateVolatility.js",
+    "check-volatility": "node scripts/checkVolatilitySetup.js"
   },
   "dependencies": {
     "console-stamp": "^3.1.2",
