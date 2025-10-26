@@ -1,6 +1,7 @@
 "use client";
 
 import React, { memo } from "react";
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableHeader,
@@ -48,6 +49,8 @@ function CryptoTableComponent({
   sortColumn,
   sortOrder,
 }: CryptoTableProps) {
+  const router = useRouter();
+
   const columns = [
     { key: "rank", label: "Rank", sortable: true, dbColumn: "market_cap_usd" },
     { key: "name", label: "Cryptocurrency", sortable: true },
@@ -208,7 +211,14 @@ function CryptoTableComponent({
           emptyContent={"No cryptocurrencies found"}
         >
           {(item) => (
-            <TableRow key={item.id}>
+            <TableRow
+              key={item.id}
+              className="cursor-pointer hover:bg-default-100 transition-colors"
+              onClick={() => {
+                sessionStorage.setItem('cryptoReturnPath', '/#crypto-table');
+                router.push(`/crypto/${item.symbol}`);
+              }}
+            >
               {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
             </TableRow>
           )}

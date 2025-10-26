@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, memo } from "react";
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableHeader,
@@ -28,6 +29,7 @@ interface ConstituentsTableProps {
 }
 
 function ConstituentsTableComponent({ constituents }: ConstituentsTableProps) {
+  const router = useRouter();
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>(null);
 
@@ -208,7 +210,14 @@ function ConstituentsTableComponent({ constituents }: ConstituentsTableProps) {
         emptyContent={"No constituents found"}
       >
         {(item) => (
-          <TableRow key={item.cmc_id}>
+          <TableRow
+            key={item.cmc_id}
+            className="cursor-pointer hover:bg-default-100 transition-colors"
+            onClick={() => {
+              sessionStorage.setItem('cryptoReturnPath', '/index#constituents-table');
+              router.push(`/crypto/${item.symbol}`);
+            }}
+          >
             {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
           </TableRow>
         )}

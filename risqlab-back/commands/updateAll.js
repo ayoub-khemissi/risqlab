@@ -33,37 +33,55 @@ function executeCommand(command, description) {
 
 /**
  * Main function to update all data and calculate the index
+ * @param {Object} options - Configuration options
+ * @param {boolean} options.skipMetadata - Skip metadata fetch (default: false)
  */
-async function updateAll() {
+async function updateAll(options = {}) {
   const startTime = Date.now();
+  const {
+    skipMetadata = false
+  } = options;
 
   try {
     log.info('╔════════════════════════════════════════════════════════════╗');
     log.info('║         RisqLab 80 - Complete Data Update & Index          ║');
     log.info('╚════════════════════════════════════════════════════════════╝\n');
 
+    let step = 1;
+    const totalSteps = 5 - (skipMetadata ? 1 : 0);
+
     // Step 1: Fetch cryptocurrency market data (500 cryptos)
     await executeCommand(
       'commands/fetchCryptoMarketData.js',
-      'Step 1/4: Fetching Cryptocurrency Market Data'
+      `Step ${step++}/${totalSteps}: Fetching Cryptocurrency Market Data`
     );
 
-    // Step 2: Fetch global market metrics
+    // Step 2: Fetch cryptocurrency metadata (optional, can be skipped to save API credits)
+    if (!skipMetadata) {
+      await executeCommand(
+        'commands/fetchCryptoMetadata.js',
+        `Step ${step++}/${totalSteps}: Fetching Cryptocurrency Metadata`
+      );
+    } else {
+      log.info(`⊘ Skipping Cryptocurrency Metadata (--skip-metadata flag)\n`);
+    }
+
+    // Step 3: Fetch global market metrics
     await executeCommand(
       'commands/fetchGlobalMetrics.js',
-      'Step 2/4: Fetching Global Market Metrics'
+      `Step ${step++}/${totalSteps}: Fetching Global Market Metrics`
     );
 
-    // Step 3: Fetch Fear and Greed Index
+    // Step 4: Fetch Fear and Greed Index
     await executeCommand(
       'commands/fetchFearAndGreed.js',
-      'Step 3/4: Fetching Fear and Greed Index'
+      `Step ${step++}/${totalSteps}: Fetching Fear and Greed Index`
     );
 
-    // Step 4: Calculate RisqLab 80 Index
+    // Step 5: Calculate RisqLab 80 Index
     await executeCommand(
       'commands/calculateRisqLab80.js',
-      'Step 4/4: Calculating RisqLab 80 Index'
+      `Step ${step++}/${totalSteps}: Calculating RisqLab 80 Index`
     );
 
     const duration = Date.now() - startTime;
@@ -75,6 +93,11 @@ async function updateAll() {
     log.info(`Total execution time: ${durationSeconds}s (${duration}ms)`);
     log.info('All data successfully updated and index calculated!\n');
 
+    if (skipMetadata) {
+      log.info('ℹ Note: Metadata was skipped. Use the following to run it manually:');
+      log.info('  - npm run fetch-crypto-metadata\n');
+    }
+
   } catch (error) {
     log.error('╔════════════════════════════════════════════════════════════╗');
     log.error('║                     UPDATE FAILED                          ║');
@@ -84,8 +107,37 @@ async function updateAll() {
   }
 }
 
+// Parse command line arguments
+const args = process.argv.slice(2);
+const options = {
+  skipMetadata: args.includes('--skip-metadata')
+};
+
+// Show help if requested
+if (args.includes('--help') || args.includes('-h')) {
+  console.log(`
+Usage: node commands/updateAll.js [options]
+
+Options:
+  --skip-metadata       Skip cryptocurrency metadata fetch (saves API credits)
+  --help, -h            Show this help message
+
+Examples:
+  # Full update (default, includes all commands)
+  npm run update-all
+
+  # Quick update (skip metadata)
+  node commands/updateAll.js --skip-metadata
+
+Notes:
+  - Metadata only needs to be updated occasionally (once per day is sufficient)
+  - Market data, global metrics, and index should be updated frequently
+`);
+  process.exit(0);
+}
+
 // Run the update
-updateAll()
+updateAll(options)
   .then(() => {
     process.exit(0);
   })

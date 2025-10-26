@@ -27,6 +27,22 @@ export default function Home() {
     fetchMetrics();
   }, [page, sortColumn, sortOrder]);
 
+  // Scroll to crypto table if hash is present
+  useEffect(() => {
+    if (window.location.hash === '#crypto-table') {
+      // Wait for data to load and page to render
+      const scrollToTable = () => {
+        const element = document.getElementById('crypto-table');
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      };
+
+      // Try after a delay
+      setTimeout(scrollToTable, 300);
+    }
+  }, [data]);
+
   const fetchCryptocurrencies = async () => {
     setIsLoading(true);
     try {
@@ -105,16 +121,18 @@ export default function Home() {
           />
         )}
 
-        <CryptoTable
-          data={data}
-          isLoading={isLoading}
-          page={page}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-          onSort={handleSort}
-          sortColumn={sortColumn}
-          sortOrder={sortOrder}
-        />
+        <div id="crypto-table">
+          <CryptoTable
+            data={data}
+            isLoading={isLoading}
+            page={page}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            onSort={handleSort}
+            sortColumn={sortColumn}
+            sortOrder={sortOrder}
+          />
+        </div>
       </section>
     </BinancePricesProvider>
   );

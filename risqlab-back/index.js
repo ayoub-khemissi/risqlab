@@ -5,6 +5,7 @@ import config from './utils/config.js';
 import './routes/cryptocurrencies.js';
 import './routes/metrics.js';
 import './routes/indexDetails.js';
+import './routes/cryptoDetail.js';
 
 // eslint-disable-next-line
 api.use((err, req, res, next) => {

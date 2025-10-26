@@ -82,18 +82,44 @@ async function fetchCryptoMetadata() {
             const description = metadata.description || null;
             const logoUrl = metadata.logo || null;
             const websiteUrl = metadata.urls?.website?.[0] || null;
+            const whitepaperUrl = metadata.urls?.technical_doc?.[0] || null;
+            const twitterUrl = metadata.urls?.twitter?.[0] || null;
+            const redditUrl = metadata.urls?.reddit?.[0] || null;
+            const telegramUrl = metadata.urls?.chat?.[0] || metadata.urls?.message_board?.[1] || null;
+            const githubUrl = metadata.urls?.source_code?.[0] || null;
+
+            // Extract platform information
+            let platform = null;
+            let dateLaunched = null;
+
+            if (metadata.platform) {
+              platform = metadata.platform.name || null;
+            }
+
+            if (metadata.date_added) {
+              dateLaunched = metadata.date_added.split('T')[0]; // Extract just the date part
+            }
 
             // Store metadata in database
             await Database.execute(
               `INSERT INTO cryptocurrency_metadata
-              (crypto_id, cmc_id, tags, category, description, logo_url, website_url)
-              VALUES (?, ?, ?, ?, ?, ?, ?)
+              (crypto_id, cmc_id, tags, category, description, logo_url, website_url,
+               whitepaper_url, twitter_url, reddit_url, telegram_url, github_url,
+               platform, date_launched)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
               ON DUPLICATE KEY UPDATE
               tags = VALUES(tags),
               category = VALUES(category),
               description = VALUES(description),
               logo_url = VALUES(logo_url),
               website_url = VALUES(website_url),
+              whitepaper_url = VALUES(whitepaper_url),
+              twitter_url = VALUES(twitter_url),
+              reddit_url = VALUES(reddit_url),
+              telegram_url = VALUES(telegram_url),
+              github_url = VALUES(github_url),
+              platform = VALUES(platform),
+              date_launched = VALUES(date_launched),
               updated_at = CURRENT_TIMESTAMP`,
               [
                 crypto.id,
@@ -103,6 +129,13 @@ async function fetchCryptoMetadata() {
                 description,
                 logoUrl,
                 websiteUrl,
+                whitepaperUrl,
+                twitterUrl,
+                redditUrl,
+                telegramUrl,
+                githubUrl,
+                platform,
+                dateLaunched,
               ]
             );
 

@@ -29,6 +29,22 @@ export default function IndexPage() {
     fetchIndexDetails();
   }, [selectedPeriod]);
 
+  // Scroll to constituents table if hash is present
+  useEffect(() => {
+    if (window.location.hash === '#constituents-table') {
+      // Wait for data to load and page to render
+      const scrollToTable = () => {
+        const element = document.getElementById('constituents-table');
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      };
+
+      // Try after a delay
+      setTimeout(scrollToTable, 300);
+    }
+  }, [data]);
+
   const fetchIndexDetails = async () => {
     setIsLoading(true);
     try {
@@ -212,7 +228,9 @@ export default function IndexPage() {
         </CardBody>
       </Card>
 
-      <ConstituentsTable constituents={constituents} />
+      <div id="constituents-table">
+        <ConstituentsTable constituents={constituents} />
+      </div>
       </section>
     </BinancePricesProvider>
   );

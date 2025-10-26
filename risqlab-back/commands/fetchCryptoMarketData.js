@@ -117,21 +117,39 @@ async function insertMarketData(cryptoId, crypto) {
 
   await Database.execute(
     `INSERT INTO market_data
-    (crypto_id, price_usd, circulating_supply, volume_24h_usd, percent_change_24h, percent_change_7d, timestamp)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    (crypto_id, price_usd, circulating_supply, volume_24h_usd, percent_change_1h, percent_change_24h,
+     percent_change_7d, percent_change_30d, percent_change_60d, percent_change_90d, cmc_rank,
+     total_supply, max_supply, fully_diluted_valuation, timestamp)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
     price_usd = VALUES(price_usd),
     circulating_supply = VALUES(circulating_supply),
     volume_24h_usd = VALUES(volume_24h_usd),
+    percent_change_1h = VALUES(percent_change_1h),
     percent_change_24h = VALUES(percent_change_24h),
-    percent_change_7d = VALUES(percent_change_7d)`,
+    percent_change_7d = VALUES(percent_change_7d),
+    percent_change_30d = VALUES(percent_change_30d),
+    percent_change_60d = VALUES(percent_change_60d),
+    percent_change_90d = VALUES(percent_change_90d),
+    cmc_rank = VALUES(cmc_rank),
+    total_supply = VALUES(total_supply),
+    max_supply = VALUES(max_supply),
+    fully_diluted_valuation = VALUES(fully_diluted_valuation)`,
     [
       cryptoId,
       quote.price || 0,
       crypto.circulating_supply || 0,
       quote.volume_24h || 0,
+      quote.percent_change_1h || null,
       quote.percent_change_24h || null,
       quote.percent_change_7d || null,
+      quote.percent_change_30d || null,
+      quote.percent_change_60d || null,
+      quote.percent_change_90d || null,
+      crypto.cmc_rank || null,
+      crypto.total_supply || null,
+      crypto.max_supply || null,
+      quote.fully_diluted_market_cap || null,
       timestamp,
     ]
   );
