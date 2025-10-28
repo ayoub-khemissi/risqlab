@@ -41,14 +41,9 @@ async function calculatePortfolioVolatility() {
 
     for (const dateRow of indexDates) {
       try {
-        // Convert date to YYYY-MM-DD format
-        const dateStr = dateRow.date instanceof Date
-          ? dateRow.date.toISOString().split('T')[0]
-          : dateRow.date;
-
         const result = await calculatePortfolioVolatilityForDate(
           indexConfig.id,
-          dateStr,
+          dateRow.date,
           dateRow.timestamp
         );
 
