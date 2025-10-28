@@ -10,8 +10,7 @@ import { MetricsResponse } from "@/types/metrics";
 import { PortfolioVolatilityResponse } from "@/types/volatility";
 import { BinancePricesProvider } from "@/contexts/BinancePricesContext";
 
-const API_HOSTNAME =
-  process.env.NEXT_PUBLIC_RISQLAB_API_HOSTNAME;
+const API_HOSTNAME = process.env.NEXT_PUBLIC_RISQLAB_API_HOSTNAME;
 const API_PORT = process.env.NEXT_PUBLIC_RISQLAB_API_PORT;
 const API_HTTPSECURE =
   process.env.NEXT_PUBLIC_RISQLAB_API_HTTPSECURE === "true";
