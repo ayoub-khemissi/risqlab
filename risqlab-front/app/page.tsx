@@ -72,8 +72,6 @@ export default function Home() {
 
       setData(result.data);
       setTotalPages(result.pagination.totalPages);
-    } catch (error) {
-      console.error("Error fetching cryptocurrencies:", error);
     } finally {
       setIsLoading(false);
     }
@@ -94,9 +92,7 @@ export default function Home() {
       const result: MetricsResponse = await response.json();
 
       setMetricsData(result.data);
-    } catch (error) {
-      console.error("Error fetching metrics:", error);
-    }
+    } catch {}
   };
 
   const fetchVolatility = async () => {
@@ -110,9 +106,7 @@ export default function Home() {
       const result: PortfolioVolatilityResponse = await response.json();
 
       setVolatilityData(result.data);
-    } catch (error) {
-      console.error("Error fetching volatility:", error);
-    }
+    } catch {}
   };
 
   const symbols = useMemo(() => data.map((crypto) => crypto.symbol), [data]);

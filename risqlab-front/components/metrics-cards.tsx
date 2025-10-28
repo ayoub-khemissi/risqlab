@@ -33,6 +33,97 @@ interface MetricsCardsProps {
   } | null;
 }
 
+interface MetricCardProps {
+  title: string;
+  value: string;
+  change: number;
+  chartData: any[];
+  dataKey: string;
+  fullValue?: string;
+  onClick?: () => void;
+}
+
+const MetricCard: React.FC<MetricCardProps> = ({
+  title,
+  value,
+  change,
+  chartData,
+  dataKey,
+  fullValue,
+  onClick,
+}) => {
+  const isPositive = change > 0;
+  const strokeColor = isPositive ? "#22c55e" : "#ef4444";
+
+  // Calculate dynamic Y-axis domain with padding
+  const chartDomain = useMemo(() => {
+    if (chartData.length === 0) return undefined;
+    const values = chartData.map((d) => d[dataKey]);
+    const rawMin = Math.min(...values);
+    const rawMax = Math.max(...values);
+    const range = rawMax - rawMin;
+    const padding = range * 0.05; // 5% padding
+    const domainMin = rawMin - padding;
+    const domainMax = rawMax + padding;
+
+    return [domainMin, domainMax];
+  }, [chartData, dataKey]);
+
+  return (
+    <Card
+      className={
+        onClick ? "cursor-pointer hover:scale-[1.02] transition-transform" : ""
+      }
+      isPressable={!!onClick}
+      onPress={onClick}
+    >
+      <CardBody className="p-4">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-default-500">{title}</span>
+            <Chip
+              color={isPositive ? "success" : "danger"}
+              size="sm"
+              startContent={
+                isPositive ? (
+                  <TrendingUp size={14} />
+                ) : (
+                  <TrendingDown size={14} />
+                )
+              }
+              variant="flat"
+            >
+              {formatPercentage(change)}
+            </Chip>
+          </div>
+          <div className="text-2xl font-bold" title={fullValue}>
+            {value}
+          </div>
+          <div className="h-12" style={{ minHeight: "48px" }}>
+            <ResponsiveContainer height="100%" minHeight={48} width="100%">
+              <LineChart
+                data={chartData}
+                margin={{ top: 2, right: 2, left: 2, bottom: 2 }}
+              >
+                <YAxis hide domain={chartDomain} />
+                <Line
+                  activeDot={false}
+                  dataKey={dataKey}
+                  dot={false}
+                  isAnimationActive={false}
+                  stroke={strokeColor}
+                  strokeWidth={2}
+                  type="linear"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </CardBody>
+    </Card>
+  );
+};
+
 function MetricsCardsComponent({
   indexData,
   globalData,
@@ -40,99 +131,6 @@ function MetricsCardsComponent({
   volatilityData,
 }: MetricsCardsProps) {
   const router = useRouter();
-
-  const renderMetricCard = (
-    title: string,
-    value: string,
-    change: number,
-    chartData: any[],
-    dataKey: string,
-    fullValue?: string,
-    onClick?: () => void,
-  ) => {
-    const isPositive = change > 0;
-    const strokeColor = isPositive ? "#22c55e" : "#ef4444";
-
-    // Calculate dynamic Y-axis domain with padding
-    const chartDomain = useMemo(() => {
-      if (chartData.length === 0) return undefined;
-      const values = chartData.map((d) => d[dataKey]);
-      const rawMin = Math.min(...values);
-      const rawMax = Math.max(...values);
-      const range = rawMax - rawMin;
-      const padding = range * 0.05; // 5% padding
-      const domainMin = rawMin - padding;
-      const domainMax = rawMax + padding;
-
-      return [domainMin, domainMax];
-    }, [chartData, dataKey]);
-
-    return (
-      <Card
-        className={
-          onClick
-            ? "cursor-pointer hover:scale-[1.02] transition-transform"
-            : ""
-        }
-        isPressable={!!onClick}
-        onPress={onClick}
-      >
-        <CardBody className="p-4">
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-default-500">{title}</span>
-              <Chip
-                color={isPositive ? "success" : "danger"}
-                size="sm"
-                startContent={
-                  isPositive ? (
-                    <TrendingUp size={14} />
-                  ) : (
-                    <TrendingDown size={14} />
-                  )
-                }
-                variant="flat"
-              >
-                {formatPercentage(change)}
-              </Chip>
-            </div>
-            <div className="text-2xl font-bold" title={fullValue}>
-              {value}
-            </div>
-            <div className="h-12" style={{ minHeight: "48px" }}>
-              <ResponsiveContainer height="100%" minHeight={48} width="100%">
-                <LineChart
-                  data={chartData}
-                  margin={{ top: 2, right: 2, left: 2, bottom: 2 }}
-                >
-                  <YAxis hide domain={chartDomain} />
-                  <Line
-                    activeDot={false}
-                    dataKey={dataKey}
-                    dot={false}
-                    isAnimationActive={false}
-                    stroke={strokeColor}
-                    strokeWidth={2}
-                    type="linear"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </CardBody>
-      </Card>
-    );
-  };
-
-  const getFearGreedColor = (
-    value: number,
-  ): "success" | "warning" | "danger" | "default" => {
-    if (value >= 75) return "success";
-    if (value >= 50) return "warning";
-    if (value >= 25) return "danger";
-
-    return "danger";
-  };
 
   const renderFearGreedGauge = (value: number) => {
     const width = 144;
@@ -422,42 +420,46 @@ function MetricsCardsComponent({
   return (
     <div className="flex flex-col gap-4 mb-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {indexData.current &&
-          renderMetricCard(
-            "RisqLab 80 Index",
-            indexData.current.index_level.toFixed(2),
-            parseFloat(indexData.current.percent_change_24h.toString()),
-            indexData.history.map((item) => ({
+        {indexData.current && (
+          <MetricCard
+            change={parseFloat(indexData.current.percent_change_24h.toString())}
+            chartData={indexData.history.map((item) => ({
               value: parseFloat(item.index_level.toString()),
-            })),
-            "value",
-            undefined,
-            () => router.push("/index"),
-          )}
+            }))}
+            dataKey="value"
+            title="RisqLab 80 Index"
+            value={indexData.current.index_level.toFixed(2)}
+            onClick={() => router.push("/index")}
+          />
+        )}
 
         {globalData.current && (
           <>
-            {renderMetricCard(
-              "Market Cap",
-              formatCompactUSD(globalData.current.total_market_cap_usd),
-              parseFloat(globalData.current.market_cap_change_24h.toString()),
-              globalData.history.map((item) => ({
+            <MetricCard
+              change={parseFloat(
+                globalData.current.market_cap_change_24h.toString(),
+              )}
+              chartData={globalData.history.map((item) => ({
                 value: parseFloat(item.total_market_cap_usd.toString()),
-              })),
-              "value",
-              formatUSD(globalData.current.total_market_cap_usd),
-            )}
+              }))}
+              dataKey="value"
+              fullValue={formatUSD(globalData.current.total_market_cap_usd)}
+              title="Market Cap"
+              value={formatCompactUSD(globalData.current.total_market_cap_usd)}
+            />
 
-            {renderMetricCard(
-              "24h Volume",
-              formatCompactUSD(globalData.current.total_volume_24h_usd),
-              parseFloat(globalData.current.volume_change_24h.toString()),
-              globalData.history.map((item) => ({
+            <MetricCard
+              change={parseFloat(
+                globalData.current.volume_change_24h.toString(),
+              )}
+              chartData={globalData.history.map((item) => ({
                 value: parseFloat(item.total_volume_24h_usd.toString()),
-              })),
-              "value",
-              formatUSD(globalData.current.total_volume_24h_usd),
-            )}
+              }))}
+              dataKey="value"
+              fullValue={formatUSD(globalData.current.total_volume_24h_usd)}
+              title="24h Volume"
+              value={formatCompactUSD(globalData.current.total_volume_24h_usd)}
+            />
           </>
         )}
       </div>

@@ -71,8 +71,6 @@ export default function IndexPage() {
       const result: IndexDetailsResponse = await response.json();
 
       setData(result.data);
-    } catch (error) {
-      console.error("Error fetching index details:", error);
     } finally {
       setIsLoading(false);
     }

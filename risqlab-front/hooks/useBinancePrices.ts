@@ -34,12 +34,6 @@ export function useBinancePrices(symbols: string[]) {
       }
     }, 5000); // Update every 5 seconds
 
-    ws.onopen = () => {
-      if (isMountedRef.current) {
-        console.log("WebSocket Binance connecté");
-      }
-    };
-
     ws.onmessage = (event) => {
       if (!isMountedRef.current) return;
 
@@ -55,23 +49,7 @@ export function useBinancePrices(symbols: string[]) {
             pendingUpdatesRef.current[symbol] = ticker.c;
           }
         });
-      } catch (error) {
-        if (isMountedRef.current) {
-          console.error("Erreur lors du parsing des données Binance:", error);
-        }
-      }
-    };
-
-    ws.onerror = (error) => {
-      if (isMountedRef.current && ws.readyState !== WebSocket.CLOSED) {
-        console.error("Erreur WebSocket Binance:", error);
-      }
-    };
-
-    ws.onclose = () => {
-      if (isMountedRef.current) {
-        console.log("WebSocket Binance fermé");
-      }
+      } catch {}
     };
 
     return () => {

@@ -66,17 +66,9 @@ function TopConstituentsChartComponent({
     cx,
     cy,
     midAngle,
-    innerRadius,
     outerRadius,
     percent,
-  }: {
-    cx: number;
-    cy: number;
-    midAngle: number;
-    innerRadius: number;
-    outerRadius: number;
-    percent: number;
-  }) => {
+  }: any) => {
     const RADIAN = Math.PI / 180;
     const radius = outerRadius + 25;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);

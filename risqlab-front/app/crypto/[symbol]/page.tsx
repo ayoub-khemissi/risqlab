@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
@@ -76,8 +77,7 @@ export default function CryptoDetailPage() {
       const result: CryptoDetailResponse = await response.json();
 
       setData(result.data);
-    } catch (error) {
-      console.error("Error fetching crypto details:", error);
+    } catch {
       setError("Failed to load cryptocurrency details");
     } finally {
       setIsLoading(false);
@@ -127,7 +127,13 @@ export default function CryptoDetailPage() {
       {/* Header */}
       <div className="flex items-center gap-4">
         {basic.logo_url && (
-          <img alt={basic.name} className="w-16 h-16" src={basic.logo_url} />
+          <Image
+            alt={basic.name}
+            className="w-16 h-16"
+            height={64}
+            src={basic.logo_url}
+            width={64}
+          />
         )}
         <div className="flex-1">
           <div className="flex items-center gap-3">
