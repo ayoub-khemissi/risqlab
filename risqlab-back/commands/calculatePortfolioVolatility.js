@@ -6,11 +6,9 @@ import {
   annualizeVolatility,
   validateWeights
 } from '../utils/statistics.js';
-import { isExcluded } from '../utils/exclusions.js';
 
 const DEFAULT_WINDOW_DAYS = 90;
 const INDEX_NAME = 'RisqLab 80';
-const MAX_CONSTITUENTS = 80;
 
 /**
  * Calculate and store portfolio volatility for the RisqLab 80 Index
@@ -226,8 +224,8 @@ async function getConstituentReturns(constituents, endDate) {
       WHERE crypto_id = ?
         AND date <= ?
       ORDER BY date DESC
-      LIMIT ?
-    `, [constituent.crypto_id, endDate, DEFAULT_WINDOW_DAYS]);
+      LIMIT ${DEFAULT_WINDOW_DAYS}
+    `, [constituent.crypto_id, endDate]);
 
     // Reverse to get chronological order
     const returnsArray = returns.map(r => parseFloat(r.log_return)).reverse();
