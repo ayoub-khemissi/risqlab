@@ -101,6 +101,34 @@ async function getCryptoId(symbol, name, cmcId) {
 }
 
 /**
+ * Cap percentage values to fit within DECIMAL(12, 4) range
+ * Max value: 99999999.9999 (99 million %)
+ * Min value: -99999999.9999
+ * @param {number|null} value - The percentage value
+ * @returns {number|null} Capped value or null
+ */
+function capPercentage(value) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  const MAX_PERCENTAGE = 99999999.9999;
+  const MIN_PERCENTAGE = -99999999.9999;
+
+  if (value > MAX_PERCENTAGE) {
+    log.warn(`Capping extreme percentage value: ${value} -> ${MAX_PERCENTAGE}`);
+    return MAX_PERCENTAGE;
+  }
+
+  if (value < MIN_PERCENTAGE) {
+    log.warn(`Capping extreme percentage value: ${value} -> ${MIN_PERCENTAGE}`);
+    return MIN_PERCENTAGE;
+  }
+
+  return value;
+}
+
+/**
  * Insert market data for a cryptocurrency.
  * @param {number} cryptoId - The cryptocurrency ID
  * @param {Object} crypto - Cryptocurrency data from CoinMarketCap
@@ -140,12 +168,12 @@ async function insertMarketData(cryptoId, crypto) {
       quote.price || 0,
       crypto.circulating_supply || 0,
       quote.volume_24h || 0,
-      quote.percent_change_1h || null,
-      quote.percent_change_24h || null,
-      quote.percent_change_7d || null,
-      quote.percent_change_30d || null,
-      quote.percent_change_60d || null,
-      quote.percent_change_90d || null,
+      capPercentage(quote.percent_change_1h),
+      capPercentage(quote.percent_change_24h),
+      capPercentage(quote.percent_change_7d),
+      capPercentage(quote.percent_change_30d),
+      capPercentage(quote.percent_change_60d),
+      capPercentage(quote.percent_change_90d),
       crypto.cmc_rank || null,
       crypto.total_supply || null,
       crypto.max_supply || null,
