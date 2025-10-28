@@ -238,7 +238,7 @@ function ConstituentsTableComponent({ constituents }: ConstituentsTableProps) {
             onClick={() => {
               sessionStorage.setItem(
                 "cryptoReturnPath",
-                "/index#constituents-table",
+                "/index-risqlab#constituents-table",
               );
               router.push(`/crypto/${item.symbol}`);
             }}

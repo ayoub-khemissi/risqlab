@@ -20,7 +20,7 @@ export const Navbar = () => {
           </NextLink>
         </NavbarBrand>
         <NavbarItem>
-          <Link as={NextLink} color="foreground" href="/index">
+          <Link as={NextLink} color="foreground" href="/index-risqlab">
             RisqLab 80 Index
           </Link>
         </NavbarItem>

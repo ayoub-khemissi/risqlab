@@ -429,7 +429,7 @@ function MetricsCardsComponent({
             dataKey="value"
             title="RisqLab 80 Index"
             value={indexData.current.index_level.toFixed(2)}
-            onClick={() => router.push("/index")}
+            onClick={() => router.push("/index-risqlab")}
           />
         )}
 
