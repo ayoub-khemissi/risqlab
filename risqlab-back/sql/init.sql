@@ -31,21 +31,6 @@ CREATE TABLE IF NOT EXISTS `app_instance` (
   KEY `fk_app_instance_app_idx` (`app_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-DROP TABLE IF EXISTS `log`;
-CREATE TABLE IF NOT EXISTS `log` (
-  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
-  `app_instance_id` int UNSIGNED NOT NULL,
-  `level` int UNSIGNED NOT NULL,
-  `text` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `created_at` bigint UNSIGNED NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `id_UNIQUE` (`id`),
-  FOREIGN KEY (`level`) REFERENCES log_level(`id`),
-  FOREIGN KEY (`app_instance_id`) REFERENCES app_instance(`id`),
-  KEY `fk_log_log_level_idx` (`level`),
-  KEY `fk_log_api_instance_idx` (`app_instance_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 DROP TABLE IF EXISTS `log_level`;
 CREATE TABLE IF NOT EXISTS `log_level` (
   `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -60,6 +45,21 @@ INSERT INTO `log_level` (`id`, `level`) VALUES
 (2, 'INFO'),
 (3, 'WARN'),
 (4, 'ERROR');
+
+DROP TABLE IF EXISTS `log`;
+CREATE TABLE IF NOT EXISTS `log` (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `app_instance_id` int UNSIGNED NOT NULL,
+  `level` int UNSIGNED NOT NULL,
+  `text` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` bigint UNSIGNED NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`),
+  FOREIGN KEY (`level`) REFERENCES log_level(`id`),
+  FOREIGN KEY (`app_instance_id`) REFERENCES app_instance(`id`),
+  KEY `fk_log_log_level_idx` (`level`),
+  KEY `fk_log_api_instance_idx` (`app_instance_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 DROP TABLE IF EXISTS `index_config`;
 CREATE TABLE IF NOT EXISTS `index_config` (
