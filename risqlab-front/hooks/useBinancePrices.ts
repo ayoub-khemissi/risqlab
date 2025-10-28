@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from "react";
 
 interface BinanceTicker {
   s: string;
@@ -20,7 +20,8 @@ export function useBinancePrices(symbols: string[]) {
       wsRef.current.close();
     }
 
-    const ws = new WebSocket('wss://stream.binance.com:9443/ws/!ticker@arr');
+    const ws = new WebSocket("wss://stream.binance.com:9443/ws/!ticker@arr");
+
     wsRef.current = ws;
 
     // Apply all accumulated updates every 5 seconds
@@ -35,7 +36,7 @@ export function useBinancePrices(symbols: string[]) {
 
     ws.onopen = () => {
       if (isMountedRef.current) {
-        console.log('WebSocket Binance connecté');
+        console.log("WebSocket Binance connecté");
       }
     };
 
@@ -56,20 +57,20 @@ export function useBinancePrices(symbols: string[]) {
         });
       } catch (error) {
         if (isMountedRef.current) {
-          console.error('Erreur lors du parsing des données Binance:', error);
+          console.error("Erreur lors du parsing des données Binance:", error);
         }
       }
     };
 
     ws.onerror = (error) => {
       if (isMountedRef.current && ws.readyState !== WebSocket.CLOSED) {
-        console.error('Erreur WebSocket Binance:', error);
+        console.error("Erreur WebSocket Binance:", error);
       }
     };
 
     ws.onclose = () => {
       if (isMountedRef.current) {
-        console.log('WebSocket Binance fermé');
+        console.log("WebSocket Binance fermé");
       }
     };
 
@@ -81,7 +82,7 @@ export function useBinancePrices(symbols: string[]) {
         wsRef.current = null;
       }
     };
-  }, [symbols.join(',')]);
+  }, [symbols.join(",")]);
 
   return prices;
 }

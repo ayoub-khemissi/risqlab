@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+
 import { title } from "@/components/primitives";
 import { CryptoTable } from "@/components/crypto-table";
 import { MetricsCards } from "@/components/metrics-cards";
@@ -9,10 +10,12 @@ import { MetricsResponse } from "@/types/metrics";
 import { PortfolioVolatilityResponse } from "@/types/volatility";
 import { BinancePricesProvider } from "@/contexts/BinancePricesContext";
 
-const API_HOSTNAME = process.env.NEXT_PUBLIC_RISQLAB_API_HOSTNAME || "localhost";
+const API_HOSTNAME =
+  process.env.NEXT_PUBLIC_RISQLAB_API_HOSTNAME || "localhost";
 const API_PORT = process.env.NEXT_PUBLIC_RISQLAB_API_PORT || "8080";
-const API_HTTPSECURE = process.env.NEXT_PUBLIC_RISQLAB_API_HTTPSECURE === "true";
-const API_BASE_URL = `http${API_HTTPSECURE ? 's' : ''}://${API_HOSTNAME}:${API_PORT}`;
+const API_HTTPSECURE =
+  process.env.NEXT_PUBLIC_RISQLAB_API_HTTPSECURE === "true";
+const API_BASE_URL = `http${API_HTTPSECURE ? "s" : ""}://${API_HOSTNAME}:${API_PORT}`;
 
 export default function Home() {
   const [data, setData] = useState<Cryptocurrency[]>([]);
@@ -21,8 +24,12 @@ export default function Home() {
   const [totalPages, setTotalPages] = useState(1);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>(null);
-  const [metricsData, setMetricsData] = useState<MetricsResponse["data"] | null>(null);
-  const [volatilityData, setVolatilityData] = useState<PortfolioVolatilityResponse["data"] | null>(null);
+  const [metricsData, setMetricsData] = useState<
+    MetricsResponse["data"] | null
+  >(null);
+  const [volatilityData, setVolatilityData] = useState<
+    PortfolioVolatilityResponse["data"] | null
+  >(null);
 
   useEffect(() => {
     fetchCryptocurrencies();
@@ -32,12 +39,13 @@ export default function Home() {
 
   // Scroll to crypto table if hash is present
   useEffect(() => {
-    if (window.location.hash === '#crypto-table') {
+    if (window.location.hash === "#crypto-table") {
       // Wait for data to load and page to render
       const scrollToTable = () => {
-        const element = document.getElementById('crypto-table');
+        const element = document.getElementById("crypto-table");
+
         if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          element.scrollIntoView({ behavior: "smooth", block: "start" });
         }
       };
 
@@ -49,9 +57,10 @@ export default function Home() {
   const fetchCryptocurrencies = async () => {
     setIsLoading(true);
     try {
-      const url = sortColumn && sortOrder
-        ? `${API_BASE_URL}/cryptocurrencies?page=${page}&limit=100&sortBy=${sortColumn}&sortOrder=${sortOrder}`
-        : `${API_BASE_URL}/cryptocurrencies?page=${page}&limit=100`;
+      const url =
+        sortColumn && sortOrder
+          ? `${API_BASE_URL}/cryptocurrencies?page=${page}&limit=100&sortBy=${sortColumn}&sortOrder=${sortOrder}`
+          : `${API_BASE_URL}/cryptocurrencies?page=${page}&limit=100`;
 
       const response = await fetch(url);
 
@@ -60,6 +69,7 @@ export default function Home() {
       }
 
       const result: CryptocurrencyResponse = await response.json();
+
       setData(result.data);
       setTotalPages(result.pagination.totalPages);
     } catch (error) {
@@ -82,6 +92,7 @@ export default function Home() {
       }
 
       const result: MetricsResponse = await response.json();
+
       setMetricsData(result.data);
     } catch (error) {
       console.error("Error fetching metrics:", error);
@@ -97,13 +108,14 @@ export default function Home() {
       }
 
       const result: PortfolioVolatilityResponse = await response.json();
+
       setVolatilityData(result.data);
     } catch (error) {
       console.error("Error fetching volatility:", error);
     }
   };
 
-  const symbols = useMemo(() => data.map(crypto => crypto.symbol), [data]);
+  const symbols = useMemo(() => data.map((crypto) => crypto.symbol), [data]);
 
   const handleSort = (column: string) => {
     if (column === sortColumn) {
@@ -133,9 +145,9 @@ export default function Home() {
 
         {metricsData && (
           <MetricsCards
-            indexData={metricsData.index}
-            globalData={metricsData.global}
             fearGreedData={metricsData.fearGreed}
+            globalData={metricsData.global}
+            indexData={metricsData.index}
             volatilityData={volatilityData}
           />
         )}
@@ -145,11 +157,11 @@ export default function Home() {
             data={data}
             isLoading={isLoading}
             page={page}
+            sortColumn={sortColumn}
+            sortOrder={sortOrder}
             totalPages={totalPages}
             onPageChange={handlePageChange}
             onSort={handleSort}
-            sortColumn={sortColumn}
-            sortOrder={sortOrder}
           />
         </div>
       </section>

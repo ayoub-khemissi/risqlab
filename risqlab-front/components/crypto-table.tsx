@@ -15,18 +15,18 @@ import { Chip } from "@heroui/chip";
 import { Pagination } from "@heroui/pagination";
 import { Spinner } from "@heroui/spinner";
 import { TrendingUp, TrendingDown } from "lucide-react";
+
+import { PriceCell } from "./PriceCell";
+import { MarketCapCell } from "./MarketCapCell";
+
 import { Cryptocurrency } from "@/types/cryptocurrency";
 import {
   formatUSD,
-  formatCryptoPrice,
-  formatNumber,
   formatCirculatingSupply,
   formatPercentage,
   getPercentageColor,
   getCoinImageUrl,
 } from "@/lib/formatters";
-import { PriceCell } from "./PriceCell";
-import { MarketCapCell } from "./MarketCapCell";
 
 interface CryptoTableProps {
   data: Cryptocurrency[];
@@ -65,17 +65,19 @@ function CryptoTableComponent({
   const renderCell = (crypto: Cryptocurrency, columnKey: React.Key) => {
     switch (columnKey) {
       case "rank":
-        return <div className="text-default-600 font-semibold">#{crypto.rank}</div>;
+        return (
+          <div className="text-default-600 font-semibold">#{crypto.rank}</div>
+        );
 
       case "name":
         return (
           <div className="flex items-center gap-3">
             <Image
-              src={getCoinImageUrl(crypto.cmc_id)}
               alt={crypto.name}
-              width={32}
-              height={32}
               className="rounded-full"
+              height={32}
+              src={getCoinImageUrl(crypto.cmc_id)}
+              width={32}
             />
             <div className="flex flex-col">
               <span className="font-semibold">{crypto.name}</span>
@@ -85,7 +87,9 @@ function CryptoTableComponent({
         );
 
       case "price_usd":
-        return <PriceCell symbol={crypto.symbol} fallbackPrice={crypto.price_usd} />;
+        return (
+          <PriceCell fallbackPrice={crypto.price_usd} symbol={crypto.symbol} />
+        );
 
       case "percent_change_24h": {
         const value = parseFloat(crypto.percent_change_24h || "0");
@@ -93,9 +97,8 @@ function CryptoTableComponent({
 
         return (
           <Chip
-            size="sm"
-            variant="flat"
             color={color}
+            size="sm"
             startContent={
               value > 0 ? (
                 <TrendingUp size={14} />
@@ -103,6 +106,7 @@ function CryptoTableComponent({
                 <TrendingDown size={14} />
               ) : null
             }
+            variant="flat"
           >
             {formatPercentage(value)}
           </Chip>
@@ -115,9 +119,8 @@ function CryptoTableComponent({
 
         return (
           <Chip
-            size="sm"
-            variant="flat"
             color={color}
+            size="sm"
             startContent={
               value > 0 ? (
                 <TrendingUp size={14} />
@@ -125,6 +128,7 @@ function CryptoTableComponent({
                 <TrendingDown size={14} />
               ) : null
             }
+            variant="flat"
           >
             {formatPercentage(value)}
           </Chip>
@@ -134,9 +138,9 @@ function CryptoTableComponent({
       case "market_cap_usd":
         return (
           <MarketCapCell
-            symbol={crypto.symbol}
-            fallbackPrice={crypto.price_usd}
             circulatingSupply={crypto.circulating_supply}
+            fallbackPrice={crypto.price_usd}
+            symbol={crypto.symbol}
           />
         );
 
@@ -148,7 +152,9 @@ function CryptoTableComponent({
         );
 
       case "volume_24h_usd":
-        return <div className="font-mono">{formatUSD(crypto.volume_24h_usd)}</div>;
+        return (
+          <div className="font-mono">{formatUSD(crypto.volume_24h_usd)}</div>
+        );
 
       default:
         return null;
@@ -159,22 +165,6 @@ function CryptoTableComponent({
     <div className="flex flex-col gap-4">
       <Table
         aria-label="Cryptocurrency table"
-        sortDescriptor={
-          sortColumn && sortOrder
-            ? {
-                column: sortColumn,
-                direction: sortOrder === "asc" ? "ascending" : "descending",
-              }
-            : undefined
-        }
-        onSortChange={(descriptor) => {
-          if (descriptor.column) {
-            const column = descriptor.column as string;
-            const columnConfig = columns.find(col => col.key === column);
-            const dbColumn = columnConfig?.dbColumn || column;
-            onSort(dbColumn);
-          }
-        }}
         bottomContent={
           totalPages > 1 ? (
             <div className="flex w-full justify-center">
@@ -193,33 +183,49 @@ function CryptoTableComponent({
         classNames={{
           wrapper: "min-h-[400px]",
         }}
+        sortDescriptor={
+          sortColumn && sortOrder
+            ? {
+                column: sortColumn,
+                direction: sortOrder === "asc" ? "ascending" : "descending",
+              }
+            : undefined
+        }
+        onSortChange={(descriptor) => {
+          if (descriptor.column) {
+            const column = descriptor.column as string;
+            const columnConfig = columns.find((col) => col.key === column);
+            const dbColumn = columnConfig?.dbColumn || column;
+
+            onSort(dbColumn);
+          }
+        }}
       >
         <TableHeader columns={columns}>
           {(column) => (
-            <TableColumn
-              key={column.key}
-              allowsSorting={column.sortable}
-            >
+            <TableColumn key={column.key} allowsSorting={column.sortable}>
               {column.label}
             </TableColumn>
           )}
         </TableHeader>
         <TableBody
-          items={data}
-          isLoading={isLoading}
-          loadingContent={<Spinner label="Loading..." />}
           emptyContent={"No cryptocurrencies found"}
+          isLoading={isLoading}
+          items={data}
+          loadingContent={<Spinner label="Loading..." />}
         >
           {(item) => (
             <TableRow
               key={item.id}
               className="cursor-pointer hover:bg-default-100 transition-colors"
               onClick={() => {
-                sessionStorage.setItem('cryptoReturnPath', '/#crypto-table');
+                sessionStorage.setItem("cryptoReturnPath", "/#crypto-table");
                 router.push(`/crypto/${item.symbol}`);
               }}
             >
-              {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
+              {(columnKey) => (
+                <TableCell>{renderCell(item, columnKey)}</TableCell>
+              )}
             </TableRow>
           )}
         </TableBody>

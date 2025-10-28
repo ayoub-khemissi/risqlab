@@ -13,16 +13,17 @@ import {
 import { Image } from "@heroui/image";
 import { Chip } from "@heroui/chip";
 import { TrendingUp, TrendingDown } from "lucide-react";
+
+import { PriceCell } from "./PriceCell";
+import { MarketCapCell } from "./MarketCapCell";
+
 import { IndexConstituent } from "@/types/index-details";
 import {
   formatUSD,
-  formatCryptoPrice,
   formatPercentage,
   getPercentageColor,
   getCoinImageUrl,
 } from "@/lib/formatters";
-import { PriceCell } from "./PriceCell";
-import { MarketCapCell } from "./MarketCapCell";
 
 interface ConstituentsTableProps {
   constituents: IndexConstituent[];
@@ -88,27 +89,38 @@ function ConstituentsTableComponent({ constituents }: ConstituentsTableProps) {
   const renderCell = (constituent: IndexConstituent, columnKey: React.Key) => {
     switch (columnKey) {
       case "rank_position":
-        return <div className="text-default-600 font-semibold">#{constituent.rank_position}</div>;
+        return (
+          <div className="text-default-600 font-semibold">
+            #{constituent.rank_position}
+          </div>
+        );
 
       case "name":
         return (
           <div className="flex items-center gap-3">
             <Image
-              src={getCoinImageUrl(constituent.cmc_id)}
               alt={constituent.name}
-              width={32}
-              height={32}
               className="rounded-full"
+              height={32}
+              src={getCoinImageUrl(constituent.cmc_id)}
+              width={32}
             />
             <div className="flex flex-col">
               <span className="font-semibold">{constituent.name}</span>
-              <span className="text-sm text-default-500">{constituent.symbol}</span>
+              <span className="text-sm text-default-500">
+                {constituent.symbol}
+              </span>
             </div>
           </div>
         );
 
       case "price_usd":
-        return <PriceCell symbol={constituent.symbol} fallbackPrice={constituent.price_usd} />;
+        return (
+          <PriceCell
+            fallbackPrice={constituent.price_usd}
+            symbol={constituent.symbol}
+          />
+        );
 
       case "percent_change_24h": {
         const value = parseFloat(constituent.percent_change_24h || "0");
@@ -116,9 +128,8 @@ function ConstituentsTableComponent({ constituents }: ConstituentsTableProps) {
 
         return (
           <Chip
-            size="sm"
-            variant="flat"
             color={color}
+            size="sm"
             startContent={
               value > 0 ? (
                 <TrendingUp size={14} />
@@ -126,6 +137,7 @@ function ConstituentsTableComponent({ constituents }: ConstituentsTableProps) {
                 <TrendingDown size={14} />
               ) : null
             }
+            variant="flat"
           >
             {formatPercentage(value)}
           </Chip>
@@ -138,9 +150,8 @@ function ConstituentsTableComponent({ constituents }: ConstituentsTableProps) {
 
         return (
           <Chip
-            size="sm"
-            variant="flat"
             color={color}
+            size="sm"
             startContent={
               value > 0 ? (
                 <TrendingUp size={14} />
@@ -148,6 +159,7 @@ function ConstituentsTableComponent({ constituents }: ConstituentsTableProps) {
                 <TrendingDown size={14} />
               ) : null
             }
+            variant="flat"
           >
             {formatPercentage(value)}
           </Chip>
@@ -157,19 +169,24 @@ function ConstituentsTableComponent({ constituents }: ConstituentsTableProps) {
       case "market_cap_usd":
         return (
           <MarketCapCell
-            symbol={constituent.symbol}
-            fallbackPrice={constituent.price_usd}
             circulatingSupply={constituent.circulating_supply}
+            fallbackPrice={constituent.price_usd}
+            symbol={constituent.symbol}
           />
         );
 
       case "weight_in_index": {
         const weight = parseFloat(constituent.weight_in_index || "0");
+
         return <div className="font-mono">{weight.toFixed(2)}%</div>;
       }
 
       case "volume_24h_usd":
-        return <div className="font-mono">{formatUSD(constituent.volume_24h_usd)}</div>;
+        return (
+          <div className="font-mono">
+            {formatUSD(constituent.volume_24h_usd)}
+          </div>
+        );
 
       default:
         return null;
@@ -184,19 +201,24 @@ function ConstituentsTableComponent({ constituents }: ConstituentsTableProps) {
       }}
       sortDescriptor={
         sortColumn && sortOrder
-          ? { column: sortColumn, direction: sortOrder === "asc" ? "ascending" : "descending" }
+          ? {
+              column: sortColumn,
+              direction: sortOrder === "asc" ? "ascending" : "descending",
+            }
           : undefined
+      }
+      topContent={
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold">
+            RisqLab 80 Index Constituents
+          </h2>
+        </div>
       }
       onSortChange={(descriptor) => {
         if (descriptor.column) {
           handleSort(descriptor.column.toString());
         }
       }}
-      topContent={
-        <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold">RisqLab 80 Index Constituents</h2>
-        </div>
-      }
     >
       <TableHeader columns={columns}>
         {(column) => (
@@ -206,19 +228,24 @@ function ConstituentsTableComponent({ constituents }: ConstituentsTableProps) {
         )}
       </TableHeader>
       <TableBody
-        items={sortedConstituents}
         emptyContent={"No constituents found"}
+        items={sortedConstituents}
       >
         {(item) => (
           <TableRow
             key={item.cmc_id}
             className="cursor-pointer hover:bg-default-100 transition-colors"
             onClick={() => {
-              sessionStorage.setItem('cryptoReturnPath', '/index#constituents-table');
+              sessionStorage.setItem(
+                "cryptoReturnPath",
+                "/index#constituents-table",
+              );
               router.push(`/crypto/${item.symbol}`);
             }}
           >
-            {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
+            {(columnKey) => (
+              <TableCell>{renderCell(item, columnKey)}</TableCell>
+            )}
           </TableRow>
         )}
       </TableBody>

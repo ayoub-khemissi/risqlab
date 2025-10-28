@@ -2,7 +2,8 @@ export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
   name: "RisqLab",
-  description: "Real-time cryptocurrency market index tracking the top 80 digital assets.",
+  description:
+    "Real-time cryptocurrency market index tracking the top 80 digital assets.",
   navItems: [
     {
       label: "Dashboard",

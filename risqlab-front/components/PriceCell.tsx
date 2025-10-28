@@ -1,8 +1,9 @@
 "use client";
 
-import { memo } from 'react';
-import { useBinancePrice } from '@/contexts/BinancePricesContext';
-import { formatCryptoPrice } from '@/lib/formatters';
+import { memo } from "react";
+
+import { useBinancePrice } from "@/contexts/BinancePricesContext";
+import { formatCryptoPrice } from "@/lib/formatters";
 
 interface PriceCellProps {
   symbol: string;

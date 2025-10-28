@@ -1,8 +1,9 @@
 "use client";
 
-import { memo } from 'react';
-import { useBinancePrice } from '@/contexts/BinancePricesContext';
-import { formatUSD } from '@/lib/formatters';
+import { memo } from "react";
+
+import { useBinancePrice } from "@/contexts/BinancePricesContext";
+import { formatUSD } from "@/lib/formatters";
 
 interface MarketCapCellProps {
   symbol: string;
@@ -11,7 +12,11 @@ interface MarketCapCellProps {
 }
 
 // Ce composant re-render UNIQUEMENT quand SON prix change
-function MarketCapCellComponent({ symbol, fallbackPrice, circulatingSupply }: MarketCapCellProps) {
+function MarketCapCellComponent({
+  symbol,
+  fallbackPrice,
+  circulatingSupply,
+}: MarketCapCellProps) {
   const livePrice = useBinancePrice(symbol);
   const displayPrice = livePrice || fallbackPrice;
   const marketCap = parseFloat(displayPrice) * parseFloat(circulatingSupply);
