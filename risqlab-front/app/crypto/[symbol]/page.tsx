@@ -27,13 +27,7 @@ import {
   getPercentageColor,
 } from "@/lib/formatters";
 import { title } from "@/components/primitives";
-
-const API_HOSTNAME =
-  process.env.NEXT_PUBLIC_RISQLAB_API_HOSTNAME || "localhost";
-const API_PORT = process.env.NEXT_PUBLIC_RISQLAB_API_PORT || "8080";
-const API_HTTPSECURE =
-  process.env.NEXT_PUBLIC_RISQLAB_API_HTTPSECURE === "true";
-const API_BASE_URL = `http${API_HTTPSECURE ? "s" : ""}://${API_HOSTNAME}:${API_PORT}`;
+import { API_BASE_URL } from "@/config/constants";
 
 export default function CryptoDetailPage() {
   const params = useParams();

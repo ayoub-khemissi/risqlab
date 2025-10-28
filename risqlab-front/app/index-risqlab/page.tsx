@@ -21,13 +21,7 @@ import { ConstituentsTable } from "@/components/constituents-table";
 import { TopConstituentsChart } from "@/components/top-constituents-chart";
 import { title } from "@/components/primitives";
 import { BinancePricesProvider } from "@/contexts/BinancePricesContext";
-
-const API_HOSTNAME =
-  process.env.NEXT_PUBLIC_RISQLAB_API_HOSTNAME || "localhost";
-const API_PORT = process.env.NEXT_PUBLIC_RISQLAB_API_PORT || "8080";
-const API_HTTPSECURE =
-  process.env.NEXT_PUBLIC_RISQLAB_API_HTTPSECURE === "true";
-const API_BASE_URL = `http${API_HTTPSECURE ? "s" : ""}://${API_HOSTNAME}:${API_PORT}`;
+import { API_BASE_URL } from "@/config/constants";
 
 type Period = "24h" | "7d" | "30d" | "all";
 

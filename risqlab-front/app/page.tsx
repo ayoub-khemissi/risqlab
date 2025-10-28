@@ -9,12 +9,7 @@ import { Cryptocurrency, CryptocurrencyResponse } from "@/types/cryptocurrency";
 import { MetricsResponse } from "@/types/metrics";
 import { PortfolioVolatilityResponse } from "@/types/volatility";
 import { BinancePricesProvider } from "@/contexts/BinancePricesContext";
-
-const API_HOSTNAME = process.env.NEXT_PUBLIC_RISQLAB_API_HOSTNAME;
-const API_PORT = process.env.NEXT_PUBLIC_RISQLAB_API_PORT;
-const API_HTTPSECURE =
-  process.env.NEXT_PUBLIC_RISQLAB_API_HTTPSECURE === "true";
-const API_BASE_URL = `http${API_HTTPSECURE ? "s" : ""}://${API_HOSTNAME}${API_HTTPSECURE ? "" : `:${API_PORT}`}`;
+import { API_BASE_URL } from "@/config/constants";
 
 export default function Home() {
   const [data, setData] = useState<Cryptocurrency[]>([]);
