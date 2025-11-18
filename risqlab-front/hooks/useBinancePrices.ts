@@ -9,7 +9,7 @@ export function useBinancePrices(symbols: string[]) {
   const [prices, setPrices] = useState<Record<string, string>>({});
   const wsRef = useRef<WebSocket | null>(null);
   const isMountedRef = useRef(true);
-  const pendingUpdatesRef = useRef<Record<string, string>>({});
+  const lastUpdateTimeRef = useRef<number>(0);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -24,37 +24,43 @@ export function useBinancePrices(symbols: string[]) {
 
     wsRef.current = ws;
 
-    // Apply all accumulated updates every 5 seconds
-    const updateInterval = setInterval(() => {
-      if (!isMountedRef.current) return;
-
-      if (Object.keys(pendingUpdatesRef.current).length > 0) {
-        setPrices((prev) => ({ ...prev, ...pendingUpdatesRef.current }));
-        pendingUpdatesRef.current = {}; // Clear after applying
-      }
-    }, 5000); // Update every 5 seconds
+    const MIN_UPDATE_INTERVAL = 5000; // Update at most once every 5 seconds
 
     ws.onmessage = (event) => {
       if (!isMountedRef.current) return;
 
+      const now = Date.now();
+      const timeSinceLastUpdate = now - lastUpdateTimeRef.current;
+
+      // Only update if enough time has passed (manual throttle)
+      if (timeSinceLastUpdate < MIN_UPDATE_INTERVAL) {
+        return;
+      }
+
       try {
         const tickers: BinanceTicker[] = JSON.parse(event.data);
+        const updates: Record<string, string> = {};
 
-        // Accumulate all price updates (last value wins if updated multiple times)
+        // Collect all price updates for our symbols
         symbols.forEach((symbol) => {
           const binanceSymbol = `${symbol}USDT`;
           const ticker = tickers.find((t) => t.s === binanceSymbol);
 
           if (ticker) {
-            pendingUpdatesRef.current[symbol] = ticker.c;
+            updates[symbol] = ticker.c;
           }
         });
+
+        // Apply updates immediately if we have any
+        if (Object.keys(updates).length > 0) {
+          setPrices((prev) => ({ ...prev, ...updates }));
+          lastUpdateTimeRef.current = now;
+        }
       } catch {}
     };
 
     return () => {
       isMountedRef.current = false;
-      clearInterval(updateInterval);
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         wsRef.current.close();
         wsRef.current = null;
