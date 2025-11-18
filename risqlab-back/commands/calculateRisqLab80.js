@@ -170,12 +170,8 @@ async function getMostRecentMarketData() {
     FROM market_data md
     INNER JOIN cryptocurrencies c ON md.crypto_id = c.id
     LEFT JOIN cryptocurrency_metadata cm ON c.id = cm.crypto_id
-    INNER JOIN (
-      SELECT crypto_id, MAX(timestamp) as max_timestamp
-      FROM market_data
-      GROUP BY crypto_id
-    ) latest ON md.crypto_id = latest.crypto_id AND md.timestamp = latest.max_timestamp
-    WHERE (md.price_usd * md.circulating_supply) > 0
+    WHERE md.timestamp = (SELECT MAX(timestamp) FROM market_data)
+      AND (md.price_usd * md.circulating_supply) > 0
     ORDER BY (md.price_usd * md.circulating_supply) DESC
   `);
 

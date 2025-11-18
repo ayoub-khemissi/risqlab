@@ -216,9 +216,11 @@ api.get('/volatility/crypto/top/volatile', async (req, res) => {
         cv.date
       FROM crypto_volatility cv
       INNER JOIN cryptocurrencies c ON cv.crypto_id = c.id
+      INNER JOIN market_data md ON c.id = md.crypto_id
       WHERE cv.date = (
         SELECT MAX(date) FROM crypto_volatility WHERE crypto_id = cv.crypto_id
       )
+        AND md.timestamp = (SELECT MAX(timestamp) FROM market_data)
       ORDER BY cv.annualized_volatility DESC
       LIMIT ?
     `, [parseInt(limit)]);
@@ -256,9 +258,11 @@ api.get('/volatility/crypto/top/stable', async (req, res) => {
         cv.date
       FROM crypto_volatility cv
       INNER JOIN cryptocurrencies c ON cv.crypto_id = c.id
+      INNER JOIN market_data md ON c.id = md.crypto_id
       WHERE cv.date = (
         SELECT MAX(date) FROM crypto_volatility WHERE crypto_id = cv.crypto_id
       )
+        AND md.timestamp = (SELECT MAX(timestamp) FROM market_data)
       ORDER BY cv.annualized_volatility ASC
       LIMIT ?
     `, [parseInt(limit)]);

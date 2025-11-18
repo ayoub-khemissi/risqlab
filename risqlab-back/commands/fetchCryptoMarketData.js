@@ -11,6 +11,10 @@ async function fetchCryptoMarketData() {
   try {
     log.info('Starting cryptocurrency market data fetch...');
 
+    // Generate a single timestamp for this entire fetch batch
+    const fetchTimestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    log.info(`Fetch timestamp: ${fetchTimestamp}`);
+
     // 1. Fetch data from CoinMarketCap API
     const response = await fetch(`${Constants.COINMARKETCAP_LISTINGS_LATEST}?limit=${config.COINMARKETCAP_CRYPTO_FETCH_LIMIT}&convert=USD`, {
       headers: {
@@ -39,7 +43,7 @@ async function fetchCryptoMarketData() {
 
     for (const crypto of cryptos) {
       try {
-        await processCrypto(crypto);
+        await processCrypto(crypto, fetchTimestamp);
         successCount++;
       } catch (error) {
         errorCount++;
@@ -58,13 +62,14 @@ async function fetchCryptoMarketData() {
  * Process a single cryptocurrency: ensure it exists in the database
  * and insert its market data.
  * @param {Object} crypto - Cryptocurrency data from CoinMarketCap
+ * @param {string} fetchTimestamp - Timestamp for this fetch batch
  */
-async function processCrypto(crypto) {
+async function processCrypto(crypto, fetchTimestamp) {
   // Get or create cryptocurrency record
   const cryptoId = await getCryptoId(crypto.symbol, crypto.name, crypto.id);
 
   // Insert market data
-  await insertMarketData(cryptoId, crypto);
+  await insertMarketData(cryptoId, crypto, fetchTimestamp);
 }
 
 /**
@@ -104,16 +109,14 @@ async function getCryptoId(symbol, name, cmcId) {
  * Insert market data for a cryptocurrency.
  * @param {number} cryptoId - The cryptocurrency ID
  * @param {Object} crypto - Cryptocurrency data from CoinMarketCap
+ * @param {string} fetchTimestamp - Timestamp for this fetch batch
  */
-async function insertMarketData(cryptoId, crypto) {
+async function insertMarketData(cryptoId, crypto, fetchTimestamp) {
   const quote = crypto.quote?.USD;
 
   if (!quote) {
     throw new Error(`No USD quote data available for ${crypto.symbol}`);
   }
-
-  // Use the last_updated timestamp from CoinMarketCap
-  const timestamp = new Date(crypto.last_updated).toISOString().slice(0, 19).replace('T', ' ');
 
   await Database.execute(
     `INSERT INTO market_data
@@ -150,11 +153,11 @@ async function insertMarketData(cryptoId, crypto) {
       crypto.total_supply || null,
       crypto.max_supply || null,
       quote.fully_diluted_market_cap || null,
-      timestamp,
+      fetchTimestamp,
     ]
   );
 
-  log.debug(`Inserted/updated market data for ${crypto.symbol} at ${timestamp}`);
+  log.debug(`Inserted/updated market data for ${crypto.symbol} at ${fetchTimestamp}`);
 }
 
 // Run the command

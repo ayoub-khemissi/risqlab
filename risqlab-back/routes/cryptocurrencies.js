@@ -53,25 +53,17 @@ api.get('/cryptocurrencies', async (req, res) => {
         md.timestamp,
         ranked.rank_number as \`rank\`
       FROM cryptocurrencies c
-      INNER JOIN (
-        SELECT crypto_id, MAX(timestamp) as max_timestamp
-        FROM market_data
-        GROUP BY crypto_id
-      ) latest ON c.id = latest.crypto_id
-      INNER JOIN market_data md ON c.id = md.crypto_id AND md.timestamp = latest.max_timestamp
+      INNER JOIN market_data md ON c.id = md.crypto_id
       INNER JOIN (
         SELECT
           md2.crypto_id,
           ROW_NUMBER() OVER (ORDER BY (md2.price_usd * md2.circulating_supply) DESC) as rank_number
         FROM market_data md2
-        INNER JOIN (
-          SELECT crypto_id, MAX(timestamp) as max_timestamp
-          FROM market_data
-          GROUP BY crypto_id
-        ) latest2 ON md2.crypto_id = latest2.crypto_id AND md2.timestamp = latest2.max_timestamp
-        WHERE (md2.price_usd * md2.circulating_supply) > 0
+        WHERE md2.timestamp = (SELECT MAX(timestamp) FROM market_data)
+          AND (md2.price_usd * md2.circulating_supply) > 0
       ) ranked ON c.id = ranked.crypto_id
-      WHERE (md.price_usd * md.circulating_supply) > 0
+      WHERE md.timestamp = (SELECT MAX(timestamp) FROM market_data)
+        AND (md.price_usd * md.circulating_supply) > 0
       ${orderByClause}
       LIMIT ${limit} OFFSET ${offset}
     `);
@@ -79,13 +71,9 @@ api.get('/cryptocurrencies', async (req, res) => {
     const [countResult] = await Database.execute(`
       SELECT COUNT(DISTINCT c.id) as total
       FROM cryptocurrencies c
-      INNER JOIN (
-        SELECT crypto_id, MAX(timestamp) as max_timestamp
-        FROM market_data
-        GROUP BY crypto_id
-      ) latest ON c.id = latest.crypto_id
-      INNER JOIN market_data md ON c.id = md.crypto_id AND md.timestamp = latest.max_timestamp
-      WHERE (md.price_usd * md.circulating_supply) > 0
+      INNER JOIN market_data md ON c.id = md.crypto_id
+      WHERE md.timestamp = (SELECT MAX(timestamp) FROM market_data)
+        AND (md.price_usd * md.circulating_supply) > 0
     `);
 
     const total = countResult[0].total;
