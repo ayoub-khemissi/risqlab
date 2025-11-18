@@ -1,4 +1,4 @@
-import Config from '../utils/config.js';
+import config from '../utils/config.js';
 import Constants from '../utils/constants.js';
 import Database from '../lib/database.js';
 import log from '../lib/log.js';
@@ -12,9 +12,9 @@ async function fetchCryptoMarketData() {
     log.info('Starting cryptocurrency market data fetch...');
 
     // 1. Fetch data from CoinMarketCap API
-    const response = await fetch(`${Constants.COINMARKETCAP_LISTINGS_LATEST}?limit=500&convert=USD`, {
+    const response = await fetch(`${Constants.COINMARKETCAP_LISTINGS_LATEST}?limit=${config.COINMARKETCAP_CRYPTO_FETCH_LIMIT}&convert=USD`, {
       headers: {
-        'X-CMC_PRO_API_KEY': Config.COINMARKETCAP_API_KEY,
+        'X-CMC_PRO_API_KEY': config.COINMARKETCAP_API_KEY,
         'Accept': 'application/json',
       },
     });

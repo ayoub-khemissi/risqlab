@@ -50,7 +50,7 @@ async function updateAll(options = {}) {
     let step = 1;
     const totalSteps = 6 - (skipMetadata ? 1 : 0);
 
-    // Step 1: Fetch cryptocurrency market data (500 cryptos)
+    // Step 1: Fetch cryptocurrency market data (config.COINMARKETCAP_CRYPTO_FETCH_LIMIT cryptos)
     await executeCommand(
       'commands/fetchCryptoMarketData.js',
       `Step ${step++}/${totalSteps}: Fetching Cryptocurrency Market Data`

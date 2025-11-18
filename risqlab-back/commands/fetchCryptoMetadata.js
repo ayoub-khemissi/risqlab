@@ -1,4 +1,4 @@
-import Config from '../utils/config.js';
+import config from '../utils/config.js';
 import Constants from '../utils/constants.js';
 import Database from '../lib/database.js';
 import log from '../lib/log.js';
@@ -27,7 +27,7 @@ async function fetchCryptoMetadata() {
     log.info(`Found ${cryptos.length} cryptocurrencies to fetch metadata for`);
 
     // 2. Batch the requests (CoinMarketCap allows up to 1000 IDs per request)
-    const BATCH_SIZE = 500; // Use 500 to be safe
+    const BATCH_SIZE = config.COINMARKETCAP_CRYPTO_FETCH_LIMIT;
     const batches = [];
 
     for (let i = 0; i < cryptos.length; i += BATCH_SIZE) {
@@ -49,7 +49,7 @@ async function fetchCryptoMetadata() {
         // Fetch metadata from CoinMarketCap
         const response = await fetch(`${Constants.COINMARKETCAP_CRYPTO_INFO}?id=${cmcIds}`, {
           headers: {
-            'X-CMC_PRO_API_KEY': Config.COINMARKETCAP_API_KEY,
+            'X-CMC_PRO_API_KEY': config.COINMARKETCAP_API_KEY,
             'Accept': 'application/json',
           },
         });
