@@ -74,7 +74,7 @@ function CryptoTableComponent({
           <div className="flex items-center gap-3">
             <Image
               alt={crypto.name}
-              className="rounded-full"
+              className="rounded-full min-w-8 min-h-8"
               height={32}
               src={getCoinImageUrl(crypto.cmc_id)}
               width={32}

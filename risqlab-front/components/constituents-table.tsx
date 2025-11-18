@@ -100,7 +100,7 @@ function ConstituentsTableComponent({ constituents }: ConstituentsTableProps) {
           <div className="flex items-center gap-3">
             <Image
               alt={constituent.name}
-              className="rounded-full"
+              className="rounded-full min-w-8 min-h-8"
               height={32}
               src={getCoinImageUrl(constituent.cmc_id)}
               width={32}
