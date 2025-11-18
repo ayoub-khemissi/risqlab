@@ -106,7 +106,7 @@ export default function CryptoDetailPage() {
       : 0;
 
   return (
-    <section className="flex flex-col gap-6 py-8 md:py-10">
+    <section className="flex flex-col gap-6">
       {/* Back Button */}
       <div>
         <Button

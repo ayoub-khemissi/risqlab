@@ -123,7 +123,7 @@ export default function Home() {
 
   return (
     <BinancePricesProvider symbols={symbols}>
-      <section className="flex flex-col gap-8 py-8 md:py-10">
+      <section className="flex flex-col gap-8">
         <div className="text-center">
           <h1 className={title()}>RisqLab</h1>
           <p className="text-lg text-default-600 mt-4">

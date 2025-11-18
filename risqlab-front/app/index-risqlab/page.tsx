@@ -88,7 +88,7 @@ export default function IndexPage() {
 
   return (
     <BinancePricesProvider symbols={symbols}>
-      <section className="flex flex-col gap-6 py-8 md:py-10">
+      <section className="flex flex-col gap-6">
         <div className="text-center">
           <h1 className={title()}>RisqLab 80 Index</h1>
           <p className="text-lg text-default-600 mt-4">
