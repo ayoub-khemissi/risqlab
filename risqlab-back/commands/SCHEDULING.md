@@ -16,7 +16,7 @@ Each call to a CoinMarketCap API endpoint costs at least 1 credit. Based on the 
 
 4.  **`fetchFearAndGreed.js`**: This script fetches the Fear and Greed Index. It consumes **1 credit per call**.
 
-5.  **`fetchCryptoMetadata.js`**: This script fetches metadata (logos, descriptions, links) for all cryptocurrencies in the database. The cost depends on the number of assets, but it's typically low (**~2-4 credits** per full run). This data changes very infrequently.
+5.  **`fetchCryptoMetadata.js`**: This script fetches metadata (logos, descriptions, links) for all cryptocurrencies in the database. The cost depends on the number of assets, but it's typically low (**~5 credits** per full run). This data changes very infrequently.
 
 ## Optimized Scheduling Strategy
 
@@ -29,8 +29,8 @@ Here is the proposed strategy to optimize data freshness without exceeding the m
 | **Main Pipeline** | Every 15 minutes | **8,640** | Ensures maximum freshness for market data, which is the core of the application. |
 | **Global Metrics** | Every 45 minutes | **~960** | This data (dominance, total market cap) is important but less volatile than prices. A 45-minute interval is an excellent trade-off. |
 | **Fear & Greed Index** | Twice a day | **60** | The index is typically updated once daily. Fetching it twice (e.g., noon and midnight) ensures the latest value is captured without wasting credits. |
-| **Crypto Metadata** | Once a week | **~15** | Project logos, descriptions, and websites almost never change. A weekly update is more than sufficient. |
-| **Total Estimated** | | **~9,675 credits/month** | |
+| **Crypto Metadata** | Once a week | **~20** | Project logos, descriptions, and websites almost never change. A weekly update is more than sufficient. |
+| **Total Estimated** | | **~9,680 credits/month** | |
 
 This plan uses approximately 97% of the monthly quota, leaving a small buffer for safety while ensuring high data freshness where it matters most.
 
