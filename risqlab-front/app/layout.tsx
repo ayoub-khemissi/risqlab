@@ -10,8 +10,8 @@ import { Navbar } from "@/components/navbar";
 
 export const metadata: Metadata = {
   title: {
-    default: siteConfig.name,
-    template: `%s - ${siteConfig.name}`,
+    default: "RisqLab | Real-time Crypto Analytics",
+    template: "%s | RisqLab",
   },
   description: siteConfig.description,
   icons: {
