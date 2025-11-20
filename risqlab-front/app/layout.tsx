@@ -88,7 +88,7 @@ export default function RootLayout({
               {children}
             </main>
             <footer className="w-full flex flex-col items-center justify-center py-6 gap-4 border-t border-default-100 mt-8">
-              <div className="flex gap-6 text-sm text-default-600">
+              <div className="flex flex-col md:flex-row gap-3 md:gap-6 text-sm text-default-600 w-full md:w-auto px-6 md:px-0 md:justify-center">
                 <Link className="hover:text-primary transition-colors" href="/">
                   Home
                 </Link>
