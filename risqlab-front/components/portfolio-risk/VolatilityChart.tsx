@@ -116,10 +116,13 @@ export function VolatilityChart({ data, height = 400 }: VolatilityChartProps) {
                 return (
                   <div className="bg-content1 border border-default-200 rounded-lg p-3 shadow-lg">
                     <p className="text-sm font-semibold mb-1">
-                      {new Date(data.date).toLocaleDateString("en-US", {
+                      {new Date(data.date).toLocaleString("en-US", {
                         year: "numeric",
                         month: "long",
                         day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
                       })}
                     </p>
                     <p className="text-lg font-bold text-primary">

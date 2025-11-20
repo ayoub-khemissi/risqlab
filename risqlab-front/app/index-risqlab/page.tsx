@@ -319,10 +319,13 @@ export default function IndexPage() {
                                   <p className="text-xs text-default-500">
                                     {new Date(
                                       payload[0].payload.timestamp,
-                                    ).toLocaleDateString("en-US", {
+                                    ).toLocaleString("en-US", {
                                       day: "2-digit",
                                       month: "short",
                                       year: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                      second: "2-digit",
                                     })}
                                   </p>
                                 </div>
