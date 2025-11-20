@@ -31,7 +31,8 @@ api.get('/cryptocurrency/:symbol', async (req, res) => {
         md.max_supply,
         md.total_supply,
         md.fully_diluted_valuation,
-        md.timestamp
+        md.timestamp,
+        ranked.rank_number as \`rank\`
       FROM cryptocurrencies c
       INNER JOIN (
         SELECT crypto_id, MAX(timestamp) as max_timestamp
@@ -39,6 +40,14 @@ api.get('/cryptocurrency/:symbol', async (req, res) => {
         GROUP BY crypto_id
       ) latest ON c.id = latest.crypto_id
       INNER JOIN market_data md ON c.id = md.crypto_id AND md.timestamp = latest.max_timestamp
+      INNER JOIN (
+        SELECT
+          md2.crypto_id,
+          ROW_NUMBER() OVER (ORDER BY (md2.price_usd * md2.circulating_supply) DESC) as rank_number
+        FROM market_data md2
+        WHERE md2.timestamp = (SELECT MAX(timestamp) FROM market_data)
+          AND (md2.price_usd * md2.circulating_supply) > 0
+      ) ranked ON c.id = ranked.crypto_id
       WHERE c.symbol = ?
       LIMIT 1
     `, [symbol]);
@@ -84,7 +93,19 @@ api.get('/cryptocurrency/:symbol', async (req, res) => {
       }
     }
 
-    // 3. Build response
+    // 3. Fetch index rank (if crypto is part of the latest index calculation)
+    const [indexRankRows] = await Database.execute(`
+      SELECT ic.rank_position
+      FROM index_constituents ic
+      INNER JOIN index_history ih ON ic.index_history_id = ih.id
+      WHERE ic.crypto_id = ?
+        AND ih.id = (SELECT MAX(id) FROM index_history)
+      LIMIT 1
+    `, [crypto.id]);
+
+    const indexRank = indexRankRows.length > 0 ? indexRankRows[0].rank_position : null;
+
+    // 4. Build response
     const response = {
       data: {
         basic: {
@@ -117,6 +138,8 @@ api.get('/cryptocurrency/:symbol', async (req, res) => {
           total_supply: crypto.total_supply ? parseFloat(crypto.total_supply) : null,
           max_supply: crypto.max_supply ? parseFloat(crypto.max_supply) : null,
           fully_diluted_valuation: crypto.fully_diluted_valuation ? parseFloat(crypto.fully_diluted_valuation) : null,
+          rank: crypto.rank || null,
+          index_rank: indexRank,
           cmc_rank: crypto.cmc_rank || null,
           percent_change_1h: crypto.percent_change_1h ? parseFloat(crypto.percent_change_1h) : null,
           percent_change_24h: crypto.percent_change_24h ? parseFloat(crypto.percent_change_24h) : null,

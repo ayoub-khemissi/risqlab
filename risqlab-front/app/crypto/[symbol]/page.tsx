@@ -130,14 +130,19 @@ export default function CryptoDetailPage() {
           />
         )}
         <div className="flex-1">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <h1 className={title()}>{basic.name}</h1>
             <Chip size="lg" variant="flat">
               {basic.symbol}
             </Chip>
-            {market.cmc_rank && (
-              <Chip size="sm" variant="bordered">
-                Rank #{market.cmc_rank}
+            {market.rank && (
+              <Chip color="default" size="sm" variant="bordered">
+                Rank #{market.rank}
+              </Chip>
+            )}
+            {market.index_rank && (
+              <Chip color="primary" size="sm" variant="flat">
+                RisqLab 80 #{market.index_rank}
               </Chip>
             )}
           </div>

@@ -33,6 +33,8 @@ export interface CryptoMarket {
   total_supply: number | null;
   max_supply: number | null;
   fully_diluted_valuation: number | null;
+  rank: number | null;
+  index_rank: number | null;
   cmc_rank: number | null;
   percent_change_1h: number | null;
   percent_change_24h: number | null;
