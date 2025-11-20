@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Info } from "lucide-react";
+import Link from "next/link";
 import {
   LineChart,
   Line,
@@ -90,7 +91,20 @@ export default function IndexPage() {
     <BinancePricesProvider symbols={symbols}>
       <section className="flex flex-col gap-6">
         <div className="text-center">
-          <h1 className={title()}>RisqLab 80 Index</h1>
+          <div className="flex items-center justify-center gap-3">
+            <h1 className={title()}>RisqLab 80 Index</h1>
+            <Link href="/methodology/index">
+              <Button
+                isIconOnly
+                aria-label="How is this calculated?"
+                color="primary"
+                size="sm"
+                variant="flat"
+              >
+                <Info size={18} />
+              </Button>
+            </Link>
+          </div>
           <p className="text-lg text-default-600 mt-4">
             A market-cap weighted index tracking the top 80 cryptocurrencies
           </p>
