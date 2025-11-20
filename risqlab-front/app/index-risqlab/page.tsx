@@ -42,9 +42,21 @@ export default function IndexPage() {
   const [data, setData] = useState<IndexDetailsResponse["data"] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState<Period>("24h");
+  const [isMobile, setIsMobile] = useState(false);
 
   // Fetch portfolio volatility data
   const { data: volatilityData } = usePortfolioVolatility("30d");
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   useEffect(() => {
     fetchIndexDetails();
@@ -284,8 +296,9 @@ export default function IndexPage() {
                         <YAxis
                           domain={["auto", "auto"]}
                           stroke="#6b7280"
-                          style={{ fontSize: "12px" }}
+                          style={{ fontSize: isMobile ? "10px" : "12px" }}
                           tickFormatter={(value) => value.toFixed(2)}
+                          width={isMobile ? 35 : 60}
                         />
                         <ReferenceLine
                           stroke="#6b7280"
