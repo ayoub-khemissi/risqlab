@@ -140,9 +140,11 @@ export default function VolatilityMethodologyPage() {
           {/* Overview Section */}
           <Card id="overview">
             <CardBody className="p-8">
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center justify-center sm:justify-start gap-3 mb-4">
                 <TrendingUp className="w-6 h-6 text-success" />
-                <h2 className="text-2xl font-bold">Overview</h2>
+                <h2 className="text-2xl font-bold text-center sm:text-left">
+                  Overview
+                </h2>
               </div>
               <p className="text-default-600 mb-4">
                 The RisqLab 80 Volatility system calculates risk metrics for
@@ -170,7 +172,9 @@ export default function VolatilityMethodologyPage() {
           {/* Glossary Section */}
           <Card id="glossary">
             <CardBody className="p-8">
-              <h2 className="text-2xl font-bold mb-6">Glossary</h2>
+              <h2 className="text-2xl font-bold mb-6 text-center sm:text-left">
+                Glossary
+              </h2>
               <div className="grid gap-4">
                 <div className="border-l-4 border-primary pl-4">
                   <h3 className="font-bold text-lg">Volatility</h3>
@@ -258,9 +262,11 @@ export default function VolatilityMethodologyPage() {
           {/* Base Parameters Section */}
           <Card id="parameters">
             <CardBody className="p-8">
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center justify-center sm:justify-start gap-3 mb-4">
                 <Activity className="w-6 h-6 text-warning" />
-                <h2 className="text-2xl font-bold">Base Parameters</h2>
+                <h2 className="text-2xl font-bold text-center sm:text-left">
+                  Base Parameters
+                </h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -329,9 +335,11 @@ export default function VolatilityMethodologyPage() {
           {/* Calculation Pipeline Section */}
           <Card id="pipeline">
             <CardBody className="p-8">
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center justify-center sm:justify-start gap-3 mb-4">
                 <GitBranch className="w-6 h-6 text-primary" />
-                <h2 className="text-2xl font-bold">Calculation Pipeline</h2>
+                <h2 className="text-2xl font-bold text-center sm:text-left">
+                  Calculation Pipeline
+                </h2>
               </div>
               <p className="text-default-600 mb-6">
                 The volatility calculation follows a three-stage pipeline, where
@@ -339,11 +347,11 @@ export default function VolatilityMethodologyPage() {
               </p>
               <div className="bg-default-50 p-6 rounded-lg">
                 <div className="flex flex-col gap-4">
-                  <div className="flex items-center gap-3">
-                    <Chip className="min-w-16" color="primary" size="lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 items-center sm:items-start">
+                    <Chip className="min-w-16 w-fit" color="primary" size="lg">
                       Stage 1
                     </Chip>
-                    <div>
+                    <div className="text-center sm:text-left">
                       <p className="font-bold">Log Returns Calculation</p>
                       <p className="text-sm text-default-600">
                         Calculate daily logarithmic returns for all
@@ -354,11 +362,11 @@ export default function VolatilityMethodologyPage() {
                   <div className="flex items-center justify-center">
                     <div className="w-px h-8 bg-default-300" />
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Chip className="min-w-16" color="success" size="lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 items-center sm:items-start">
+                    <Chip className="min-w-16 w-fit" color="success" size="lg">
                       Stage 2
                     </Chip>
-                    <div>
+                    <div className="text-center sm:text-left">
                       <p className="font-bold">Individual Crypto Volatility</p>
                       <p className="text-sm text-default-600">
                         Calculate rolling volatility for each cryptocurrency
@@ -368,11 +376,11 @@ export default function VolatilityMethodologyPage() {
                   <div className="flex items-center justify-center">
                     <div className="w-px h-8 bg-default-300" />
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Chip className="min-w-16" color="warning" size="lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 items-center sm:items-start">
+                    <Chip className="min-w-16 w-fit" color="warning" size="lg">
                       Stage 3
                     </Chip>
-                    <div>
+                    <div className="text-center sm:text-left">
                       <p className="font-bold">Portfolio Volatility</p>
                       <p className="text-sm text-default-600">
                         Calculate index-level volatility using covariance matrix
@@ -387,11 +395,13 @@ export default function VolatilityMethodologyPage() {
           {/* Stage 1: Log Returns Section */}
           <Card id="stage1">
             <CardBody className="p-8">
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 items-center sm:items-start">
                 <Chip color="primary" size="lg">
                   Stage 1
                 </Chip>
-                <h2 className="text-2xl font-bold">Logarithmic Returns</h2>
+                <h2 className="text-2xl font-bold text-center sm:text-left">
+                  Logarithmic Returns
+                </h2>
               </div>
               <p className="text-default-600 mb-6">
                 The first stage calculates daily logarithmic returns for all
@@ -466,11 +476,11 @@ export default function VolatilityMethodologyPage() {
           {/* Stage 2: Crypto Volatility Section */}
           <Card id="stage2">
             <CardBody className="p-8">
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 items-center sm:items-start">
                 <Chip color="success" size="lg">
                   Stage 2
                 </Chip>
-                <h2 className="text-2xl font-bold">
+                <h2 className="text-2xl font-bold text-center sm:text-left">
                   Individual Crypto Volatility
                 </h2>
               </div>
@@ -559,11 +569,13 @@ export default function VolatilityMethodologyPage() {
           {/* Stage 3: Portfolio Volatility Section */}
           <Card id="stage3">
             <CardBody className="p-8">
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 items-center sm:items-start">
                 <Chip color="warning" size="lg">
                   Stage 3
                 </Chip>
-                <h2 className="text-2xl font-bold">Portfolio Volatility</h2>
+                <h2 className="text-2xl font-bold text-center sm:text-left">
+                  Portfolio Volatility
+                </h2>
               </div>
               <p className="text-default-600 mb-6">
                 The third stage calculates the volatility of the RisqLab 80
@@ -650,8 +662,8 @@ export default function VolatilityMethodologyPage() {
                   <p className="text-default-600 mb-4">
                     Using modern portfolio theory:
                   </p>
-                  <div className="bg-content1 p-6 rounded-lg mb-4">
-                    <pre className="text-sm whitespace-pre-wrap">
+                  <div className="bg-content1 p-6 rounded-lg mb-4 overflow-x-auto">
+                    <pre className="text-xs sm:text-sm whitespace-pre">
                       {`σ²_portfolio = w' × Σ × w
 
 Where:
@@ -685,9 +697,11 @@ Where:
           {/* Examples Section */}
           <Card id="examples">
             <CardBody className="p-8">
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center justify-center sm:justify-start gap-3 mb-4">
                 <BarChart3 className="w-6 h-6 text-primary" />
-                <h2 className="text-2xl font-bold">Calculation Examples</h2>
+                <h2 className="text-2xl font-bold text-center sm:text-left">
+                  Calculation Examples
+                </h2>
               </div>
 
               <div className="space-y-6">
@@ -750,8 +764,8 @@ Where:
                   <p className="text-default-600 mb-2">
                     <strong>Covariance matrix:</strong>
                   </p>
-                  <div className="bg-content1 p-4 rounded-lg font-mono text-xs mb-4">
-                    <pre>
+                  <div className="bg-content1 p-4 rounded-lg font-mono text-xs mb-4 overflow-x-auto">
+                    <pre className="text-xs whitespace-pre">
                       {`Σ = [σ₁²           ρ×σ₁×σ₂  ]
     [ρ×σ₁×σ₂       σ₂²      ]
 
@@ -763,8 +777,8 @@ Where:
                   <p className="text-default-600 mb-2">
                     <strong>Portfolio variance:</strong>
                   </p>
-                  <div className="bg-content1 p-4 rounded-lg font-mono text-xs mb-4">
-                    <pre>
+                  <div className="bg-content1 p-4 rounded-lg font-mono text-xs mb-4 overflow-x-auto">
+                    <pre className="text-xs whitespace-pre">
                       {`σ²_p = [0.6  0.4] × [0.0009    0.00084] × [0.6]
                      [0.00084   0.0016 ]   [0.4]
 
@@ -799,9 +813,11 @@ Where:
           {/* Diversification Benefit Section */}
           <Card id="diversification">
             <CardBody className="p-8">
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center justify-center sm:justify-start gap-3 mb-4">
                 <Calculator className="w-6 h-6 text-success" />
-                <h2 className="text-2xl font-bold">Diversification Benefit</h2>
+                <h2 className="text-2xl font-bold text-center sm:text-left">
+                  Diversification Benefit
+                </h2>
               </div>
               <p className="text-default-600 mb-6">
                 The portfolio volatility calculation demonstrates a key

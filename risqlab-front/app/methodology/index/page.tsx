@@ -129,9 +129,11 @@ export default function IndexMethodologyPage() {
           {/* Overview Section */}
           <Card id="overview">
             <CardBody className="p-8">
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center justify-center sm:justify-start gap-3 mb-4">
                 <Calculator className="w-6 h-6 text-primary" />
-                <h2 className="text-2xl font-bold">Overview</h2>
+                <h2 className="text-2xl font-bold text-center sm:text-left">
+                  Overview
+                </h2>
               </div>
               <p className="text-default-600 mb-4">
                 The <strong>RisqLab 80</strong> is a market-capitalization
@@ -155,7 +157,9 @@ export default function IndexMethodologyPage() {
           {/* Glossary Section */}
           <Card id="glossary">
             <CardBody className="p-8">
-              <h2 className="text-2xl font-bold mb-6">Glossary</h2>
+              <h2 className="text-2xl font-bold mb-6 text-center sm:text-left">
+                Glossary
+              </h2>
               <div className="grid gap-4">
                 <div className="border-l-4 border-primary pl-4">
                   <h3 className="font-bold text-lg">Market Capitalization</h3>
@@ -230,9 +234,11 @@ export default function IndexMethodologyPage() {
           {/* Base Parameters Section */}
           <Card id="parameters">
             <CardBody className="p-8">
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center justify-center sm:justify-start gap-3 mb-4">
                 <Scale className="w-6 h-6 text-success" />
-                <h2 className="text-2xl font-bold">Base Parameters</h2>
+                <h2 className="text-2xl font-bold text-center sm:text-left">
+                  Base Parameters
+                </h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -301,9 +307,11 @@ export default function IndexMethodologyPage() {
           {/* Constituent Selection Section */}
           <Card id="constituents">
             <CardBody className="p-8">
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center justify-center sm:justify-start gap-3 mb-4">
                 <Filter className="w-6 h-6 text-warning" />
-                <h2 className="text-2xl font-bold">Constituent Selection</h2>
+                <h2 className="text-2xl font-bold text-center sm:text-left">
+                  Constituent Selection
+                </h2>
               </div>
               <p className="text-default-600 mb-6">
                 The selection process follows three main steps to identify the
@@ -399,9 +407,11 @@ export default function IndexMethodologyPage() {
           {/* Index Calculation Section */}
           <Card id="calculation">
             <CardBody className="p-8">
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center justify-center sm:justify-start gap-3 mb-4">
                 <Calculator className="w-6 h-6 text-primary" />
-                <h2 className="text-2xl font-bold">Index Calculation</h2>
+                <h2 className="text-2xl font-bold text-center sm:text-left">
+                  Index Calculation
+                </h2>
               </div>
               <p className="text-default-600 mb-6">
                 The index calculation follows a mathematical formula that
@@ -457,8 +467,8 @@ export default function IndexMethodologyPage() {
                     <div>Index_Level = Total_Market_Cap / Divisor</div>
                   </div>
                   <p className="text-default-600 mb-4">Complete formula:</p>
-                  <div className="bg-content1 p-6 rounded-lg">
-                    <pre className="text-sm whitespace-pre-wrap">
+                  <div className="bg-content1 p-6 rounded-lg overflow-x-auto">
+                    <pre className="text-xs sm:text-sm whitespace-pre">
                       {`                n=80
                 Σ  (P[i] × Q[i])
                i=1
@@ -480,9 +490,11 @@ Where:
           {/* Weighting Section */}
           <Card id="weighting">
             <CardBody className="p-8">
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center justify-center sm:justify-start gap-3 mb-4">
                 <TrendingUp className="w-6 h-6 text-success" />
-                <h2 className="text-2xl font-bold">Constituent Weights</h2>
+                <h2 className="text-2xl font-bold text-center sm:text-left">
+                  Constituent Weights
+                </h2>
               </div>
               <p className="text-default-600 mb-6">
                 Each constituent&apos;s weight in the index represents its
@@ -513,7 +525,9 @@ Where:
           {/* Example Section */}
           <Card id="example">
             <CardBody className="p-8">
-              <h2 className="text-2xl font-bold mb-6">Calculation Example</h2>
+              <h2 className="text-2xl font-bold mb-6 text-center sm:text-left">
+                Calculation Example
+              </h2>
 
               <div className="space-y-6">
                 <div className="bg-primary/5 p-6 rounded-lg">
@@ -575,7 +589,7 @@ Where:
           {/* Rebalancing Section */}
           <Card id="rebalancing">
             <CardBody className="p-8">
-              <h2 className="text-2xl font-bold mb-6">
+              <h2 className="text-2xl font-bold mb-6 text-center sm:text-left">
                 Maintenance &amp; Rebalancing
               </h2>
 
