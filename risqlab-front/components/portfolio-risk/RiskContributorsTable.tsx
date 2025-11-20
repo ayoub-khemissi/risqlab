@@ -10,10 +10,12 @@ import {
   TableCell,
 } from "@heroui/table";
 import { Input } from "@heroui/input";
+import { Image } from "@heroui/image";
 import { Search } from "lucide-react";
 
 import { RiskContribution } from "@/types/volatility";
 import { VolatilityBadge } from "@/components/volatility";
+import { getCoinImageUrl } from "@/lib/formatters";
 
 interface RiskContributorsTableProps {
   /**
@@ -113,7 +115,7 @@ export function RiskContributorsTable({
             className="cursor-pointer"
             onClick={() => handleSort("symbol")}
           >
-            CRYPTO
+            CRYPTOCURRENCY
           </TableColumn>
           <TableColumn
             key="weight"
@@ -149,9 +151,20 @@ export function RiskContributorsTable({
                 </span>
               </TableCell>
               <TableCell>
-                <div>
-                  <p className="font-semibold">{item.symbol}</p>
-                  <p className="text-xs text-default-500">{item.name}</p>
+                <div className="flex items-center gap-3">
+                  <Image
+                    alt={item.name}
+                    className="rounded-full min-w-8 min-h-8"
+                    height={32}
+                    src={getCoinImageUrl(item.cmc_id)}
+                    width={32}
+                  />
+                  <div className="flex flex-col">
+                    <span className="font-semibold">{item.name}</span>
+                    <span className="text-sm text-default-500">
+                      {item.symbol}
+                    </span>
+                  </div>
                 </div>
               </TableCell>
               <TableCell>
