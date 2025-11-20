@@ -60,15 +60,20 @@ async function calculateLogReturnsForCrypto(cryptoId, symbol) {
   // We use the latest price for each day (at 23:59)
   const [prices] = await Database.execute(`
     SELECT
-      DATE(timestamp) as date,
-      price_usd,
-      timestamp
-    FROM market_data
-    WHERE crypto_id = ?
-      AND price_usd > 0
-    GROUP BY DATE(timestamp)
-    HAVING timestamp = MAX(timestamp)
-    ORDER BY DATE(timestamp) ASC
+      DATE(md.timestamp) as date,
+      md.price_usd,
+      md.timestamp
+    FROM market_data md
+    WHERE md.crypto_id = ?
+      AND md.price_usd > 0
+      AND md.timestamp = (
+        SELECT MAX(timestamp)
+        FROM market_data md2
+        WHERE md2.crypto_id = md.crypto_id
+          AND DATE(md2.timestamp) = DATE(md.timestamp)
+          AND md2.price_usd > 0
+      )
+    ORDER BY DATE(md.timestamp) ASC
   `, [cryptoId]);
 
   if (prices.length < 2) {
