@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, memo } from "react";
+import { useMemo, memo, useState, useEffect } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
 import { IndexConstituent } from "@/types/index-details";
@@ -26,26 +26,44 @@ const COLORS = [
 function TopConstituentsChartComponent({
   constituents,
 }: TopConstituentsChartProps) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   const chartData = useMemo(() => {
     if (!constituents || constituents.length === 0) return [];
 
-    // Sort by weight descending and take top 10
+    // Sort by weight descending
     const sorted = [...constituents].sort(
       (a, b) => parseFloat(b.weight_in_index) - parseFloat(a.weight_in_index),
     );
 
-    const top10 = sorted.slice(0, 10);
-    const rest = sorted.slice(10);
+    // Split constituents: those >= 0.75% and those < 0.75%
+    const aboveThreshold = sorted.filter(
+      (c) => parseFloat(c.weight_in_index) >= 0.75,
+    );
+    const belowThreshold = sorted.filter(
+      (c) => parseFloat(c.weight_in_index) < 0.75,
+    );
 
-    const data = top10.map((constituent) => ({
+    const data = aboveThreshold.map((constituent) => ({
       name: constituent.symbol,
       value: parseFloat(constituent.weight_in_index),
       displayValue: `${parseFloat(constituent.weight_in_index).toFixed(2)}%`,
     }));
 
-    // Add "Others" if there are more than 10 constituents
-    if (rest.length > 0) {
-      const othersWeight = rest.reduce(
+    // Add "Others" if there are constituents below 0.75%
+    if (belowThreshold.length > 0) {
+      const othersWeight = belowThreshold.reduce(
         (sum, constituent) => sum + parseFloat(constituent.weight_in_index),
         0,
       );
@@ -62,15 +80,20 @@ function TopConstituentsChartComponent({
 
   const totalConstituents = constituents?.length || 0;
 
+  // Adjust dimensions based on screen size
+  const outerRadius = isMobile ? 100 : 140;
+  const innerRadius = isMobile ? 60 : 80;
+  const labelDistance = isMobile ? 15 : 25;
+
   const renderCustomLabel = ({
     cx,
     cy,
     midAngle,
-    outerRadius,
+    outerRadius: currentOuterRadius,
     percent,
   }: any) => {
     const RADIAN = Math.PI / 180;
-    const radius = outerRadius + 25;
+    const radius = currentOuterRadius + labelDistance;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
@@ -78,7 +101,7 @@ function TopConstituentsChartComponent({
       <text
         className="fill-gray-900 dark:fill-white"
         dominantBaseline="central"
-        fontSize={12}
+        fontSize={isMobile ? 10 : 12}
         fontWeight={600}
         textAnchor={x > cx ? "start" : "end"}
         x={x}
@@ -114,8 +137,15 @@ function TopConstituentsChartComponent({
 
   return (
     <div className="flex flex-col lg:flex-row items-center gap-8 w-full">
-      <div className="w-full lg:w-1/2 h-[400px]" style={{ minHeight: "400px" }}>
-        <ResponsiveContainer height="100%" minHeight={400} width="100%">
+      <div
+        className="w-full lg:w-1/2"
+        style={{ height: isMobile ? "275px" : "400px" }}
+      >
+        <ResponsiveContainer
+          height="100%"
+          minHeight={isMobile ? 275 : 400}
+          width="100%"
+        >
           <PieChart>
             <Pie
               cx="50%"
@@ -123,10 +153,10 @@ function TopConstituentsChartComponent({
               data={chartData}
               dataKey="value"
               fill="#8884d8"
-              innerRadius={80}
+              innerRadius={innerRadius}
               label={renderCustomLabel}
               labelLine={false}
-              outerRadius={140}
+              outerRadius={outerRadius}
               stroke="none"
             >
               {chartData.map((entry, index) => (
@@ -146,7 +176,7 @@ function TopConstituentsChartComponent({
               <tspan
                 className="fill-gray-900 dark:fill-white"
                 dy="-0.5em"
-                fontSize={32}
+                fontSize={isMobile ? 24 : 32}
                 fontWeight={700}
                 x="50%"
               >
@@ -155,7 +185,7 @@ function TopConstituentsChartComponent({
               <tspan
                 className="fill-gray-600 dark:fill-gray-400"
                 dy="1.5em"
-                fontSize={14}
+                fontSize={isMobile ? 12 : 14}
                 x="50%"
               >
                 Assets
