@@ -120,7 +120,7 @@ export default function IndexPage() {
         <div className="text-center">
           <div className="flex items-center justify-center gap-3">
             <h1 className={title()}>RisqLab 80 Index</h1>
-            <Link href="/methodology/index">
+            <Link href="/methodology/index-risqlab">
               <Button
                 isIconOnly
                 aria-label="How is this calculated?"

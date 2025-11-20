@@ -35,7 +35,7 @@ export default function MethodologyPage() {
               </p>
 
               <div className="mt-4">
-                <Link href="/methodology/index">
+                <Link href="/methodology/index-risqlab">
                   <Button color="primary" endContent={<ArrowRight size={18} />}>
                     View Index Methodology
                   </Button>
