@@ -6,11 +6,11 @@ import { API_BASE_URL } from "@/config/constants";
 import { CryptoDetailResponse } from "@/types/crypto-detail";
 
 type Props = {
-  params: { symbol: string };
+  params: Promise<{ symbol: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const symbol = params.symbol;
+  const { symbol } = await params;
 
   try {
     const response = await fetch(
