@@ -1,19 +1,59 @@
 import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
 import clsx from "clsx";
+import Link from "next/link";
 
 import { Providers } from "./providers";
 
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
 import { Navbar } from "@/components/navbar";
+import JsonLd from "@/components/json-ld";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteConfig.siteUrl),
   title: {
     default: "RisqLab | Real-time Crypto Analytics",
     template: "%s | RisqLab",
   },
   description: siteConfig.description,
+  keywords: siteConfig.keywords,
+  authors: siteConfig.authors,
+  creator: siteConfig.creator,
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: siteConfig.siteUrl,
+    title: "RisqLab | Real-time Crypto Analytics",
+    description: siteConfig.description,
+    siteName: siteConfig.name,
+    images: [
+      {
+        url: `/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "RisqLab",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "RisqLab | Real-time Crypto Analytics",
+    description: siteConfig.description,
+    creator: "@risqlab",
+    images: [`/og-image.png`],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   icons: {
     icon: "/favicon.ico",
   },
@@ -47,12 +87,36 @@ export default function RootLayout({
             <main className="container mx-auto max-w-7xl p-6 flex-grow">
               {children}
             </main>
-            <footer className="w-full flex items-center justify-center py-3">
-              <p className="text-default-600 text-sm">
+            <footer className="w-full flex flex-col items-center justify-center py-6 gap-4 border-t border-default-100 mt-8">
+              <div className="flex gap-6 text-sm text-default-600">
+                <Link className="hover:text-primary transition-colors" href="/">
+                  Home
+                </Link>
+                <Link
+                  className="hover:text-primary transition-colors"
+                  href="/index-risqlab"
+                >
+                  RisqLab 80 Index
+                </Link>
+                <Link
+                  className="hover:text-primary transition-colors"
+                  href="/methodology"
+                >
+                  Methodology
+                </Link>
+                <Link
+                  className="hover:text-primary transition-colors"
+                  href="/portfolio-risk"
+                >
+                  Portfolio Risk
+                </Link>
+              </div>
+              <p className="text-default-500 text-xs">
                 © {new Date().getFullYear()} RisqLab. All rights reserved.
               </p>
             </footer>
           </div>
+          <JsonLd />
         </Providers>
       </body>
     </html>
