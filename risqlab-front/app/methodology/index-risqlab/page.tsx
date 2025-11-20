@@ -291,7 +291,7 @@ export default function IndexMethodologyPage() {
                       </td>
                       <td className="py-3 px-4">
                         <Chip color="danger" size="sm">
-                          30 minutes
+                          15 minutes
                         </Chip>
                       </td>
                       <td className="py-3 px-4 text-default-600">
@@ -600,7 +600,7 @@ Where:
                   </h3>
                   <p className="text-default-600 mb-4">
                     The index automatically rebalances on each calculation
-                    (every 30 minutes):
+                    (every 15 minutes):
                   </p>
                   <ul className="list-disc list-inside text-default-600 space-y-2">
                     <li>

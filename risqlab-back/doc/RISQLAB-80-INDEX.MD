@@ -11,7 +11,7 @@ The RisqLab 80 is a market-capitalization weighted cryptocurrency index that tra
 | **Index Name** | RisqLab 80 | Official name of the index |
 | **Base Level** | 100 | Starting index level |
 | **Max Constituents** | 80 | Maximum number of cryptocurrencies in the index |
-| **Update Frequency** | 30 minutes | Configurable recalculation interval |
+| **Update Frequency** | 15 minutes | Configurable recalculation interval |
 
 ## Calculation Methodology
 
