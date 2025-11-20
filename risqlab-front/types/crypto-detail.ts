@@ -9,6 +9,7 @@ export interface CryptoBasicInfo {
   description: string | null;
   category: string | null;
   tags: string[];
+  metadata_updated_at: string | null;
 }
 
 export interface CryptoLinks {

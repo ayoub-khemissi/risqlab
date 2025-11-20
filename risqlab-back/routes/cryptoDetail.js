@@ -75,7 +75,8 @@ api.get('/cryptocurrency/:symbol', async (req, res) => {
         github_url,
         platform,
         date_launched,
-        tags
+        tags,
+        updated_at
       FROM cryptocurrency_metadata
       WHERE crypto_id = ?
       LIMIT 1
@@ -117,6 +118,7 @@ api.get('/cryptocurrency/:symbol', async (req, res) => {
           description: metadata.description || null,
           category: metadata.category || null,
           tags: tags,
+          metadata_updated_at: metadata.updated_at || null,
         },
         links: {
           website: metadata.website_url || null,

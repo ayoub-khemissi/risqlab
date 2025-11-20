@@ -435,6 +435,16 @@ export default function CryptoDetailPage() {
                   </span>
                 </div>
               )}
+              {basic.metadata_updated_at && (
+                <div>
+                  <span className="text-sm text-default-500">
+                    Last updated:{" "}
+                  </span>
+                  <span className="text-sm font-medium">
+                    {new Date(basic.metadata_updated_at).toLocaleString()}
+                  </span>
+                </div>
+              )}
             </div>
             {basic.tags.length > 0 && (
               <div className="mt-4">
