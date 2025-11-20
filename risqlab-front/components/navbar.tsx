@@ -26,6 +26,10 @@ const menuItems = [
     href: "/index-risqlab",
   },
   {
+    label: "Portfolio Risk",
+    href: "/portfolio-risk",
+  },
+  {
     label: "Methodology",
     href: "/methodology",
   },
@@ -68,6 +72,11 @@ export const Navbar = () => {
         <NavbarItem>
           <Link as={NextLink} color="foreground" href="/index-risqlab">
             RisqLab 80 Index
+          </Link>
+        </NavbarItem>
+        <NavbarItem>
+          <Link as={NextLink} color="foreground" href="/portfolio-risk">
+            Portfolio Risk
           </Link>
         </NavbarItem>
         <NavbarItem>

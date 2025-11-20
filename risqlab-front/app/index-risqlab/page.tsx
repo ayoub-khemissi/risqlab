@@ -4,7 +4,13 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import { TrendingUp, TrendingDown, Info } from "lucide-react";
+import {
+  TrendingUp,
+  TrendingDown,
+  Info,
+  Activity,
+  ArrowRight,
+} from "lucide-react";
 import Link from "next/link";
 import {
   LineChart,
@@ -23,6 +29,12 @@ import { TopConstituentsChart } from "@/components/top-constituents-chart";
 import { title } from "@/components/primitives";
 import { BinancePricesProvider } from "@/contexts/BinancePricesContext";
 import { API_BASE_URL } from "@/config/constants";
+import { usePortfolioVolatility } from "@/hooks/usePortfolioVolatility";
+import {
+  RiskLevelIndicator,
+  VolatilityBadge,
+  VolatilitySparkline,
+} from "@/components/volatility";
 
 type Period = "24h" | "7d" | "30d" | "all";
 
@@ -30,6 +42,9 @@ export default function IndexPage() {
   const [data, setData] = useState<IndexDetailsResponse["data"] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState<Period>("24h");
+
+  // Fetch portfolio volatility data
+  const { data: volatilityData } = usePortfolioVolatility("30d");
 
   useEffect(() => {
     fetchIndexDetails();
@@ -325,6 +340,100 @@ export default function IndexPage() {
             </Card>
           </div>
         </div>
+
+        {/* Risk Metrics Section */}
+        {volatilityData?.current && (
+          <Card className="bg-gradient-to-br from-primary/5 to-success/5">
+            <CardBody className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <Activity className="text-primary" size={24} />
+                  <h2 className="text-xl font-bold">Portfolio Risk Metrics</h2>
+                </div>
+                <Link href="/portfolio-risk">
+                  <Button
+                    color="primary"
+                    endContent={<ArrowRight size={18} />}
+                    size="sm"
+                    variant="flat"
+                  >
+                    Detailed Analysis
+                  </Button>
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Volatility */}
+                <div className="bg-content1 p-4 rounded-lg">
+                  <p className="text-sm text-default-500 mb-2">
+                    Current Volatility
+                  </p>
+                  <p className="text-3xl font-bold text-primary mb-2">
+                    {(
+                      volatilityData.current.annualized_volatility * 100
+                    ).toFixed(2)}
+                    %
+                  </p>
+                  <p className="text-xs text-default-500 mb-3">
+                    Annualized (90-day window)
+                  </p>
+                  <VolatilityBadge
+                    showRiskLevel
+                    value={volatilityData.current.annualized_volatility}
+                  />
+                </div>
+
+                {/* Risk Level */}
+                <div className="bg-content1 p-4 rounded-lg">
+                  <p className="text-sm text-default-500 mb-3">Risk Level</p>
+                  <RiskLevelIndicator
+                    level={
+                      volatilityData.current.annualized_volatility < 0.3
+                        ? "low"
+                        : volatilityData.current.annualized_volatility < 0.6
+                          ? "medium"
+                          : volatilityData.current.annualized_volatility < 1.0
+                            ? "high"
+                            : "extreme"
+                    }
+                    size="md"
+                  />
+                </div>
+
+                {/* Trend */}
+                <div className="bg-content1 p-4 rounded-lg">
+                  <p className="text-sm text-default-500 mb-2">
+                    30-Day Volatility Trend
+                  </p>
+                  <div className="h-20">
+                    <VolatilitySparkline
+                      data={volatilityData.history.slice(-30)}
+                      height={80}
+                    />
+                  </div>
+                  <p className="text-xs text-default-500 mt-2 text-center">
+                    Last 30 days
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 bg-primary/10 border-l-4 border-primary p-4 rounded">
+                <p className="text-sm text-default-700">
+                  <strong>Diversification Benefit:</strong> The portfolio
+                  volatility is typically lower than individual assets due to
+                  the diversification across{" "}
+                  {volatilityData.current.num_constituents} constituents.{" "}
+                  <Link
+                    className="text-primary font-semibold"
+                    href="/portfolio-risk"
+                  >
+                    Learn more →
+                  </Link>
+                </p>
+              </div>
+            </CardBody>
+          </Card>
+        )}
 
         <Card>
           <CardBody className="p-6">

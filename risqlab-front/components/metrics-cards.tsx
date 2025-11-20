@@ -572,7 +572,7 @@ function MetricsCardsComponent({
 
         {volatilityData?.current &&
           renderVolatilityGauge(
-            parseFloat(volatilityData.current.annualized_volatility) * 100,
+            volatilityData.current.annualized_volatility * 100,
           )}
       </div>
     </div>
