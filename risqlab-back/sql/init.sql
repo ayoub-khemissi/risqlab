@@ -71,7 +71,6 @@ CREATE TABLE IF NOT EXISTS `index_config` (
     `divisor` DECIMAL(30, 8) NOT NULL,
     `base_date` DATETIME NOT NULL,
     `max_constituents` INT UNSIGNED NOT NULL DEFAULT 80,
-    `update_frequency_minutes` INT UNSIGNED NOT NULL DEFAULT 30,
     `is_active` BOOLEAN NOT NULL DEFAULT TRUE,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -81,12 +80,11 @@ CREATE TABLE IF NOT EXISTS `index_config` (
 -- Initialize RisqLab 80 Index with base configuration
 -- The divisor will be calculated dynamically on first run based on actual market data
 -- Base Level = 100, calculated as: Divisor = (Total Market Cap of top 80) / 100
-INSERT INTO `index_config` (`index_name`, `base_level`, `divisor`, `base_date`, `max_constituents`, `update_frequency_minutes`, `is_active`)
-VALUES ('RisqLab 80', 100.00000000, 1.00000000, NOW(), 80, 30, TRUE)
+INSERT INTO `index_config` (`index_name`, `base_level`, `divisor`, `base_date`, `max_constituents`, `is_active`)
+VALUES ('RisqLab 80', 100.00000000, 1.00000000, NOW(), 80, TRUE)
 ON DUPLICATE KEY UPDATE
     base_level = VALUES(base_level),
     max_constituents = VALUES(max_constituents),
-    update_frequency_minutes = VALUES(update_frequency_minutes),
     is_active = VALUES(is_active);
 
 DROP TABLE IF EXISTS `cryptocurrencies`;

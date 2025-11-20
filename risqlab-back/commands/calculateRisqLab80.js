@@ -127,9 +127,9 @@ async function getOrCreateIndexConfig() {
 
   const [result] = await Database.execute(
     `INSERT INTO index_config
-    (index_name, base_level, divisor, base_date, max_constituents, update_frequency_minutes, is_active)
-    VALUES (?, ?, ?, ?, ?, ?, TRUE)`,
-    [INDEX_NAME, BASE_LEVEL, calculatedDivisor, now, MAX_CONSTITUENTS, 30]
+    (index_name, base_level, divisor, base_date, max_constituents, is_active)
+    VALUES (?, ?, ?, ?, ?, TRUE)`,
+    [INDEX_NAME, BASE_LEVEL, calculatedDivisor, now, MAX_CONSTITUENTS]
   );
 
   log.info(`Created new index config with divisor: ${calculatedDivisor}`);
@@ -142,7 +142,6 @@ async function getOrCreateIndexConfig() {
     divisor: calculatedDivisor,
     base_date: now,
     max_constituents: MAX_CONSTITUENTS,
-    update_frequency_minutes: 30,
     is_active: true,
   };
 }

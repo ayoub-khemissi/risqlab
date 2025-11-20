@@ -23,9 +23,9 @@ async function insertFakeVolatilityData() {
       log.info('  Creating test index configuration...');
       const [result] = await Database.execute(
         `INSERT INTO index_config
-        (index_name, base_level, divisor, base_date, max_constituents, update_frequency_minutes, is_active)
-        VALUES (?, ?, ?, NOW(), ?, ?, TRUE)`,
-        ['RisqLab 80', 100, 1000000000000, 80, 30]
+        (index_name, base_level, divisor, base_date, max_constituents, is_active)
+        VALUES (?, ?, ?, NOW(), ?, TRUE)`,
+        ['RisqLab 80', 100, 1000000000000, 80]
       );
       indexConfigId = result.insertId;
       log.info(`  ✓ Index config created (ID: ${indexConfigId})`);
