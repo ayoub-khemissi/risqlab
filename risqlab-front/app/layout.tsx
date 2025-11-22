@@ -29,10 +29,10 @@ export const metadata: Metadata = {
     siteName: siteConfig.name,
     images: [
       {
-        url: `/og-image.png`,
+        url: `/img/branding/1200x630.png`,
         width: 1200,
         height: 630,
-        alt: "RisqLab",
+        alt: "RisqLab - Real-time crypto market intelligence",
       },
     ],
   },
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     title: "RisqLab | Real-time Crypto Analytics",
     description: siteConfig.description,
     creator: "@risqlab",
-    images: [`/og-image.png`],
+    images: [`/img/branding/1200x630.png`],
   },
   robots: {
     index: true,
