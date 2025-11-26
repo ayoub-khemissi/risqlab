@@ -31,15 +31,21 @@ export default function Home() {
     fetchVolatility();
   }, [page, sortColumn, sortOrder]);
 
-  // Scroll to crypto table if hash is present
+  // Scroll to crypto table if hash is present, then remove hash from URL
   useEffect(() => {
-    if (window.location.hash === "#crypto-table") {
+    if (window.location.hash === "#crypto-table" && data.length > 0) {
       // Wait for data to load and page to render
       const scrollToTable = () => {
         const element = document.getElementById("crypto-table");
 
         if (element) {
           element.scrollIntoView({ behavior: "smooth", block: "start" });
+          // Remove hash from URL to prevent auto-scroll on data updates
+          window.history.replaceState(
+            null,
+            "",
+            window.location.pathname + window.location.search,
+          );
         }
       };
 
