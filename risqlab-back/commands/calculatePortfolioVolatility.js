@@ -8,6 +8,7 @@ import {
 } from '../utils/statistics.js';
 
 const DEFAULT_WINDOW_DAYS = 90;
+const MINIMUM_WINDOW_DAYS = 7; // Minimum days for statistical validity
 const INDEX_NAME = 'RisqLab 80';
 
 /**
@@ -94,10 +95,11 @@ async function getIndexConfig() {
 async function calculatePortfolioVolatilityForDate(indexConfigId, date, timestamp) {
   const calcStartTime = Date.now();
 
-  // Check if already calculated
+  // We'll determine the actual window days after checking constituent data
+  // For now, just check if any calculation exists for this date
   const [existing] = await Database.execute(
-    'SELECT id FROM portfolio_volatility WHERE index_config_id = ? AND date = ? AND window_days = ?',
-    [indexConfigId, date, DEFAULT_WINDOW_DAYS]
+    'SELECT id FROM portfolio_volatility WHERE index_config_id = ? AND date = ?',
+    [indexConfigId, date]
   );
 
   if (existing.length > 0) {
@@ -117,19 +119,31 @@ async function calculatePortfolioVolatilityForDate(indexConfigId, date, timestam
   // Get log returns for all constituents over the window period
   const constituentReturns = await getConstituentReturns(constituents, date);
 
-  // Filter out constituents with insufficient data
+  // Filter out constituents with insufficient data (minimum required)
   const validConstituents = constituentReturns.filter(
-    c => c.returns.length >= DEFAULT_WINDOW_DAYS
+    c => c.returns.length >= MINIMUM_WINDOW_DAYS
   );
 
   if (validConstituents.length < 10) {
-    log.debug(`${date}: Insufficient data - only ${validConstituents.length} constituents with enough returns`);
+    log.debug(`${date}: Insufficient data - only ${validConstituents.length} constituents with at least ${MINIMUM_WINDOW_DAYS} returns`);
     return { calculated: false };
   }
 
+  // Find the minimum number of days available across all constituents
+  const minAvailableDays = Math.min(...validConstituents.map(c => c.returns.length));
+  const effectiveWindowDays = Math.min(minAvailableDays, DEFAULT_WINDOW_DAYS);
+
+  log.debug(`${date}: Using ${effectiveWindowDays} days window (min available: ${minAvailableDays})`);
+
+  // Truncate all constituents' returns to the same window size
+  const normalizedConstituents = validConstituents.map(c => ({
+    ...c,
+    returns: c.returns.slice(-effectiveWindowDays) // Take last N days
+  }));
+
   // Calculate total market cap and weights
-  const totalMarketCap = validConstituents.reduce((sum, c) => sum + c.marketCap, 0);
-  const weights = validConstituents.map(c => c.marketCap / totalMarketCap);
+  const totalMarketCap = normalizedConstituents.reduce((sum, c) => sum + c.marketCap, 0);
+  const weights = normalizedConstituents.map(c => c.marketCap / totalMarketCap);
 
   // Validate weights
   if (!validateWeights(weights)) {
@@ -137,7 +151,7 @@ async function calculatePortfolioVolatilityForDate(indexConfigId, date, timestam
   }
 
   // Build covariance matrix
-  const assets = validConstituents.map((c, i) => ({
+  const assets = normalizedConstituents.map((c, i) => ({
     id: c.crypto_id,
     returns: c.returns
   }));
@@ -159,10 +173,10 @@ async function calculatePortfolioVolatilityForDate(indexConfigId, date, timestam
   `, [
     indexConfigId,
     date,
-    DEFAULT_WINDOW_DAYS,
+    effectiveWindowDays,
     dailyVol,
     annualizedVol,
-    validConstituents.length,
+    normalizedConstituents.length,
     totalMarketCap,
     calculationDuration
   ]);
@@ -170,9 +184,9 @@ async function calculatePortfolioVolatilityForDate(indexConfigId, date, timestam
   const portfolioVolatilityId = result.insertId;
 
   // Store constituent details
-  await storeConstituentVolatilities(portfolioVolatilityId, validConstituents, weights);
+  await storeConstituentVolatilities(portfolioVolatilityId, normalizedConstituents, weights);
 
-  log.info(`${date}: Portfolio volatility = ${(annualizedVol * 100).toFixed(2)}% (${validConstituents.length} constituents)`);
+  log.info(`${date}: Portfolio volatility = ${(annualizedVol * 100).toFixed(2)}% (${normalizedConstituents.length} constituents, ${effectiveWindowDays} days window)`);
 
   return { calculated: true };
 }

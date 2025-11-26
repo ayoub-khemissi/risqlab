@@ -3,6 +3,7 @@ import log from '../lib/log.js';
 import { mean, standardDeviation, annualizeVolatility } from '../utils/statistics.js';
 
 const DEFAULT_WINDOW_DAYS = 90;
+const MINIMUM_WINDOW_DAYS = 7; // Minimum days for statistical validity
 
 /**
  * Calculate and store individual cryptocurrency volatility
@@ -22,9 +23,9 @@ async function calculateCryptoVolatility() {
       GROUP BY c.id, c.symbol, c.name
       HAVING COUNT(*) >= ?
       ORDER BY c.symbol
-    `, [DEFAULT_WINDOW_DAYS]);
+    `, [MINIMUM_WINDOW_DAYS]);
 
-    log.info(`Found ${cryptos.length} cryptocurrencies with sufficient data (>= ${DEFAULT_WINDOW_DAYS} log returns)`);
+    log.info(`Found ${cryptos.length} cryptocurrencies with sufficient data (>= ${MINIMUM_WINDOW_DAYS} log returns)`);
 
     let totalCalculated = 0;
     let totalSkipped = 0;
@@ -68,24 +69,30 @@ async function calculateVolatilityForCrypto(cryptoId, symbol) {
     ORDER BY date ASC
   `, [cryptoId]);
 
-  if (logReturns.length < DEFAULT_WINDOW_DAYS) {
-    log.debug(`${symbol}: Insufficient data (${logReturns.length} returns, need ${DEFAULT_WINDOW_DAYS})`);
+  if (logReturns.length < MINIMUM_WINDOW_DAYS) {
+    log.debug(`${symbol}: Insufficient data (${logReturns.length} returns, need at least ${MINIMUM_WINDOW_DAYS})`);
     return { inserted: 0, skipped: 0 };
   }
 
   let inserted = 0;
   let skipped = 0;
 
+  // Determine the window size to use - prefer DEFAULT_WINDOW_DAYS but use what's available
+  const effectiveWindowDays = Math.min(logReturns.length, DEFAULT_WINDOW_DAYS);
+
   // Calculate volatility for each possible window
-  // Start from the first window that has exactly DEFAULT_WINDOW_DAYS returns
-  for (let i = DEFAULT_WINDOW_DAYS - 1; i < logReturns.length; i++) {
+  // Start from the first window that has exactly effectiveWindowDays returns
+  for (let i = effectiveWindowDays - 1; i < logReturns.length; i++) {
     const windowEnd = logReturns[i];
     const currentDate = windowEnd.date;
+
+    // Determine actual window size for this date
+    const actualWindowDays = Math.min(i + 1, DEFAULT_WINDOW_DAYS);
 
     // Check if volatility already exists for this date
     const [existing] = await Database.execute(
       'SELECT id FROM crypto_volatility WHERE crypto_id = ? AND date = ? AND window_days = ?',
-      [cryptoId, currentDate, DEFAULT_WINDOW_DAYS]
+      [cryptoId, currentDate, actualWindowDays]
     );
 
     if (existing.length > 0) {
@@ -93,9 +100,9 @@ async function calculateVolatilityForCrypto(cryptoId, symbol) {
       continue;
     }
 
-    // Get the window of returns (last DEFAULT_WINDOW_DAYS)
+    // Get the window of returns (last actualWindowDays)
     const windowReturns = logReturns
-      .slice(i - DEFAULT_WINDOW_DAYS + 1, i + 1)
+      .slice(i - actualWindowDays + 1, i + 1)
       .map(r => parseFloat(r.log_return));
 
     // Calculate statistics
@@ -108,7 +115,7 @@ async function calculateVolatilityForCrypto(cryptoId, symbol) {
       INSERT INTO crypto_volatility
       (crypto_id, date, window_days, daily_volatility, annualized_volatility, num_observations, mean_return)
       VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [cryptoId, currentDate, DEFAULT_WINDOW_DAYS, dailyVol, annualizedVol, windowReturns.length, meanReturn]);
+    `, [cryptoId, currentDate, actualWindowDays, dailyVol, annualizedVol, windowReturns.length, meanReturn]);
 
     inserted++;
   }

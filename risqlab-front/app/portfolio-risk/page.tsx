@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import { Info, TrendingUp, Activity } from "lucide-react";
+import { Info, TrendingUp, Activity, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 
 import { title } from "@/components/primitives";
@@ -130,6 +130,32 @@ export default function PortfolioRiskPage() {
           Comprehensive risk analysis for the RisqLab 80 Index
         </p>
       </div>
+
+      {/* Warning for insufficient data */}
+      {current.window_days < 90 && (
+        <Card className="bg-warning/10 border border-warning">
+          <CardBody className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle
+                className="text-warning mt-0.5 flex-shrink-0"
+                size={20}
+              />
+              <div>
+                <h3 className="font-semibold text-warning mb-1">
+                  Limited Historical Data
+                </h3>
+                <p className="text-sm text-default-700">
+                  The portfolio volatility calculations are currently based on{" "}
+                  <strong>{current.window_days} days</strong> of historical
+                  data. For optimal statistical accuracy, we recommend at least{" "}
+                  <strong>90 days</strong> of data. Results may be less reliable
+                  until sufficient historical data is available.
+                </p>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      )}
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
