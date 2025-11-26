@@ -143,7 +143,7 @@ export default function PortfolioRiskPage() {
     <section className="flex flex-col gap-6">
       {/* Header */}
       <div className="text-center">
-        <div className="flex items-center justify-center gap-3">
+        <div className="flex flex-col md:flex-row items-center justify-center gap-3">
           <h1 className={title()}>Portfolio Risk Analysis</h1>
           <Link href="/methodology/volatility">
             <Button

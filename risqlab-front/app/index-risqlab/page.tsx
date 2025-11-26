@@ -126,7 +126,7 @@ export default function IndexPage() {
     <BinancePricesProvider symbols={symbols}>
       <section className="flex flex-col gap-6">
         <div className="text-center">
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-3">
             <h1 className={title()}>RisqLab 80 Index</h1>
             <Link href="/methodology/index-risqlab">
               <Button
@@ -369,7 +369,7 @@ export default function IndexPage() {
         {volatilityData?.current && (
           <Card className="bg-gradient-to-br from-primary/5 to-success/5">
             <CardBody className="p-6">
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex flex-col md:flex-row items-center md:justify-between gap-4 mb-6">
                 <div className="flex items-center gap-3">
                   <Activity className="text-primary" size={24} />
                   <h2 className="text-xl font-bold">Portfolio Risk Metrics</h2>
