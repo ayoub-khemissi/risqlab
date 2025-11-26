@@ -4,7 +4,8 @@ import React, { useMemo, memo } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardBody } from "@heroui/card";
 import { Chip } from "@heroui/chip";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { Tooltip } from "@heroui/tooltip";
+import { TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer, YAxis } from "recharts";
 
 import { IndexMetric, GlobalMetric, FearGreedMetric } from "@/types/metrics";
@@ -251,7 +252,10 @@ function MetricsCardsComponent({
     );
   };
 
-  const renderVolatilityGauge = (volatilityPercent: number) => {
+  const renderVolatilityGauge = (
+    volatilityPercent: number,
+    windowDays: number,
+  ) => {
     const width = 144;
     const height = 80;
     const radius = 55;
@@ -311,12 +315,36 @@ function MetricsCardsComponent({
     const redArc = createArc(-60, 0); // 20-30% zone
 
     return (
-      <Card>
+      <Card
+        isPressable
+        className="cursor-pointer hover:scale-[1.02] transition-transform"
+        onPress={() => router.push("/portfolio-risk")}
+      >
         <CardBody className="p-4">
           <div className="flex flex-col items-center gap-2">
-            <span className="text-sm text-default-500 self-start">
-              Volatility (90d)
-            </span>
+            <div className="flex items-center gap-1 self-start">
+              <span className="text-sm text-default-500">
+                Volatility ({windowDays}d)
+              </span>
+              {windowDays < 90 && (
+                <Tooltip
+                  content={
+                    <div className="px-1 py-2 max-w-xs">
+                      <div className="text-small font-bold">
+                        Limited Historical Data
+                      </div>
+                      <div className="text-tiny">
+                        Currently based on {windowDays} days. Full accuracy
+                        requires 90 days of data.
+                      </div>
+                    </div>
+                  }
+                  placement="right"
+                >
+                  <AlertCircle className="text-warning" size={14} />
+                </Tooltip>
+              )}
+            </div>
             <svg
               height={height}
               viewBox={`0 0 ${width} ${height}`}
@@ -573,6 +601,7 @@ function MetricsCardsComponent({
         {volatilityData?.current &&
           renderVolatilityGauge(
             volatilityData.current.annualized_volatility * 100,
+            volatilityData.current.window_days,
           )}
       </div>
     </div>
