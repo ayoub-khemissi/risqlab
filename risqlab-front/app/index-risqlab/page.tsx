@@ -238,14 +238,10 @@ export default function IndexPage() {
                     </div>
                   </div>
                   <div
-                    className="h-80 transition-opacity"
-                    style={{ minHeight: "320px", opacity: isLoading ? 0.5 : 1 }}
+                    className="h-64 md:h-80 transition-opacity"
+                    style={{ opacity: isLoading ? 0.5 : 1 }}
                   >
-                    <ResponsiveContainer
-                      height="100%"
-                      minHeight={320}
-                      width="100%"
-                    >
+                    <ResponsiveContainer height="100%" width="100%">
                       <LineChart data={history}>
                         <defs>
                           <linearGradient

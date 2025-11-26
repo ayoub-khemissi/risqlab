@@ -259,10 +259,10 @@ export default function PortfolioRiskPage() {
             </div>
           </div>
           <div
-            className="transition-opacity"
+            className="h-64 md:h-96 transition-opacity"
             style={{ opacity: volatilityLoading ? 0.5 : 1 }}
           >
-            <VolatilityChart data={history} height={400} />
+            <VolatilityChart data={history} />
           </div>
         </CardBody>
       </Card>

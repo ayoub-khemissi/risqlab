@@ -17,15 +17,18 @@ interface VolatilityChartProps {
    */
   data: PortfolioVolatility[];
   /**
-   * Height of the chart
+   * Height of the chart (optional - defaults to 100% of parent container)
    */
-  height?: number;
+  height?: number | string;
 }
 
 /**
  * Line chart showing portfolio volatility over time
  */
-export function VolatilityChart({ data, height = 400 }: VolatilityChartProps) {
+export function VolatilityChart({
+  data,
+  height = "100%",
+}: VolatilityChartProps) {
   // Transform data for chart
   const chartData = data.map((item) => ({
     date: item.date,
@@ -39,7 +42,7 @@ export function VolatilityChart({ data, height = 400 }: VolatilityChartProps) {
     chartData.length;
 
   return (
-    <div style={{ height }}>
+    <div style={{ height, width: "100%" }}>
       <ResponsiveContainer height="100%" width="100%">
         <LineChart data={chartData}>
           <CartesianGrid opacity={0.1} strokeDasharray="3 3" />
