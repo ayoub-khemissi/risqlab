@@ -1,4 +1,4 @@
-import { LineChart, Line, ResponsiveContainer } from "recharts";
+import { LineChart, Line, ResponsiveContainer, YAxis } from "recharts";
 
 interface VolatilitySparklineProps {
   /**
@@ -50,7 +50,9 @@ export function VolatilitySparkline({
   return (
     <ResponsiveContainer height={height} width={width}>
       <LineChart data={chartData}>
+        <YAxis hide domain={["auto", "auto"]} />
         <Line
+          activeDot={false}
           dataKey="value"
           dot={false}
           stroke={color}
