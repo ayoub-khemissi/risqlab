@@ -31,6 +31,7 @@ type Period = "7d" | "30d" | "90d" | "all";
 export default function PortfolioRiskPage() {
   const [selectedPeriod, setSelectedPeriod] = useState<Period>("30d");
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Fetch portfolio volatility data
   const {
@@ -50,6 +51,18 @@ export default function PortfolioRiskPage() {
   if (isInitialLoading && !volatilityLoading && !constituentsLoading) {
     setIsInitialLoading(false);
   }
+
+  // Detect mobile screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Remove hash from URL on initial load to prevent auto-scroll on data updates
   useEffect(() => {
@@ -310,7 +323,7 @@ export default function PortfolioRiskPage() {
           </p>
           <VolatilityDistribution
             constituents={constituentsData}
-            height={350}
+            height={isMobile ? 250 : 350}
             portfolioVolatility={current.annualized_volatility}
           />
         </CardBody>
