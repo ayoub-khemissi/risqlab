@@ -352,7 +352,7 @@ export default function VolatilityMethodologyPage() {
               </p>
               <div className="bg-default-50 p-6 rounded-lg">
                 <div className="flex flex-col gap-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 items-center sm:items-start">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 items-center">
                     <Chip className="min-w-16 w-fit" color="primary" size="lg">
                       Stage 1
                     </Chip>
@@ -367,7 +367,7 @@ export default function VolatilityMethodologyPage() {
                   <div className="flex items-center justify-center">
                     <div className="w-px h-8 bg-default-300" />
                   </div>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 items-center sm:items-start">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 items-center">
                     <Chip className="min-w-16 w-fit" color="success" size="lg">
                       Stage 2
                     </Chip>
@@ -381,7 +381,7 @@ export default function VolatilityMethodologyPage() {
                   <div className="flex items-center justify-center">
                     <div className="w-px h-8 bg-default-300" />
                   </div>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 items-center sm:items-start">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 items-center">
                     <Chip className="min-w-16 w-fit" color="warning" size="lg">
                       Stage 3
                     </Chip>
@@ -400,7 +400,7 @@ export default function VolatilityMethodologyPage() {
           {/* Stage 1: Log Returns Section */}
           <Card id="stage1">
             <CardBody className="p-8">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 items-center sm:items-start">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 items-center">
                 <Chip color="primary" size="lg">
                   Stage 1
                 </Chip>
@@ -481,7 +481,7 @@ export default function VolatilityMethodologyPage() {
           {/* Stage 2: Crypto Volatility Section */}
           <Card id="stage2">
             <CardBody className="p-8">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 items-center sm:items-start">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 items-center">
                 <Chip color="success" size="lg">
                   Stage 2
                 </Chip>
@@ -574,7 +574,7 @@ export default function VolatilityMethodologyPage() {
           {/* Stage 3: Portfolio Volatility Section */}
           <Card id="stage3">
             <CardBody className="p-8">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 items-center sm:items-start">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 items-center">
                 <Chip color="warning" size="lg">
                   Stage 3
                 </Chip>
