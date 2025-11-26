@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
@@ -13,11 +14,11 @@ import {
   GitBranch,
   BarChart3,
 } from "lucide-react";
-import Link from "next/link";
 
 import { title } from "@/components/primitives";
 
 export default function VolatilityMethodologyPage() {
+  const router = useRouter();
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
   const scrollToSection = (sectionId: string) => {
@@ -31,19 +32,23 @@ export default function VolatilityMethodologyPage() {
 
   return (
     <section className="flex flex-col gap-6">
+      {/* Back Button */}
+      <div>
+        <Button
+          startContent={<ArrowLeft size={18} />}
+          variant="light"
+          onPress={() => router.push("/methodology")}
+        >
+          Back
+        </Button>
+      </div>
+
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/methodology">
-          <Button isIconOnly variant="light">
-            <ArrowLeft />
-          </Button>
-        </Link>
-        <div>
-          <h1 className={title()}>Volatility Calculation - Methodology</h1>
-          <p className="text-lg text-default-600 mt-2">
-            How we measure risk and volatility
-          </p>
-        </div>
+      <div>
+        <h1 className={title()}>Volatility Calculation - Methodology</h1>
+        <p className="text-lg text-default-600 mt-2">
+          How we measure risk and volatility
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
