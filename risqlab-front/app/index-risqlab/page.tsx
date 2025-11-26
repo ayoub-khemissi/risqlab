@@ -41,6 +41,7 @@ type Period = "24h" | "7d" | "30d" | "all";
 export default function IndexPage() {
   const [data, setData] = useState<IndexDetailsResponse["data"] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState<Period>("24h");
   const [isMobile, setIsMobile] = useState(false);
 
@@ -95,6 +96,7 @@ export default function IndexPage() {
       setData(result.data);
     } finally {
       setIsLoading(false);
+      setIsInitialLoading(false);
     }
   };
 
@@ -103,7 +105,7 @@ export default function IndexPage() {
     [data?.constituents],
   );
 
-  if (isLoading || !data) {
+  if (isInitialLoading || !data) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">Loading...</div>
@@ -222,6 +224,7 @@ export default function IndexPage() {
                         (period) => (
                           <Button
                             key={period}
+                            isDisabled={isLoading}
                             size="sm"
                             variant={
                               selectedPeriod === period ? "solid" : "bordered"
@@ -234,7 +237,10 @@ export default function IndexPage() {
                       )}
                     </div>
                   </div>
-                  <div className="h-80" style={{ minHeight: "320px" }}>
+                  <div
+                    className="h-80 transition-opacity"
+                    style={{ minHeight: "320px", opacity: isLoading ? 0.5 : 1 }}
+                  >
                     <ResponsiveContainer
                       height="100%"
                       minHeight={320}

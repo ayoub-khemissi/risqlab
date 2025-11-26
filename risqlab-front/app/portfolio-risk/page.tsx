@@ -30,6 +30,7 @@ type Period = "7d" | "30d" | "90d" | "all";
 
 export default function PortfolioRiskPage() {
   const [selectedPeriod, setSelectedPeriod] = useState<Period>("30d");
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Fetch portfolio volatility data
   const {
@@ -44,6 +45,11 @@ export default function PortfolioRiskPage() {
     isLoading: constituentsLoading,
     error: constituentsError,
   } = usePortfolioConstituentsVolatility();
+
+  // Update initial loading state
+  if (isInitialLoading && !volatilityLoading && !constituentsLoading) {
+    setIsInitialLoading(false);
+  }
 
   // Calculate derived data
   const diversificationBenefit = useMemo(() => {
@@ -67,8 +73,8 @@ export default function PortfolioRiskPage() {
     return getRiskLevel(volatilityData.current.annualized_volatility);
   }, [volatilityData]);
 
-  // Loading state
-  if (volatilityLoading || constituentsLoading) {
+  // Loading state (only show full-page loader on initial load)
+  if (isInitialLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">Loading portfolio risk data...</div>
@@ -242,6 +248,7 @@ export default function PortfolioRiskPage() {
               {(["7d", "30d", "90d", "all"] as Period[]).map((period) => (
                 <Button
                   key={period}
+                  isDisabled={volatilityLoading}
                   size="sm"
                   variant={selectedPeriod === period ? "solid" : "bordered"}
                   onPress={() => setSelectedPeriod(period)}
@@ -251,7 +258,12 @@ export default function PortfolioRiskPage() {
               ))}
             </div>
           </div>
-          <VolatilityChart data={history} height={400} />
+          <div
+            className="transition-opacity"
+            style={{ opacity: volatilityLoading ? 0.5 : 1 }}
+          >
+            <VolatilityChart data={history} height={400} />
+          </div>
         </CardBody>
       </Card>
 
