@@ -44,7 +44,7 @@ export default function VolatilityMethodologyPage() {
       </div>
 
       {/* Header */}
-      <div>
+      <div className="text-center md:text-left">
         <h1 className={title()}>Volatility Calculation - Methodology</h1>
         <p className="text-lg text-default-600 mt-2">
           How we measure risk and volatility

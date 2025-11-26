@@ -43,7 +43,7 @@ export default function IndexMethodologyPage() {
       </div>
 
       {/* Header */}
-      <div>
+      <div className="text-center md:text-left">
         <h1 className={title()}>RisqLab 80 Index - Methodology</h1>
         <p className="text-lg text-default-600 mt-2">
           How we calculate the RisqLab 80 Index
