@@ -10,13 +10,15 @@ Each call to a CoinMarketCap API endpoint costs at least 1 credit. Based on the 
     *   `(60 min / 15 min) * 24 hours * 30 days = 2,880 calls`
     *   `2,880 calls * 3 credits = 8,640 credits`
 
-2.  **`calculateRisqLab80.js`** & **`updateVolatility.js`**: These scripts perform internal calculations on the local database. They make **no external API calls** and therefore consume no credits.
+2.  **`calculateRisqLab80.js`**: This script performs internal calculations on the local database to compute the RisqLab80 index. It makes **no external API calls** and therefore consumes no credits.
 
-3.  **`fetchGlobalMetrics.js`**: This script fetches global metrics (e.g., BTC dominance). It consumes **1 credit per call**.
+3.  **`updateVolatility.js`**: This script calculates the volatility for crypto assets and portfolios based on historical data in the database. It makes **no external API calls** and consumes no credits. Given the computational nature of volatility (which requires historical price data), it is scheduled to run **once per day at midnight** rather than every 15 minutes.
 
-4.  **`fetchFearAndGreed.js`**: This script fetches the Fear and Greed Index. It consumes **1 credit per call**.
+4.  **`fetchGlobalMetrics.js`**: This script fetches global metrics (e.g., BTC dominance). It consumes **1 credit per call**.
 
-5.  **`fetchCryptoMetadata.js`**: This script fetches metadata (logos, descriptions, links) for all cryptocurrencies in the database. The cost depends on the number of assets, but it's typically low (**~5 credits** per full run). This data changes very infrequently.
+5.  **`fetchFearAndGreed.js`**: This script fetches the Fear and Greed Index. It consumes **1 credit per call**.
+
+6.  **`fetchCryptoMetadata.js`**: This script fetches metadata (logos, descriptions, links) for all cryptocurrencies in the database. The cost depends on the number of assets, but it's typically low (**~5 credits** per full run). This data changes very infrequently.
 
 ## Optimized Scheduling Strategy
 
@@ -26,7 +28,8 @@ Here is the proposed strategy to optimize data freshness without exceeding the m
 
 | Task | Frequency | Monthly Cost (Credits) | Justification |
 | :--- | :--- | :--- | :--- |
-| **Main Pipeline** | Every 15 minutes | **8,640** | Ensures maximum freshness for market data, which is the core of the application. |
+| **Main Pipeline** (Market Data + Index) | Every 15 minutes | **8,640** | Ensures maximum freshness for market data and the RisqLab80 index, which are the core of the application. |
+| **Volatility Update** | Once a day (midnight) | **0** | Volatility calculations are computationally intensive and based on historical data. Daily updates are sufficient for this metric. No API calls required. |
 | **Global Metrics** | Every 45 minutes | **~960** | This data (dominance, total market cap) is important but less volatile than prices. A 45-minute interval is an excellent trade-off. |
 | **Fear & Greed Index** | Twice a day | **60** | The index is typically updated once daily. Fetching it twice (e.g., noon and midnight) ensures the latest value is captured without wasting credits. |
 | **Crypto Metadata** | Once a week | **~20** | Project logos, descriptions, and websites almost never change. A weekly update is more than sufficient. |
@@ -52,19 +55,23 @@ To implement this schedule, open your crontab file by running `crontab -e` in yo
 # >> /home/ubuntu/risqlab/risqlab/risqlab-back/log/cron.log 2>&1
 #
 
-# 1. Main Pipeline: Fetch market data, then calculate the index and volatility.
+# 1. Main Pipeline: Fetch market data and calculate the RisqLab80 index.
 #    Runs every 15 minutes.
-*/15 * * * * cd /home/ubuntu/risqlab/risqlab/risqlab-back && node commands/fetchCryptoMarketData.js && node commands/calculateRisqLab80.js && node commands/updateVolatility.js
+*/15 * * * * cd /home/ubuntu/risqlab/risqlab/risqlab-back && node commands/fetchCryptoMarketData.js && node commands/calculateRisqLab80.js
 
-# 2. Global Metrics: Fetch BTC/ETH dominance, total market cap, etc.
+# 2. Volatility Update: Calculate crypto and portfolio volatility.
+#    Runs once a day at 00:10 (10 minutes past midnight).
+10 0 * * * cd /home/ubuntu/risqlab/risqlab/risqlab-back && node commands/updateVolatility.js
+
+# 3. Global Metrics: Fetch BTC/ETH dominance, total market cap, etc.
 #    Runs every 45 minutes.
 */45 * * * * cd /home/ubuntu/risqlab/risqlab/risqlab-back && node commands/fetchGlobalMetrics.js
 
-# 3. Fear & Greed Index:
+# 4. Fear & Greed Index:
 #    Runs twice a day, at 00:05 and 12:05 (5 minutes past midnight and noon).
 5 0,12 * * * cd /home/ubuntu/risqlab/risqlab/risqlab-back && node commands/fetchFearAndGreed.js
 
-# 4. Crypto Metadata (logos, descriptions, etc.):
+# 5. Crypto Metadata (logos, descriptions, etc.):
 #    Runs once a week, on Sunday at 3:05 AM.
 5 3 * * 0 cd /home/ubuntu/risqlab/risqlab/risqlab-back && node commands/fetchCryptoMetadata.js
 ```
