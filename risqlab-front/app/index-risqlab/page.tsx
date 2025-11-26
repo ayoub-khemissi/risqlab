@@ -63,15 +63,21 @@ export default function IndexPage() {
     fetchIndexDetails();
   }, [selectedPeriod]);
 
-  // Scroll to constituents table if hash is present
+  // Scroll to constituents table if hash is present, then remove hash from URL
   useEffect(() => {
-    if (window.location.hash === "#constituents-table") {
+    if (window.location.hash === "#constituents-table" && data) {
       // Wait for data to load and page to render
       const scrollToTable = () => {
         const element = document.getElementById("constituents-table");
 
         if (element) {
           element.scrollIntoView({ behavior: "smooth", block: "start" });
+          // Remove hash from URL to prevent auto-scroll on data updates
+          window.history.replaceState(
+            null,
+            "",
+            window.location.pathname + window.location.search,
+          );
         }
       };
 

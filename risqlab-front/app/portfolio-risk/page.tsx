@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
@@ -50,6 +50,18 @@ export default function PortfolioRiskPage() {
   if (isInitialLoading && !volatilityLoading && !constituentsLoading) {
     setIsInitialLoading(false);
   }
+
+  // Remove hash from URL on initial load to prevent auto-scroll on data updates
+  useEffect(() => {
+    if (window.location.hash) {
+      // Remove hash from URL
+      window.history.replaceState(
+        null,
+        "",
+        window.location.pathname + window.location.search,
+      );
+    }
+  }, []);
 
   // Calculate derived data
   const diversificationBenefit = useMemo(() => {
