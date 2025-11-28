@@ -258,10 +258,10 @@ function MetricsCardsComponent({
   ) => {
     const width = 144;
     const height = 80;
-    const radius = 55;
+    const radius = 59;
     const centerX = width / 2;
     const centerY = height - 12;
-    const strokeWidth = 8;
+    const strokeWidth = 6;
 
     // Calculate position based on volatility percentage (0-30% mapped to 0-100 on gauge)
     // Cap at 30% for display purposes
@@ -303,16 +303,14 @@ function MetricsCardsComponent({
       return `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`;
     };
 
-    // Divide 180° arc into 4 zones:
-    // 0-5%: 0° to 30° (16.67% of 180°) - Green
-    // 5-10%: 30° to 60° (16.67% of 180°) - Light orange
-    // 10-20%: 60° to 120° (33.33% of 180°) - Dark orange
-    // 20-30%: 120° to 180° (33.33% of 180°) - Red
+    // Divide 180° arc into 4 zones with gaps
+    // Gap size approx 8 degrees (4 degrees on each side of boundary) to account for rounded caps
+    // Boundaries: -150, -120, -60
 
-    const greenArc = createArc(-180, -150); // 0-5% zone
-    const lightOrangeArc = createArc(-150, -120); // 5-10% zone
-    const darkOrangeArc = createArc(-120, -60); // 10-20% zone
-    const redArc = createArc(-60, 0); // 20-30% zone
+    const greenArc = createArc(-180, -154); // 0-5% zone
+    const lightOrangeArc = createArc(-146, -124); // 5-10% zone
+    const darkOrangeArc = createArc(-116, -64); // 10-20% zone
+    const redArc = createArc(-56, 0); // 20-30% zone
 
     return (
       <Card
@@ -355,7 +353,7 @@ function MetricsCardsComponent({
                 d={greenArc}
                 fill="none"
                 stroke="#16C784"
-                strokeLinecap="butt"
+                strokeLinecap="round"
                 strokeWidth={strokeWidth}
               />
 
@@ -364,7 +362,7 @@ function MetricsCardsComponent({
                 d={lightOrangeArc}
                 fill="none"
                 stroke="#F3D42F"
-                strokeLinecap="butt"
+                strokeLinecap="round"
                 strokeWidth={strokeWidth}
               />
 
@@ -373,7 +371,7 @@ function MetricsCardsComponent({
                 d={darkOrangeArc}
                 fill="none"
                 stroke="#EA8C00"
-                strokeLinecap="butt"
+                strokeLinecap="round"
                 strokeWidth={strokeWidth}
               />
 
@@ -382,22 +380,8 @@ function MetricsCardsComponent({
                 d={redArc}
                 fill="none"
                 stroke="#EA3943"
-                strokeLinecap="butt"
+                strokeLinecap="round"
                 strokeWidth={strokeWidth}
-              />
-
-              {/* Rounded caps at the extremities */}
-              <circle
-                cx={centerX + radius * Math.cos((-180 * Math.PI) / 180)}
-                cy={centerY + radius * Math.sin((-180 * Math.PI) / 180)}
-                fill="#16C784"
-                r={strokeWidth / 2}
-              />
-              <circle
-                cx={centerX + radius * Math.cos((0 * Math.PI) / 180)}
-                cy={centerY + radius * Math.sin((0 * Math.PI) / 180)}
-                fill="#EA3943"
-                r={strokeWidth / 2}
               />
 
               {/* Pointer */}
@@ -405,15 +389,15 @@ function MetricsCardsComponent({
                 cx={pointerX}
                 cy={pointerY}
                 fill="none"
-                r="6"
+                r="7"
                 stroke={getZoneColor()}
-                strokeWidth="3"
+                strokeWidth="4"
               />
               <circle
                 className="fill-white dark:fill-gray-900"
                 cx={pointerX}
                 cy={pointerY}
-                r="4"
+                r="5"
               />
 
               {/* Value text - smaller size */}
