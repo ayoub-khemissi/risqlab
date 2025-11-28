@@ -29,7 +29,7 @@ import {
 type Period = "7d" | "30d" | "90d" | "all";
 
 export default function PortfolioRiskPage() {
-  const [selectedPeriod, setSelectedPeriod] = useState<Period>("30d");
+  const [selectedPeriod, setSelectedPeriod] = useState<Period>("90d");
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
