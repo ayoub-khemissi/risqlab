@@ -25,6 +25,7 @@ import {
   VolatilityChart,
   RiskContributorsTable,
   VolatilityDistribution,
+  CorrelationCard,
 } from "@/components/portfolio-risk";
 
 type Period = "7d" | "30d" | "90d" | "all";
@@ -230,10 +231,20 @@ export default function PortfolioRiskPage() {
           </CardBody>
         </Card>
 
+        {/* Correlation */}
+        <Card>
+          <CardBody className="p-6">
+            <CorrelationCard constituents={constituentsData} />
+          </CardBody>
+        </Card>
+
         {/* Portfolio Info */}
         <Card>
           <CardBody className="p-6">
-            <h3 className="font-semibold mb-4">Portfolio Details</h3>
+            <div className="flex items-center gap-2 mb-4">
+              <Info className="text-primary" size={20} />
+              <h3 className="font-semibold">Portfolio Details</h3>
+            </div>
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-sm text-default-500">Constituents</span>

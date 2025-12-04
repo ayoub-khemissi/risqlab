@@ -7,7 +7,58 @@ import {
   VolatilityPeriod,
   DiversificationBenefit,
   RiskContribution,
+  CorrelationResponse,
 } from "@/types/volatility";
+
+/**
+ * Hook to fetch correlation between two cryptocurrencies
+ * @param symbol1 - First crypto symbol
+ * @param symbol2 - Second crypto symbol
+ * @param period - Time period for historical data
+ * @returns Correlation data, loading state, and error
+ */
+export function useCorrelation(
+  symbol1: string,
+  symbol2: string,
+  period: VolatilityPeriod = "90d",
+) {
+  const [data, setData] = useState<CorrelationResponse["data"] | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (!symbol1 || !symbol2) return;
+
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/volatility/correlation?symbol1=${symbol1}&symbol2=${symbol2}&period=${period}`,
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch correlation data");
+        }
+
+        const result: CorrelationResponse = await response.json();
+
+        setData(result.data);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err : new Error("Unknown error occurred"),
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [symbol1, symbol2, period]);
+
+  return { data, isLoading, error };
+}
 
 /**
  * Hook to fetch portfolio volatility data

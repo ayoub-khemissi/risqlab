@@ -7,6 +7,7 @@ import './routes/metrics.js';
 import './routes/indexDetails.js';
 import './routes/cryptoDetail.js';
 import './routes/volatility.js';
+import './routes/correlation.js';
 
 // eslint-disable-next-line
 api.use((err, req, res, next) => {

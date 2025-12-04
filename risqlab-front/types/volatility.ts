@@ -118,3 +118,17 @@ export interface RiskContribution extends PortfolioVolatilityConstituent {
   riskContribution: number; // weight × volatility
   riskContributionPercentage: number; // % of total risk
 }
+
+/**
+ * API Response for Correlation
+ */
+export interface CorrelationResponse {
+  data: {
+    correlation: number;
+    symbol1: string;
+    symbol2: string;
+    period: string;
+    dataPoints: number;
+    msg?: string;
+  };
+}
