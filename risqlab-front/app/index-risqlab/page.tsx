@@ -122,6 +122,15 @@ export default function IndexPage() {
   const { current, historicalValues, history, constituents } = data;
   const isAbove100 = current && current.index_level >= 100;
 
+  // Calculate percentage change from current value
+  const calculateChange = (historicalValue: number | null) => {
+    if (!historicalValue || !current) return null;
+    const change =
+      ((current.index_level - historicalValue) / historicalValue) * 100;
+
+    return change;
+  };
+
   return (
     <BinancePricesProvider symbols={symbols}>
       <section className="flex flex-col gap-6">
@@ -180,35 +189,119 @@ export default function IndexPage() {
                       Historical Values
                     </h3>
                     <div className="flex flex-col gap-2">
-                      <div className="flex justify-between">
+                      <div className="flex justify-between items-center">
                         <span className="text-sm text-default-500">
                           Yesterday
                         </span>
-                        <span className="text-sm font-medium">
-                          {historicalValues.yesterday
-                            ? historicalValues.yesterday.toFixed(2)
-                            : "N/A"}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {historicalValues.yesterday &&
+                            calculateChange(historicalValues.yesterday) !==
+                              null && (
+                              <Chip
+                                color={
+                                  calculateChange(historicalValues.yesterday)! >
+                                  0
+                                    ? "success"
+                                    : "danger"
+                                }
+                                size="sm"
+                                startContent={
+                                  calculateChange(historicalValues.yesterday)! >
+                                  0 ? (
+                                    <TrendingUp size={12} />
+                                  ) : (
+                                    <TrendingDown size={12} />
+                                  )
+                                }
+                                variant="flat"
+                              >
+                                {formatPercentage(
+                                  calculateChange(historicalValues.yesterday)!,
+                                )}
+                              </Chip>
+                            )}
+                          <span className="text-sm font-medium">
+                            {historicalValues.yesterday
+                              ? historicalValues.yesterday.toFixed(2)
+                              : "N/A"}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between items-center">
                         <span className="text-sm text-default-500">
                           Last Week
                         </span>
-                        <span className="text-sm font-medium">
-                          {historicalValues.lastWeek
-                            ? historicalValues.lastWeek.toFixed(2)
-                            : "N/A"}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {historicalValues.lastWeek &&
+                            calculateChange(historicalValues.lastWeek) !==
+                              null && (
+                              <Chip
+                                color={
+                                  calculateChange(historicalValues.lastWeek)! >
+                                  0
+                                    ? "success"
+                                    : "danger"
+                                }
+                                size="sm"
+                                startContent={
+                                  calculateChange(historicalValues.lastWeek)! >
+                                  0 ? (
+                                    <TrendingUp size={12} />
+                                  ) : (
+                                    <TrendingDown size={12} />
+                                  )
+                                }
+                                variant="flat"
+                              >
+                                {formatPercentage(
+                                  calculateChange(historicalValues.lastWeek)!,
+                                )}
+                              </Chip>
+                            )}
+                          <span className="text-sm font-medium">
+                            {historicalValues.lastWeek
+                              ? historicalValues.lastWeek.toFixed(2)
+                              : "N/A"}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between items-center">
                         <span className="text-sm text-default-500">
                           Last Month
                         </span>
-                        <span className="text-sm font-medium">
-                          {historicalValues.lastMonth
-                            ? historicalValues.lastMonth.toFixed(2)
-                            : "N/A"}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {historicalValues.lastMonth &&
+                            calculateChange(historicalValues.lastMonth) !==
+                              null && (
+                              <Chip
+                                color={
+                                  calculateChange(historicalValues.lastMonth)! >
+                                  0
+                                    ? "success"
+                                    : "danger"
+                                }
+                                size="sm"
+                                startContent={
+                                  calculateChange(historicalValues.lastMonth)! >
+                                  0 ? (
+                                    <TrendingUp size={12} />
+                                  ) : (
+                                    <TrendingDown size={12} />
+                                  )
+                                }
+                                variant="flat"
+                              >
+                                {formatPercentage(
+                                  calculateChange(historicalValues.lastMonth)!,
+                                )}
+                              </Chip>
+                            )}
+                          <span className="text-sm font-medium">
+                            {historicalValues.lastMonth
+                              ? historicalValues.lastMonth.toFixed(2)
+                              : "N/A"}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
