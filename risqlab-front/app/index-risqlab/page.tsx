@@ -20,6 +20,7 @@ import { IndexDetailsResponse } from "@/types/index-details";
 import { formatPercentage } from "@/lib/formatters";
 import { ConstituentsTable } from "@/components/constituents-table";
 import { TopConstituentsChart } from "@/components/top-constituents-chart";
+import { PageLoader } from "@/components/page-loader";
 import { title } from "@/components/primitives";
 import { BinancePricesProvider } from "@/contexts/BinancePricesContext";
 import { API_BASE_URL } from "@/config/constants";
@@ -97,11 +98,7 @@ export default function IndexPage() {
   );
 
   if (isInitialLoading || !data) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
+    return <PageLoader message="Loading index data..." />;
   }
 
   const { current, historicalValues, history, constituents } = data;

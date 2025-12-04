@@ -10,6 +10,7 @@ import clsx from "clsx";
 import { Select, SelectItem } from "@heroui/select";
 
 import { title } from "@/components/primitives";
+import { PageLoader } from "@/components/page-loader";
 import {
   usePortfolioVolatility,
   usePortfolioConstituentsVolatility,
@@ -126,11 +127,7 @@ export default function PortfolioRiskPage() {
 
   // Loading state (only show full-page loader on initial load)
   if (isInitialLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading portfolio risk data...</div>
-      </div>
-    );
+    return <PageLoader message="Loading portfolio risk data..." />;
   }
 
   // Error state

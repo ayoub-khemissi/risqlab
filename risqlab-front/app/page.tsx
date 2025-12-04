@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { title } from "@/components/primitives";
 import { CryptoTable } from "@/components/crypto-table";
 import { MetricsCards } from "@/components/metrics-cards";
+import { PageLoader } from "@/components/page-loader";
 import { Cryptocurrency, CryptocurrencyResponse } from "@/types/cryptocurrency";
 import { MetricsResponse } from "@/types/metrics";
 import { PortfolioVolatilityResponse } from "@/types/volatility";
@@ -14,6 +15,7 @@ import { API_BASE_URL } from "@/config/constants";
 export default function Home() {
   const [data, setData] = useState<Cryptocurrency[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -74,6 +76,7 @@ export default function Home() {
       setTotalPages(result.pagination.totalPages);
     } finally {
       setIsLoading(false);
+      setIsInitialLoading(false);
     }
   };
 
@@ -126,6 +129,10 @@ export default function Home() {
       setSortOrder("desc");
     }
   };
+
+  if (isInitialLoading) {
+    return <PageLoader message="Loading market data..." />;
+  }
 
   return (
     <BinancePricesProvider symbols={symbols}>
