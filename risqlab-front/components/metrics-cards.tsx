@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useMemo, memo } from "react";
+import React, { useMemo, memo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardBody } from "@heroui/card";
+import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { Tooltip } from "@heroui/tooltip";
 import { TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
@@ -132,6 +133,9 @@ function MetricsCardsComponent({
   volatilityData,
 }: MetricsCardsProps) {
   const router = useRouter();
+  const [volatilityMode, setVolatilityMode] = useState<"annualized" | "daily">(
+    "annualized",
+  );
 
   const renderFearGreedGauge = (value: number) => {
     const width = 144;
@@ -253,9 +257,14 @@ function MetricsCardsComponent({
   };
 
   const renderVolatilityGauge = (
-    volatilityPercent: number,
+    annualizedVolatility: number,
+    dailyVolatility: number,
     windowDays: number,
   ) => {
+    const volatilityPercent =
+      volatilityMode === "annualized"
+        ? annualizedVolatility * 100
+        : dailyVolatility * 100;
     const width = 144;
     const height = 80;
     const radius = 59;
@@ -263,29 +272,48 @@ function MetricsCardsComponent({
     const centerY = height - 12;
     const strokeWidth = 6;
 
-    // Calculate position based on volatility percentage (0-30% mapped to 0-100 on gauge)
-    // Cap at 30% for display purposes
-    const cappedVolatility = Math.min(volatilityPercent, 30);
-    const gaugeValue = (cappedVolatility / 30) * 100;
+    // Calculate position based on volatility percentage
+    // For annualized: 0-30% mapped to 0-100 on gauge
+    // For daily: 0-2% mapped to 0-100 on gauge
+    const maxValue = volatilityMode === "annualized" ? 30 : 2;
+    const cappedVolatility = Math.min(volatilityPercent, maxValue);
+    const gaugeValue = (cappedVolatility / maxValue) * 100;
 
     const angle = ((gaugeValue / 100) * 180 - 180) * (Math.PI / 180);
     const pointerX = centerX + radius * Math.cos(angle);
     const pointerY = centerY + radius * Math.sin(angle);
 
     const getZoneColor = () => {
-      if (volatilityPercent < 5) return "#16C784"; // Green
-      if (volatilityPercent < 10) return "#F3D42F"; // Light orange
-      if (volatilityPercent < 20) return "#EA8C00"; // Dark orange
+      if (volatilityMode === "annualized") {
+        if (volatilityPercent < 5) return "#16C784"; // Green
+        if (volatilityPercent < 10) return "#F3D42F"; // Light orange
+        if (volatilityPercent < 20) return "#EA8C00"; // Dark orange
 
-      return "#EA3943"; // Red
+        return "#EA3943"; // Red
+      } else {
+        // Daily thresholds (approximately annualized / sqrt(256))
+        if (volatilityPercent < 0.3) return "#16C784"; // Green
+        if (volatilityPercent < 0.6) return "#F3D42F"; // Light orange
+        if (volatilityPercent < 1.2) return "#EA8C00"; // Dark orange
+
+        return "#EA3943"; // Red
+      }
     };
 
     const getLabel = () => {
-      if (volatilityPercent < 5) return "Low";
-      if (volatilityPercent < 10) return "Moderate";
-      if (volatilityPercent < 20) return "High";
+      if (volatilityMode === "annualized") {
+        if (volatilityPercent < 5) return "Low";
+        if (volatilityPercent < 10) return "Moderate";
+        if (volatilityPercent < 20) return "High";
 
-      return "Very High";
+        return "Very High";
+      } else {
+        if (volatilityPercent < 0.3) return "Low";
+        if (volatilityPercent < 0.6) return "Moderate";
+        if (volatilityPercent < 1.2) return "High";
+
+        return "Very High";
+      }
     };
 
     // Helper function to create arc path
@@ -305,124 +333,156 @@ function MetricsCardsComponent({
 
     // Divide 180° arc into 4 zones with gaps
     // Gap size approx 8 degrees (4 degrees on each side of boundary) to account for rounded caps
-    // Boundaries: -150, -120, -60
 
-    const greenArc = createArc(-180, -154); // 0-5% zone
-    const lightOrangeArc = createArc(-146, -124); // 5-10% zone
-    const darkOrangeArc = createArc(-116, -64); // 10-20% zone
-    const redArc = createArc(-56, 0); // 20-30% zone
+    let greenArc, lightOrangeArc, darkOrangeArc, redArc;
+
+    if (volatilityMode === "annualized") {
+      // Annualized thresholds: 0-5%, 5-10%, 10-20%, 20-30%
+      greenArc = createArc(-180, -154); // 0-5% zone
+      lightOrangeArc = createArc(-146, -124); // 5-10% zone
+      darkOrangeArc = createArc(-116, -64); // 10-20% zone
+      redArc = createArc(-56, 0); // 20-30% zone
+    } else {
+      // Daily thresholds: 0-0.3%, 0.3-0.6%, 0.6-1.2%, 1.2-2%
+      // Mapped to gauge: 0-15%, 15-30%, 30-60%, 60-100%
+      greenArc = createArc(-180, -153); // 0-15% of gauge (0-0.3% daily)
+      lightOrangeArc = createArc(-145, -126); // 15-30% of gauge (0.3-0.6% daily)
+      darkOrangeArc = createArc(-118, -72); // 30-60% of gauge (0.6-1.2% daily)
+      redArc = createArc(-64, 0); // 60-100% of gauge (1.2-2% daily)
+    }
 
     return (
-      <Card
-        isPressable
-        className="cursor-pointer hover:scale-[1.02] transition-transform"
-        onPress={() => router.push("/portfolio-risk")}
-      >
+      <Card className="hover:scale-[1.02] transition-transform">
         <CardBody className="p-4">
-          <div className="flex flex-col items-center gap-2">
-            <div className="flex items-center gap-1 self-start">
-              <span className="text-sm text-default-500">
-                Volatility ({windowDays}d)
-              </span>
-              {windowDays < 90 && (
-                <Tooltip
-                  content={
-                    <div className="px-1 py-2 max-w-xs">
-                      <div className="text-small font-bold">
-                        Limited Historical Data
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                <span className="text-sm text-default-500">
+                  Volatility ({windowDays}d)
+                </span>
+                {windowDays < 90 && (
+                  <Tooltip
+                    content={
+                      <div className="px-1 py-2 max-w-xs">
+                        <div className="text-small font-bold">
+                          Limited Historical Data
+                        </div>
+                        <div className="text-tiny">
+                          Currently based on {windowDays} days. Full accuracy
+                          requires 90 days of data.
+                        </div>
                       </div>
-                      <div className="text-tiny">
-                        Currently based on {windowDays} days. Full accuracy
-                        requires 90 days of data.
-                      </div>
-                    </div>
+                    }
+                    placement="right"
+                  >
+                    <AlertCircle className="text-warning" size={14} />
+                  </Tooltip>
+                )}
+              </div>
+              <div className="flex gap-1">
+                <Button
+                  size="sm"
+                  variant={
+                    volatilityMode === "annualized" ? "solid" : "bordered"
                   }
-                  placement="right"
+                  onPress={() => setVolatilityMode("annualized")}
                 >
-                  <AlertCircle className="text-warning" size={14} />
-                </Tooltip>
-              )}
+                  Annual
+                </Button>
+                <Button
+                  size="sm"
+                  variant={volatilityMode === "daily" ? "solid" : "bordered"}
+                  onPress={() => setVolatilityMode("daily")}
+                >
+                  Daily
+                </Button>
+              </div>
             </div>
-            <svg
-              height={height}
-              viewBox={`0 0 ${width} ${height}`}
-              width={width}
+            <button
+              className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => router.push("/portfolio-risk")}
             >
-              {/* Green zone: 0-5% */}
-              <path
-                d={greenArc}
-                fill="none"
-                stroke="#16C784"
-                strokeLinecap="round"
-                strokeWidth={strokeWidth}
-              />
-
-              {/* Light orange zone: 5-10% */}
-              <path
-                d={lightOrangeArc}
-                fill="none"
-                stroke="#F3D42F"
-                strokeLinecap="round"
-                strokeWidth={strokeWidth}
-              />
-
-              {/* Dark orange zone: 10-20% */}
-              <path
-                d={darkOrangeArc}
-                fill="none"
-                stroke="#EA8C00"
-                strokeLinecap="round"
-                strokeWidth={strokeWidth}
-              />
-
-              {/* Red zone: 20-30% */}
-              <path
-                d={redArc}
-                fill="none"
-                stroke="#EA3943"
-                strokeLinecap="round"
-                strokeWidth={strokeWidth}
-              />
-
-              {/* Pointer */}
-              <circle
-                cx={pointerX}
-                cy={pointerY}
-                fill="none"
-                r="7"
-                stroke={getZoneColor()}
-                strokeWidth="4"
-              />
-              <circle
-                className="fill-white dark:fill-gray-900"
-                cx={pointerX}
-                cy={pointerY}
-                r="5"
-              />
-
-              {/* Value text - smaller size */}
-              <text
-                className="fill-gray-900 dark:fill-white"
-                fontSize="20"
-                fontWeight="bold"
-                textAnchor="middle"
-                x={centerX}
-                y="54"
+              <svg
+                height={height}
+                viewBox={`0 0 ${width} ${height}`}
+                width={width}
               >
-                {volatilityPercent.toFixed(1)}%
-              </text>
-              {/* Label text */}
-              <text
-                className="fill-gray-600 dark:fill-gray-300"
-                fontSize="11"
-                fontWeight="500"
-                textAnchor="middle"
-                x={centerX}
-                y="69"
-              >
-                {getLabel()}
-              </text>
-            </svg>
+                {/* Green zone: 0-5% */}
+                <path
+                  d={greenArc}
+                  fill="none"
+                  stroke="#16C784"
+                  strokeLinecap="round"
+                  strokeWidth={strokeWidth}
+                />
+
+                {/* Light orange zone: 5-10% */}
+                <path
+                  d={lightOrangeArc}
+                  fill="none"
+                  stroke="#F3D42F"
+                  strokeLinecap="round"
+                  strokeWidth={strokeWidth}
+                />
+
+                {/* Dark orange zone: 10-20% */}
+                <path
+                  d={darkOrangeArc}
+                  fill="none"
+                  stroke="#EA8C00"
+                  strokeLinecap="round"
+                  strokeWidth={strokeWidth}
+                />
+
+                {/* Red zone: 20-30% */}
+                <path
+                  d={redArc}
+                  fill="none"
+                  stroke="#EA3943"
+                  strokeLinecap="round"
+                  strokeWidth={strokeWidth}
+                />
+
+                {/* Pointer */}
+                <circle
+                  cx={pointerX}
+                  cy={pointerY}
+                  fill="none"
+                  r="7"
+                  stroke={getZoneColor()}
+                  strokeWidth="4"
+                />
+                <circle
+                  className="fill-white dark:fill-gray-900"
+                  cx={pointerX}
+                  cy={pointerY}
+                  r="5"
+                />
+
+                {/* Value text - smaller size */}
+                <text
+                  className="fill-gray-900 dark:fill-white"
+                  fontSize="20"
+                  fontWeight="bold"
+                  textAnchor="middle"
+                  x={centerX}
+                  y="54"
+                >
+                  {volatilityPercent.toFixed(2)}%
+                </text>
+                {/* Label text */}
+                <text
+                  className="fill-gray-600 dark:fill-gray-300"
+                  fontSize="11"
+                  fontWeight="500"
+                  textAnchor="middle"
+                  x={centerX}
+                  y="69"
+                >
+                  {getLabel()}
+                </text>
+              </svg>
+            </button>
           </div>
         </CardBody>
       </Card>
@@ -584,7 +644,8 @@ function MetricsCardsComponent({
 
         {volatilityData?.current &&
           renderVolatilityGauge(
-            volatilityData.current.annualized_volatility * 100,
+            volatilityData.current.annualized_volatility,
+            volatilityData.current.daily_volatility,
             volatilityData.current.window_days,
           )}
       </div>
