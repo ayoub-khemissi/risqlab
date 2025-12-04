@@ -2,6 +2,7 @@
 
 import { useMemo, memo, useState, useEffect } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { useRouter } from "next/navigation";
 
 import { IndexConstituent } from "@/types/index-details";
 
@@ -30,6 +31,7 @@ function TopConstituentsChartComponent({
   constituents,
 }: TopConstituentsChartProps) {
   const [isMobile, setIsMobile] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const checkMobile = () => {
@@ -41,6 +43,12 @@ function TopConstituentsChartComponent({
 
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  const handleClick = (symbol: string) => {
+    if (symbol !== "Others") {
+      router.push(`/crypto/${symbol}`);
+    }
+  };
 
   const chartData = useMemo(() => {
     if (!constituents || constituents.length === 0) return [];
@@ -161,11 +169,15 @@ function TopConstituentsChartComponent({
               labelLine={false}
               outerRadius={outerRadius}
               stroke="none"
+              onClick={(data) => handleClick(data.name)}
             >
               {chartData.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
                   fill={COLORS[index % COLORS.length]}
+                  style={{
+                    cursor: entry.name !== "Others" ? "pointer" : "default",
+                  }}
                 />
               ))}
             </Pie>
@@ -201,20 +213,37 @@ function TopConstituentsChartComponent({
       <div className="w-full lg:w-1/2">
         <ul className="flex flex-col gap-3">
           {chartData.map((entry, index) => (
-            <li
-              key={`legend-${index}`}
-              className="flex items-center justify-between gap-4"
-            >
-              <div className="flex items-center gap-2">
-                <span
-                  className="w-3 h-3 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                />
-                <span className="text-sm font-medium">{entry.name}</span>
-              </div>
-              <span className="text-sm text-default-500">
-                {entry.displayValue}
-              </span>
+            <li key={`legend-${index}`}>
+              {entry.name !== "Others" ? (
+                <button
+                  className="flex items-center justify-between gap-4 w-full cursor-pointer hover:bg-default-100 rounded-lg p-2 transition-colors text-left"
+                  onClick={() => handleClick(entry.name)}
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                    />
+                    <span className="text-sm font-medium">{entry.name}</span>
+                  </div>
+                  <span className="text-sm text-default-500">
+                    {entry.displayValue}
+                  </span>
+                </button>
+              ) : (
+                <div className="flex items-center justify-between gap-4 p-2">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                    />
+                    <span className="text-sm font-medium">{entry.name}</span>
+                  </div>
+                  <span className="text-sm text-default-500">
+                    {entry.displayValue}
+                  </span>
+                </div>
+              )}
             </li>
           ))}
         </ul>
