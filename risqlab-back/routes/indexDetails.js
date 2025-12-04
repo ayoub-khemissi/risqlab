@@ -26,7 +26,16 @@ api.get('/index-details', async (req, res) => {
         ih.index_level,
         ih.timestamp,
         ih.total_market_cap_usd,
-        ih.number_of_constituents
+        ih.number_of_constituents,
+        (
+          SELECT ih2.index_level
+          FROM index_history ih2
+          INNER JOIN index_config ic2 ON ih2.index_config_id = ic2.id
+          WHERE ic2.index_name = 'RisqLab 80'
+            AND ih2.timestamp <= DATE_SUB(ih.timestamp, INTERVAL 1 DAY)
+          ORDER BY ih2.timestamp DESC
+          LIMIT 1
+        ) as previous_level_24h
       FROM index_history ih
       INNER JOIN index_config ic ON ih.index_config_id = ic.id
       WHERE ic.index_name = 'RisqLab 80'
@@ -110,8 +119,8 @@ api.get('/index-details', async (req, res) => {
       lastMonth: lastMonthIndex[0]?.index_level || null
     };
 
-    const percent_change_24h = current && historicalValues.yesterday
-      ? ((current.index_level - historicalValues.yesterday) / historicalValues.yesterday * 100)
+    const percent_change_24h = current && current.previous_level_24h
+      ? ((current.index_level - current.previous_level_24h) / current.previous_level_24h * 100)
       : 0;
 
     res.json({
