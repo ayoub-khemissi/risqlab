@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import { Info, Activity, AlertTriangle } from "lucide-react";
+import { Info, Activity, AlertTriangle, X } from "lucide-react";
 import Link from "next/link";
 import clsx from "clsx";
 import { Select, SelectItem } from "@heroui/select";
@@ -29,6 +29,7 @@ import {
   CorrelationCard,
 } from "@/components/portfolio-risk";
 import { useCryptoVolatility } from "@/hooks/useCryptoVolatility";
+import { storage } from "@/lib/localStorage";
 
 type Period = "7d" | "30d" | "90d" | "all";
 
@@ -42,6 +43,8 @@ export default function PortfolioRiskPage() {
   >([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [warningDismissed, setWarningDismissed] = useState(false);
+  const [warningFading, setWarningFading] = useState(false);
 
   // Fetch portfolio volatility data
   const {
@@ -76,6 +79,15 @@ export default function PortfolioRiskPage() {
     window.addEventListener("resize", checkMobile);
 
     return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Load warning dismissed state from localStorage
+  useEffect(() => {
+    const dismissed = storage.get("PORTFOLIO_RISK_WARNING_DISMISSED");
+
+    if (dismissed === "true") {
+      setWarningDismissed(true);
+    }
   }, []);
 
   // Remove hash from URL on initial load to prevent auto-scroll on data updates
@@ -177,26 +189,45 @@ export default function PortfolioRiskPage() {
       </div>
 
       {/* Warning for insufficient data */}
-      {current.window_days < 90 && (
-        <Card className="bg-warning/10 border border-warning">
+      {current.window_days < 90 && !warningDismissed && (
+        <Card
+          className={`bg-warning/10 border border-warning transition-opacity duration-300 ${warningFading ? "opacity-0" : "opacity-100"}`}
+        >
           <CardBody className="p-4">
-            <div className="flex items-start gap-3">
-              <AlertTriangle
-                className="text-warning mt-0.5 flex-shrink-0"
-                size={20}
-              />
-              <div>
-                <h3 className="font-semibold text-warning mb-1">
-                  Limited Historical Data
-                </h3>
-                <p className="text-sm text-default-700">
-                  The portfolio volatility calculations are currently based on{" "}
-                  <strong>{current.window_days} days</strong> of historical
-                  data. For optimal statistical accuracy, we recommend at least{" "}
-                  <strong>90 days</strong> of data. Results may be less reliable
-                  until sufficient historical data is available.
-                </p>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3 flex-1">
+                <AlertTriangle
+                  className="text-warning mt-0.5 flex-shrink-0"
+                  size={20}
+                />
+                <div>
+                  <h3 className="font-semibold text-warning mb-1">
+                    Limited Historical Data
+                  </h3>
+                  <p className="text-sm text-default-700">
+                    The portfolio volatility calculations are currently based on{" "}
+                    <strong>{current.window_days} days</strong> of historical
+                    data. For optimal statistical accuracy, we recommend at
+                    least <strong>90 days</strong> of data. Results may be less
+                    reliable until sufficient historical data is available.
+                  </p>
+                </div>
               </div>
+              <Button
+                isIconOnly
+                className="flex-shrink-0"
+                size="sm"
+                variant="light"
+                onPress={() => {
+                  setWarningFading(true);
+                  setTimeout(() => {
+                    setWarningDismissed(true);
+                    storage.set("PORTFOLIO_RISK_WARNING_DISMISSED", "true");
+                  }, 300); // Wait for fade-out animation to complete
+                }}
+              >
+                <X className="text-warning" size={18} />
+              </Button>
             </div>
           </CardBody>
         </Card>
