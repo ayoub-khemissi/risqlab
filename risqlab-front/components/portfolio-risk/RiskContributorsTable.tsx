@@ -10,6 +10,7 @@ import {
   TableRow,
   TableCell,
 } from "@heroui/table";
+import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Image } from "@heroui/image";
 import { Search } from "lucide-react";
@@ -38,6 +39,9 @@ export function RiskContributorsTable({
   const [searchTerm, setSearchTerm] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("risk");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [volatilityMode, setVolatilityMode] = useState<"annualized" | "daily">(
+    "annualized",
+  );
 
   // Filter and sort data
   const filteredAndSortedData = useMemo(() => {
@@ -62,8 +66,14 @@ export function RiskContributorsTable({
           bValue = b.weight;
           break;
         case "volatility":
-          aValue = a.annualized_volatility;
-          bValue = b.annualized_volatility;
+          aValue =
+            volatilityMode === "annualized"
+              ? a.annualized_volatility
+              : a.daily_volatility;
+          bValue =
+            volatilityMode === "annualized"
+              ? b.annualized_volatility
+              : b.daily_volatility;
           break;
         case "risk":
           aValue = a.riskContribution;
@@ -77,7 +87,7 @@ export function RiskContributorsTable({
     });
 
     return filtered;
-  }, [contributors, searchTerm, sortKey, sortOrder]);
+  }, [contributors, searchTerm, sortKey, sortOrder, volatilityMode]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -90,18 +100,39 @@ export function RiskContributorsTable({
 
   return (
     <div className="space-y-4">
-      {/* Search */}
-      <Input
-        isClearable
-        placeholder="Search by symbol or name..."
-        startContent={<Search size={18} />}
-        value={searchTerm}
-        onClear={() => setSearchTerm("")}
-        onValueChange={setSearchTerm}
-      />
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        {/* Search */}
+        <Input
+          isClearable
+          className="w-full sm:max-w-xs"
+          placeholder="Search by symbol or name..."
+          startContent={<Search size={18} />}
+          value={searchTerm}
+          onClear={() => setSearchTerm("")}
+          onValueChange={setSearchTerm}
+        />
+
+        {/* Volatility Toggle */}
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant={volatilityMode === "annualized" ? "solid" : "bordered"}
+            onPress={() => setVolatilityMode("annualized")}
+          >
+            Annualized
+          </Button>
+          <Button
+            size="sm"
+            variant={volatilityMode === "daily" ? "solid" : "bordered"}
+            onPress={() => setVolatilityMode("daily")}
+          >
+            Daily
+          </Button>
+        </div>
+      </div>
 
       {/* Table */}
-      <Table aria-label="Risk contributors table">
+      <Table key={volatilityMode} aria-label="Risk contributors table">
         <TableHeader>
           <TableColumn
             key="rank"
@@ -133,7 +164,7 @@ export function RiskContributorsTable({
             className="cursor-pointer text-right"
             onClick={() => handleSort("volatility")}
           >
-            VOLATILITY
+            VOLATILITY ({volatilityMode === "annualized" ? "ANNUAL" : "DAILY"})
           </TableColumn>
           <TableColumn
             key="risk"
@@ -182,16 +213,25 @@ export function RiskContributorsTable({
               </TableCell>
               <TableCell>
                 <div className="flex justify-end">
-                  <VolatilityBadge value={item.annualized_volatility} />
+                  <VolatilityBadge
+                    type={
+                      volatilityMode === "annualized" ? "annualized" : "daily"
+                    }
+                    value={
+                      volatilityMode === "annualized"
+                        ? item.annualized_volatility
+                        : item.daily_volatility
+                    }
+                  />
                 </div>
               </TableCell>
               <TableCell>
                 <div className="text-right">
                   <p className="font-semibold text-primary">
-                    {(item.riskContribution * 100).toFixed(2)}%
+                    {item.riskContributionPercentage.toFixed(1)}%
                   </p>
                   <p className="text-xs text-default-500">
-                    {item.riskContributionPercentage.toFixed(1)}% of total
+                    {(item.riskContribution * 100).toFixed(2)}% gross
                   </p>
                 </div>
               </TableCell>

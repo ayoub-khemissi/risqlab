@@ -11,6 +11,10 @@ interface VolatilityBadgeProps {
    */
   value: number;
   /**
+   * Type of volatility
+   */
+  type?: "annualized" | "daily";
+  /**
    * Display format
    */
   format?: "percentage" | "decimal";
@@ -33,17 +37,23 @@ interface VolatilityBadgeProps {
  */
 export function VolatilityBadge({
   value,
+  type = "annualized",
   format = "percentage",
   size = "sm",
   showRiskLevel = false,
   variant = "flat",
 }: VolatilityBadgeProps) {
-  const riskLevel = getRiskLevel(value);
+  // Calculate risk level based on annualized value
+  // If daily, approximate annualized for color coding: daily * sqrt(365) ~ daily * 19.1
+  const annualizedValue = type === "daily" ? value * 19.1 : value;
+  const riskLevel = getRiskLevel(annualizedValue);
   const color = getRiskLevelColor(riskLevel);
 
   // Format the value
   const displayValue =
-    format === "percentage" ? `${(value * 100).toFixed(2)}%` : value.toFixed(4);
+    format === "percentage"
+      ? `${(value * 100).toFixed(type === "daily" ? 3 : 2)}%`
+      : value.toFixed(4);
 
   // Get risk level label
   const riskLabelMap = {
