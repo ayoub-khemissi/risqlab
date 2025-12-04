@@ -7,6 +7,7 @@ import { Chip } from "@heroui/chip";
 import { Info, Activity, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import clsx from "clsx";
+import { Select, SelectItem } from "@heroui/select";
 
 import { title } from "@/components/primitives";
 import {
@@ -27,11 +28,18 @@ import {
   VolatilityDistribution,
   CorrelationCard,
 } from "@/components/portfolio-risk";
+import { useCryptoVolatility } from "@/hooks/useCryptoVolatility";
 
 type Period = "7d" | "30d" | "90d" | "all";
 
 export default function PortfolioRiskPage() {
   const [selectedPeriod, setSelectedPeriod] = useState<Period>("90d");
+  const [volatilityMode, setVolatilityMode] = useState<"annualized" | "daily">(
+    "annualized",
+  );
+  const [selectedComparisonCryptos, setSelectedComparisonCryptos] = useState<
+    string[]
+  >([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -48,6 +56,10 @@ export default function PortfolioRiskPage() {
     isLoading: constituentsLoading,
     error: constituentsError,
   } = usePortfolioConstituentsVolatility();
+
+  // Fetch comparison data
+  const { data: comparisonData, isLoading: comparisonLoading } =
+    useCryptoVolatility(selectedComparisonCryptos, selectedPeriod);
 
   // Update initial loading state
   if (isInitialLoading && !volatilityLoading && !constituentsLoading) {
@@ -276,27 +288,89 @@ export default function PortfolioRiskPage() {
       {/* Volatility Timeline Chart */}
       <Card>
         <CardBody className="p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-            <h2 className="text-lg font-semibold">Volatility Over Time</h2>
-            <div className="flex gap-2">
-              {(["7d", "30d", "90d", "all"] as Period[]).map((period) => (
+          <div className="flex flex-col gap-4 mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <h2 className="text-lg font-semibold">Volatility Over Time</h2>
+              <div className="flex gap-2">
+                {(["7d", "30d", "90d", "all"] as Period[]).map((period) => (
+                  <Button
+                    key={period}
+                    isDisabled={volatilityLoading}
+                    size="sm"
+                    variant={selectedPeriod === period ? "solid" : "bordered"}
+                    onPress={() => setSelectedPeriod(period)}
+                  >
+                    {period === "all" ? "All" : period.toUpperCase()}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+              <div className="flex gap-2">
                 <Button
-                  key={period}
-                  isDisabled={volatilityLoading}
                   size="sm"
-                  variant={selectedPeriod === period ? "solid" : "bordered"}
-                  onPress={() => setSelectedPeriod(period)}
+                  variant={
+                    volatilityMode === "annualized" ? "solid" : "bordered"
+                  }
+                  onPress={() => setVolatilityMode("annualized")}
                 >
-                  {period === "all" ? "All" : period.toUpperCase()}
+                  Annualized
                 </Button>
-              ))}
+                <Button
+                  size="sm"
+                  variant={volatilityMode === "daily" ? "solid" : "bordered"}
+                  onPress={() => setVolatilityMode("daily")}
+                >
+                  Daily
+                </Button>
+              </div>
+
+              <div className="w-full sm:w-72">
+                <Select
+                  aria-label="Compare with cryptocurrencies"
+                  isDisabled={!constituentsData}
+                  placeholder="Compare with..."
+                  selectedKeys={selectedComparisonCryptos}
+                  selectionMode="multiple"
+                  size="sm"
+                  onSelectionChange={(keys) => {
+                    const selected = Array.from(keys) as string[];
+
+                    if (selected.length <= 5) {
+                      setSelectedComparisonCryptos(selected);
+                    }
+                  }}
+                >
+                  {(constituentsData || []).map((c) => (
+                    <SelectItem key={c.symbol} textValue={c.symbol}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{c.symbol}</span>
+                        <span className="text-tiny text-default-400 truncate max-w-[100px]">
+                          {c.name}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </Select>
+                <p className="text-tiny text-default-400 mt-1 ml-1">
+                  Select up to 5 cryptocurrencies to compare
+                </p>
+              </div>
             </div>
           </div>
+
           <div
             className="h-64 md:h-96 transition-opacity"
-            style={{ opacity: volatilityLoading ? 0.5 : 1 }}
+            style={{
+              opacity: volatilityLoading || comparisonLoading ? 0.5 : 1,
+            }}
           >
-            <VolatilityChart data={history} />
+            <VolatilityChart
+              comparisonData={comparisonData}
+              data={history}
+              mode={volatilityMode}
+            />
           </div>
         </CardBody>
       </Card>
