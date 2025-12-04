@@ -150,7 +150,7 @@ function MetricsCardsComponent({
 
     const getZoneColor = () => {
       if (value < 25) return "#EA3943";
-      if (value < 45) return "#EA8C00";
+      if (value < 45) return "#EA580C";
       if (value < 55) return "#F3D42F";
       if (value < 75) return "#93D900";
 
@@ -188,7 +188,7 @@ function MetricsCardsComponent({
               <path
                 d="M 25.25491104204376 32.001435329825206 A 59 59 0 0 1 49.136580399325936 13.610074056278464"
                 fill="none"
-                stroke="#EA8C00"
+                stroke="#EA580C"
                 strokeLinecap="round"
                 strokeWidth="6"
               />
@@ -286,15 +286,15 @@ function MetricsCardsComponent({
     const getZoneColor = () => {
       if (volatilityMode === "annualized") {
         if (volatilityPercent < 5) return "#16C784"; // Green
-        if (volatilityPercent < 10) return "#F3D42F"; // Light orange
-        if (volatilityPercent < 20) return "#EA8C00"; // Dark orange
+        if (volatilityPercent < 10) return "#F3D42F"; // Yellow
+        if (volatilityPercent < 20) return "#EA580C"; // Orange
 
         return "#EA3943"; // Red
       } else {
         // Daily thresholds (approximately annualized / sqrt(256))
         if (volatilityPercent < 0.3) return "#16C784"; // Green
-        if (volatilityPercent < 0.6) return "#F3D42F"; // Light orange
-        if (volatilityPercent < 1.2) return "#EA8C00"; // Dark orange
+        if (volatilityPercent < 0.6) return "#F3D42F"; // Yellow
+        if (volatilityPercent < 1.2) return "#EA580C"; // Orange
 
         return "#EA3943"; // Red
       }
@@ -425,11 +425,11 @@ function MetricsCardsComponent({
                   strokeWidth={strokeWidth}
                 />
 
-                {/* Dark orange zone: 10-20% */}
+                {/* Orange zone: 10-20% */}
                 <path
                   d={darkOrangeArc}
                   fill="none"
-                  stroke="#EA8C00"
+                  stroke="#EA580C"
                   strokeLinecap="round"
                   strokeWidth={strokeWidth}
                 />

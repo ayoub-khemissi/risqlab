@@ -80,6 +80,14 @@ export default function VolatilityMethodologyPage() {
                 <Button
                   className="justify-start"
                   size="sm"
+                  variant={activeSection === "risk-levels" ? "flat" : "light"}
+                  onPress={() => scrollToSection("risk-levels")}
+                >
+                  Risk Levels
+                </Button>
+                <Button
+                  className="justify-start"
+                  size="sm"
                   variant={activeSection === "parameters" ? "flat" : "light"}
                   onPress={() => scrollToSection("parameters")}
                 >
@@ -260,6 +268,131 @@ export default function VolatilityMethodologyPage() {
                     consistency with traditional finance.
                   </p>
                 </div>
+              </div>
+            </CardBody>
+          </Card>
+
+          {/* Risk Levels Section */}
+          <Card id="risk-levels">
+            <CardBody className="p-8">
+              <h2 className="text-2xl font-bold mb-6 text-center sm:text-left">
+                Risk Level Classification
+              </h2>
+              <p className="text-default-600 mb-6">
+                We classify volatility into four risk levels based on annualized
+                volatility percentage. This classification provides an intuitive
+                way to understand and compare risk across different assets and
+                portfolios.
+              </p>
+
+              <div className="overflow-x-auto mb-6">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b-2 border-default-300">
+                      <th className="text-left py-3 px-4">Risk Level</th>
+                      <th className="text-left py-3 px-4">Volatility Range</th>
+                      <th className="text-left py-3 px-4">Color</th>
+                      <th className="text-left py-3 px-4">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-default-200">
+                      <td className="py-3 px-4">
+                        <Chip color="success" size="sm" variant="flat">
+                          Low Risk
+                        </Chip>
+                      </td>
+                      <td className="py-3 px-4 font-semibold">&lt; 5%</td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 rounded-full bg-success" />
+                          <span className="text-sm">Green</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-default-600">
+                        Stable and predictable returns
+                      </td>
+                    </tr>
+                    <tr className="border-b border-default-200">
+                      <td className="py-3 px-4">
+                        <Chip color="warning" size="sm" variant="flat">
+                          Medium Risk
+                        </Chip>
+                      </td>
+                      <td className="py-3 px-4 font-semibold">5% - 10%</td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 rounded-full bg-warning" />
+                          <span className="text-sm">Yellow</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-default-600">
+                        Moderate volatility with reasonable risk
+                      </td>
+                    </tr>
+                    <tr className="border-b border-default-200">
+                      <td className="py-3 px-4">
+                        <Chip
+                          className="bg-orange-600/10 text-orange-600"
+                          size="sm"
+                          variant="flat"
+                        >
+                          High Risk
+                        </Chip>
+                      </td>
+                      <td className="py-3 px-4 font-semibold">10% - 20%</td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 rounded-full bg-orange-600" />
+                          <span className="text-sm">Orange</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-default-600">
+                        Significant volatility and price swings
+                      </td>
+                    </tr>
+                    <tr className="border-b border-default-200">
+                      <td className="py-3 px-4">
+                        <Chip color="danger" size="sm" variant="flat">
+                          Extreme Risk
+                        </Chip>
+                      </td>
+                      <td className="py-3 px-4 font-semibold">≥ 20%</td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 rounded-full bg-danger" />
+                          <span className="text-sm">Red</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-default-600">
+                        Very high volatility, substantial risk
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="bg-primary/5 border-l-4 border-primary p-4 rounded">
+                <p className="text-sm text-default-700 mb-2">
+                  <strong>Application Usage:</strong>
+                </p>
+                <ul className="list-disc list-inside text-sm text-default-600 space-y-1">
+                  <li>Portfolio risk level indicators on the dashboard</li>
+                  <li>Individual cryptocurrency volatility badges</li>
+                  <li>Risk contribution analysis in portfolio breakdown</li>
+                  <li>Volatility gauge on the main dashboard</li>
+                </ul>
+              </div>
+
+              <div className="bg-warning/5 border-l-4 border-warning p-4 rounded mt-4">
+                <p className="text-sm text-default-700">
+                  <strong>Note:</strong> These thresholds are calibrated for
+                  cryptocurrency markets, which typically exhibit higher
+                  volatility than traditional financial assets. A &quot;low
+                  risk&quot; crypto asset (5% annualized volatility) would still
+                  be considered moderate to high risk in traditional equity
+                  markets.
+                </p>
               </div>
             </CardBody>
           </Card>

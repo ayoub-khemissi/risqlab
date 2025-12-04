@@ -176,9 +176,9 @@ export function getRiskLevel(
 ): "low" | "medium" | "high" | "extreme" {
   const volPercentage = volatility * 100;
 
-  if (volPercentage < 30) return "low";
-  if (volPercentage < 60) return "medium";
-  if (volPercentage < 100) return "high";
+  if (volPercentage < 5) return "low";
+  if (volPercentage < 10) return "medium";
+  if (volPercentage < 20) return "high";
 
   return "extreme";
 }
@@ -193,12 +193,13 @@ export function getRiskLevelColor(
 ): "success" | "warning" | "danger" | "default" {
   switch (level) {
     case "low":
-      return "success";
+      return "success"; // Green (< 5%)
     case "medium":
-      return "warning";
+      return "warning"; // Yellow (5-10%)
     case "high":
+      return "warning"; // Orange (10-20%)
     case "extreme":
-      return "danger";
+      return "danger"; // Red (≥ 20%)
     default:
       return "default";
   }

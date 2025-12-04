@@ -521,6 +521,22 @@ Daily (after market data fetch):
 - Annualized volatility typically: 15% - 150%
 - Values outside these ranges warrant investigation
 
+**Risk Level Classification (Annualized Volatility):**
+Based on annualized volatility percentage:
+
+| Risk Level | Volatility Range | Color Code | Description |
+|------------|-----------------|------------|-------------|
+| **Low** | < 5% | 🟢 Green | Stable and predictable |
+| **Medium** | 5% - 10% | 🟡 Yellow | Moderate volatility |
+| **High** | 10% - 20% | 🟠 Orange | Significant volatility |
+| **Extreme** | ≥ 20% | 🔴 Red | Very high volatility |
+
+**Implementation note:** This classification is used throughout the application for:
+- Portfolio risk level indicators
+- Individual cryptocurrency volatility badges
+- Risk contribution analysis
+- Dashboard volatility gauge
+
 **Portfolio Metrics:**
 - Weights must sum to 1.0
 - Portfolio volatility < max(individual volatilities)
