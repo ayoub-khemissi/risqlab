@@ -23,6 +23,9 @@ const COLORS = [
   "#94A3B8", // Slate gray for "Others"
 ];
 
+// Threshold for constituents to be displayed
+const THRESHOLD = 2;
+
 function TopConstituentsChartComponent({
   constituents,
 }: TopConstituentsChartProps) {
@@ -47,12 +50,12 @@ function TopConstituentsChartComponent({
       (a, b) => parseFloat(b.weight_in_index) - parseFloat(a.weight_in_index),
     );
 
-    // Split constituents: those >= 0.75% and those < 0.75%
+    // Split constituents: those >= THRESHOLD and those < THRESHOLD
     const aboveThreshold = sorted.filter(
-      (c) => parseFloat(c.weight_in_index) >= 0.75,
+      (c) => parseFloat(c.weight_in_index) >= THRESHOLD,
     );
     const belowThreshold = sorted.filter(
-      (c) => parseFloat(c.weight_in_index) < 0.75,
+      (c) => parseFloat(c.weight_in_index) < THRESHOLD,
     );
 
     const data = aboveThreshold.map((constituent) => ({
@@ -61,7 +64,7 @@ function TopConstituentsChartComponent({
       displayValue: `${parseFloat(constituent.weight_in_index).toFixed(2)}%`,
     }));
 
-    // Add "Others" if there are constituents below 0.75%
+    // Add "Others" if there are constituents below THRESHOLD
     if (belowThreshold.length > 0) {
       const othersWeight = belowThreshold.reduce(
         (sum, constituent) => sum + parseFloat(constituent.weight_in_index),
