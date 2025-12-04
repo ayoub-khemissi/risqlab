@@ -31,11 +31,11 @@ Here is the proposed strategy to optimize data freshness without exceeding the m
 | **Main Pipeline** (Market Data + Index) | Every 15 minutes | **8,640** | Ensures maximum freshness for market data and the RisqLab80 index, which are the core of the application. |
 | **Volatility Update** | Once a day (midnight) | **0** | Volatility calculations are computationally intensive and based on historical data. Daily updates are sufficient for this metric. No API calls required. |
 | **Global Metrics** | Every 45 minutes | **~960** | This data (dominance, total market cap) is important but less volatile than prices. A 45-minute interval is an excellent trade-off. |
-| **Fear & Greed Index** | Twice a day | **60** | The index is typically updated once daily. Fetching it twice (e.g., noon and midnight) ensures the latest value is captured without wasting credits. |
+| **Fear & Greed Index** | Every 3 hours | **240** | The index provides real-time market sentiment. Fetching it 8 times daily ensures consistent updates throughout the day while staying within budget. |
 | **Crypto Metadata** | Once a week | **~20** | Project logos, descriptions, and websites almost never change. A weekly update is more than sufficient. |
-| **Total Estimated** | | **~9,680 credits/month** | |
+| **Total Estimated** | | **~9,860 credits/month** | |
 
-This plan uses approximately 97% of the monthly quota, leaving a small buffer for safety while ensuring high data freshness where it matters most.
+This plan uses approximately 98.6% of the monthly quota, leaving a small buffer (~140 credits) for safety while ensuring high data freshness where it matters most.
 
 ## Crontab Configuration for Ubuntu
 
@@ -68,8 +68,8 @@ To implement this schedule, open your crontab file by running `crontab -e` in yo
 */45 * * * * cd /home/ubuntu/risqlab/risqlab/risqlab-back && node commands/fetchGlobalMetrics.js
 
 # 4. Fear & Greed Index:
-#    Runs twice a day, at 00:05 and 12:05 (5 minutes past midnight and noon).
-5 0,12 * * * cd /home/ubuntu/risqlab/risqlab/risqlab-back && node commands/fetchFearAndGreed.js
+#    Runs every 3 hours (8 times per day: 0h, 3h, 6h, 9h, 12h, 15h, 18h, 21h).
+0 */3 * * * cd /home/ubuntu/risqlab/risqlab/risqlab-back && node commands/fetchFearAndGreed.js
 
 # 5. Crypto Metadata (logos, descriptions, etc.):
 #    Runs once a week, on Sunday at 3:05 AM.
@@ -80,4 +80,16 @@ To implement this schedule, open your crontab file by running `crontab -e` in yo
 
 *   `cd /home/ubuntu/risqlab/risqlab/risqlab-back`: This command is critical. It ensures that the scripts run from the correct directory, allowing them to resolve local dependencies (`.env`, `utils`, etc.).
 *   `&&`: This operator chains commands. The next command only executes if the previous one succeeds. This is ideal for the main pipeline.
-*   The execution times for less frequent jobs are slightly offset (e.g., `5 0,12 * * *`) to prevent them from running at the exact same time as the main pipeline, which helps distribute the system load.
+*   The execution times for less frequent jobs are slightly offset to prevent them from running at the exact same time as the main pipeline, which helps distribute the system load.
+
+### Alternative Configuration for Fear & Greed Index
+
+If you want to reduce API credit consumption slightly, you can use a 4-hour interval instead:
+
+```cron
+# Alternative: Fear & Greed Index every 4 hours (6 times per day)
+# Cost: ~180 credits/month (saves 60 credits compared to 3-hour interval)
+0 */4 * * * cd /home/ubuntu/risqlab/risqlab/risqlab-back && node commands/fetchFearAndGreed.js
+```
+
+This would bring the total monthly cost to **~9,800 credits** (98%), leaving 200 credits as a buffer.
