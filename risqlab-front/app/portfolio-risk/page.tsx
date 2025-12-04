@@ -177,6 +177,7 @@ export default function PortfolioRiskPage() {
               aria-label="How is volatility calculated?"
               color="primary"
               size="sm"
+              title="How is volatility calculated?"
               variant="flat"
             >
               <Info size={18} />

@@ -128,6 +128,7 @@ export default function IndexPage() {
                 aria-label="How is this calculated?"
                 color="primary"
                 size="sm"
+                title="How is this calculated?"
                 variant="flat"
               >
                 <Info size={18} />
