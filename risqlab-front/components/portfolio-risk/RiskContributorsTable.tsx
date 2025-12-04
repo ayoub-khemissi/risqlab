@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableHeader,
@@ -33,6 +34,7 @@ type SortOrder = "asc" | "desc";
 export function RiskContributorsTable({
   contributors,
 }: RiskContributorsTableProps) {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("risk");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
@@ -144,7 +146,11 @@ export function RiskContributorsTable({
         </TableHeader>
         <TableBody items={filteredAndSortedData}>
           {(item) => (
-            <TableRow key={item.crypto_id}>
+            <TableRow
+              key={item.crypto_id}
+              className="cursor-pointer hover:bg-default-100 transition-colors"
+              onClick={() => router.push(`/crypto/${item.symbol}`)}
+            >
               <TableCell>
                 <span className="text-sm text-default-500">
                   #{filteredAndSortedData.indexOf(item) + 1}
