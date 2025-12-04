@@ -100,15 +100,15 @@ export default function RootLayout({
                 </Link>
                 <Link
                   className="hover:text-primary transition-colors"
-                  href="/methodology"
-                >
-                  Methodology
-                </Link>
-                <Link
-                  className="hover:text-primary transition-colors"
                   href="/portfolio-risk"
                 >
                   Portfolio Risk
+                </Link>
+                <Link
+                  className="hover:text-primary transition-colors"
+                  href="/methodology"
+                >
+                  Methodology
                 </Link>
               </div>
               <p className="text-default-500 text-xs">
