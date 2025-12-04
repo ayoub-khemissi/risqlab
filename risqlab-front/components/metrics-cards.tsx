@@ -376,7 +376,10 @@ function MetricsCardsComponent({
                     }
                     placement="right"
                   >
-                    <AlertCircle className="text-warning" size={14} />
+                    <AlertCircle
+                      className="text-warning cursor-help"
+                      size={16}
+                    />
                   </Tooltip>
                 )}
               </div>
