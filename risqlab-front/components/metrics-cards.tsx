@@ -136,6 +136,8 @@ function MetricsCardsComponent({
   const [volatilityMode, setVolatilityMode] = useState<"annualized" | "daily">(
     "annualized",
   );
+  const [isVolatilityGaugeTooltipOpen, setIsVolatilityGaugeTooltipOpen] =
+    useState(false);
 
   const renderFearGreedGauge = (value: number) => {
     const width = 144;
@@ -374,11 +376,20 @@ function MetricsCardsComponent({
                         </div>
                       </div>
                     }
-                    placement="right"
+                    isOpen={isVolatilityGaugeTooltipOpen}
                   >
                     <AlertCircle
                       className="text-warning cursor-help"
                       size={16}
+                      onClick={() =>
+                        setIsVolatilityGaugeTooltipOpen(
+                          !isVolatilityGaugeTooltipOpen,
+                        )
+                      }
+                      onMouseLeave={() =>
+                        setIsVolatilityGaugeTooltipOpen(false)
+                      }
+                      onMouseOver={() => setIsVolatilityGaugeTooltipOpen(true)}
                     />
                   </Tooltip>
                 )}

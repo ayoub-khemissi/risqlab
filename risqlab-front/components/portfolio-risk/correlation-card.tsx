@@ -20,6 +20,8 @@ export function CorrelationCard({ constituents }: CorrelationCardProps) {
     return [...constituents].sort((a, b) => b.weight - a.weight).slice(0, 2);
   }, [constituents]);
 
+  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
+
   const [symbol1, setSymbol1] = useState<string>("");
   const [symbol2, setSymbol2] = useState<string>("");
 
@@ -81,8 +83,15 @@ export function CorrelationCard({ constituents }: CorrelationCardProps) {
               </div>
             </div>
           }
+          isOpen={isTooltipOpen}
         >
-          <HelpCircle className="text-default-400 cursor-help" size={16} />
+          <HelpCircle
+            className="text-default-400 cursor-help"
+            size={16}
+            onClick={() => setIsTooltipOpen(!isTooltipOpen)}
+            onMouseLeave={() => setIsTooltipOpen(false)}
+            onMouseOver={() => setIsTooltipOpen(true)}
+          />
         </Tooltip>
       </div>
 
