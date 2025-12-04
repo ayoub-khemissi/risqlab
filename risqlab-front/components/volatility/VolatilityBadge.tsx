@@ -51,9 +51,7 @@ export function VolatilityBadge({
 
   // Format the value
   const displayValue =
-    format === "percentage"
-      ? `${(value * 100).toFixed(type === "daily" ? 3 : 2)}%`
-      : value.toFixed(4);
+    format === "percentage" ? `${(value * 100).toFixed(2)}%` : value.toFixed(4);
 
   // Get risk level label
   const riskLabelMap = {
