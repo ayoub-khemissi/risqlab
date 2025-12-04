@@ -176,9 +176,9 @@ export function getRiskLevel(
 ): "low" | "medium" | "high" | "extreme" {
   const volPercentage = volatility * 100;
 
-  if (volPercentage < 5) return "low";
-  if (volPercentage < 10) return "medium";
-  if (volPercentage < 20) return "high";
+  if (volPercentage < 10) return "low";
+  if (volPercentage < 30) return "medium";
+  if (volPercentage < 60) return "high";
 
   return "extreme";
 }
@@ -193,14 +193,36 @@ export function getRiskLevelColor(
 ): "success" | "warning" | "danger" | "default" {
   switch (level) {
     case "low":
-      return "success"; // Green (< 5%)
+      return "success"; // Green (< 10%)
     case "medium":
-      return "warning"; // Yellow (5-10%)
+      return "warning"; // Yellow (10-30%)
     case "high":
-      return "warning"; // Orange (10-20%)
+      return "warning"; // Orange (30-60%) - Note: HeroUI has no native orange, uses warning
     case "extreme":
-      return "danger"; // Red (≥ 20%)
+      return "danger"; // Red (≥ 60%)
     default:
       return "default";
+  }
+}
+
+/**
+ * Get color class for risk level
+ * @param level - Risk level
+ * @returns Tailwind color class
+ */
+export function getRiskLevelColorClass(
+  level: "low" | "medium" | "high" | "extreme",
+): string {
+  switch (level) {
+    case "low":
+      return "text-success";
+    case "medium":
+      return "text-warning";
+    case "high":
+      return "text-orange-500";
+    case "extreme":
+      return "text-danger";
+    default:
+      return "text-default";
   }
 }

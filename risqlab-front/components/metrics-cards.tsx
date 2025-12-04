@@ -273,9 +273,9 @@ function MetricsCardsComponent({
     const strokeWidth = 6;
 
     // Calculate position based on volatility percentage
-    // For annualized: 0-30% mapped to 0-100 on gauge
-    // For daily: 0-2% mapped to 0-100 on gauge
-    const maxValue = volatilityMode === "annualized" ? 30 : 2;
+    // For annualized: 0-80% mapped to 0-100 on gauge
+    // For daily: 0-5% mapped to 0-100 on gauge
+    const maxValue = volatilityMode === "annualized" ? 80 : 5;
     const cappedVolatility = Math.min(volatilityPercent, maxValue);
     const gaugeValue = (cappedVolatility / maxValue) * 100;
 
@@ -285,34 +285,34 @@ function MetricsCardsComponent({
 
     const getZoneColor = () => {
       if (volatilityMode === "annualized") {
-        if (volatilityPercent < 5) return "#16C784"; // Green
-        if (volatilityPercent < 10) return "#F3D42F"; // Yellow
-        if (volatilityPercent < 20) return "#EA580C"; // Orange
+        if (volatilityPercent < 10) return "#16C784"; // Green - Low
+        if (volatilityPercent < 30) return "#F3D42F"; // Yellow - Medium
+        if (volatilityPercent < 60) return "#EA580C"; // Orange - High
 
-        return "#EA3943"; // Red
+        return "#EA3943"; // Red - Extreme
       } else {
-        // Daily thresholds (approximately annualized / sqrt(256))
-        if (volatilityPercent < 0.3) return "#16C784"; // Green
-        if (volatilityPercent < 0.6) return "#F3D42F"; // Yellow
-        if (volatilityPercent < 1.2) return "#EA580C"; // Orange
+        // Daily thresholds (annualized / sqrt(365))
+        if (volatilityPercent < 0.5) return "#16C784"; // Green - Low
+        if (volatilityPercent < 1.5) return "#F3D42F"; // Yellow - Medium
+        if (volatilityPercent < 3.0) return "#EA580C"; // Orange - High
 
-        return "#EA3943"; // Red
+        return "#EA3943"; // Red - Extreme
       }
     };
 
     const getLabel = () => {
       if (volatilityMode === "annualized") {
-        if (volatilityPercent < 5) return "Low";
-        if (volatilityPercent < 10) return "Moderate";
-        if (volatilityPercent < 20) return "High";
+        if (volatilityPercent < 10) return "Low";
+        if (volatilityPercent < 30) return "Medium";
+        if (volatilityPercent < 60) return "High";
 
-        return "Very High";
+        return "Extreme";
       } else {
-        if (volatilityPercent < 0.3) return "Low";
-        if (volatilityPercent < 0.6) return "Moderate";
-        if (volatilityPercent < 1.2) return "High";
+        if (volatilityPercent < 0.5) return "Low";
+        if (volatilityPercent < 1.5) return "Medium";
+        if (volatilityPercent < 3.0) return "High";
 
-        return "Very High";
+        return "Extreme";
       }
     };
 
@@ -337,18 +337,19 @@ function MetricsCardsComponent({
     let greenArc, lightOrangeArc, darkOrangeArc, redArc;
 
     if (volatilityMode === "annualized") {
-      // Annualized thresholds: 0-5%, 5-10%, 10-20%, 20-30%
-      greenArc = createArc(-180, -154); // 0-5% zone
-      lightOrangeArc = createArc(-146, -124); // 5-10% zone
-      darkOrangeArc = createArc(-116, -64); // 10-20% zone
-      redArc = createArc(-56, 0); // 20-30% zone
+      // Annualized thresholds: 0-10%, 10-30%, 30-60%, 60-80%
+      // Mapped to gauge: 0-12.5%, 12.5-37.5%, 37.5-75%, 75-100%
+      greenArc = createArc(-180, -161); // 0-10% zone (0-12.5% of gauge)
+      lightOrangeArc = createArc(-153, -116); // 10-30% zone (12.5-37.5% of gauge)
+      darkOrangeArc = createArc(-108, -49); // 30-60% zone (37.5-75% of gauge)
+      redArc = createArc(-41, 0); // 60-80% zone (75-100% of gauge)
     } else {
-      // Daily thresholds: 0-0.3%, 0.3-0.6%, 0.6-1.2%, 1.2-2%
-      // Mapped to gauge: 0-15%, 15-30%, 30-60%, 60-100%
-      greenArc = createArc(-180, -153); // 0-15% of gauge (0-0.3% daily)
-      lightOrangeArc = createArc(-145, -126); // 15-30% of gauge (0.3-0.6% daily)
-      darkOrangeArc = createArc(-118, -72); // 30-60% of gauge (0.6-1.2% daily)
-      redArc = createArc(-64, 0); // 60-100% of gauge (1.2-2% daily)
+      // Daily thresholds: 0-0.5%, 0.5-1.5%, 1.5-3.0%, 3.0-5.0%
+      // Mapped to gauge: 0-10%, 10-30%, 30-60%, 60-100%
+      greenArc = createArc(-180, -166); // 0-0.5% daily (0-10% of gauge)
+      lightOrangeArc = createArc(-158, -130); // 0.5-1.5% daily (10-30% of gauge)
+      darkOrangeArc = createArc(-122, -76); // 1.5-3.0% daily (30-60% of gauge)
+      redArc = createArc(-68, 0); // 3.0-5.0% daily (60-100% of gauge)
     }
 
     return (
@@ -407,7 +408,7 @@ function MetricsCardsComponent({
                 viewBox={`0 0 ${width} ${height}`}
                 width={width}
               >
-                {/* Green zone: 0-5% */}
+                {/* Green zone: Low Risk */}
                 <path
                   d={greenArc}
                   fill="none"
@@ -416,7 +417,7 @@ function MetricsCardsComponent({
                   strokeWidth={strokeWidth}
                 />
 
-                {/* Light orange zone: 5-10% */}
+                {/* Yellow zone: Medium Risk */}
                 <path
                   d={lightOrangeArc}
                   fill="none"
@@ -425,7 +426,7 @@ function MetricsCardsComponent({
                   strokeWidth={strokeWidth}
                 />
 
-                {/* Orange zone: 10-20% */}
+                {/* Orange zone: High Risk */}
                 <path
                   d={darkOrangeArc}
                   fill="none"
@@ -434,7 +435,7 @@ function MetricsCardsComponent({
                   strokeWidth={strokeWidth}
                 />
 
-                {/* Red zone: 20-30% */}
+                {/* Red zone: Extreme Risk */}
                 <path
                   d={redArc}
                   fill="none"

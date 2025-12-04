@@ -10,7 +10,7 @@ The RisqLab 80 Volatility system calculates risk metrics for both individual cry
 |-----------|-------|-------------|
 | **Window Period** | 90 days | Rolling window for volatility calculations |
 | **Return Type** | Logarithmic | Natural logarithm of price ratios |
-| **Annualization Factor** | √252 ≈ 15.87 | Assumes 252 trading days per year |
+| **Annualization Factor** | √365 ≈ 19.10 | Assumes 365 trading days per year (crypto markets 24/7) |
 | **Minimum Data Points** | 90 observations | Required for volatility calculation |
 | **Index Name** | RisqLab 80 | Target index for portfolio volatility |
 
@@ -136,10 +136,10 @@ This is the sample standard deviation of log returns over the window period.
 
 **c) Annualized Volatility:**
 ```
-σ_annual = σ_daily × √252
+σ_annual = σ_daily × √365
 
 Where:
-  252 = assumed trading days per year
+  365 = assumed trading days per year (crypto markets open 24/7)
 ```
 
 The square root of time rule applies under the assumption of independent and identically distributed returns.
@@ -267,7 +267,7 @@ Where:
 
 **Annualized Portfolio Volatility:**
 ```
-σ_portfolio_annual = σ_portfolio_daily × √252
+σ_portfolio_annual = σ_portfolio_daily × √365
 ```
 
 #### Step 3.6: Individual Constituent Volatilities
@@ -280,7 +280,7 @@ Variance[i] = (1/T) × Σ(t=1 to T) (r[i,t] - μ[i])²
 
 σ_daily[i] = √Variance[i]
 
-σ_annual[i] = σ_daily[i] × √252
+σ_annual[i] = σ_daily[i] × √365
 ```
 
 #### Step 3.7: Data Storage
@@ -330,7 +330,7 @@ r[t] = ln(P[t] / P[t-1])
 
 ### Annualization
 ```
-σ_annual = σ_daily × √252
+σ_annual = σ_daily × √365
 ```
 
 ### Covariance
@@ -399,7 +399,7 @@ Day 90: Price = $45,000 → $46,000, r₉₀ = ln(46000/45000) = 0.0220
 
 Mean return: μ = 0.0015
 Standard deviation: σ_daily = 0.03 (3% per day)
-Annualized volatility: σ_annual = 0.03 × √252 = 0.476 (47.6%)
+Annualized volatility: σ_annual = 0.03 × √365 = 0.573 (57.3%)
 ```
 
 ### Example 2: Portfolio Volatility
@@ -431,10 +431,10 @@ Daily portfolio volatility:
 σ_p = √0.000983 = 0.0313 (3.13% per day)
 
 Annualized portfolio volatility:
-σ_p_annual = 0.0313 × √252 = 0.497 (49.7%)
+σ_p_annual = 0.0313 × √365 = 0.598 (59.8%)
 ```
 
-**Note:** The portfolio volatility (49.7%) is less than the weighted average of individual volatilities (60% × 47.6% + 40% × 63.5% = 54.0%), demonstrating diversification benefit.
+**Note:** The portfolio volatility (59.8%) is less than the weighted average of individual volatilities (60% × 57.3% + 40% × 76.4% = 64.9%), demonstrating diversification benefit.
 
 ---
 
@@ -495,7 +495,7 @@ Daily (after market data fetch):
 2. **Independence:** Daily returns are independent (no autocorrelation)
 3. **Stationarity:** Volatility is stationary within the 90-day window
 4. **Market Efficiency:** Prices reflect all available information
-5. **Calendar Convention:** 252 trading days per year for annualization
+5. **Calendar Convention:** 365 trading days per year for annualization (crypto markets operate 24/7)
 
 ### Limitations
 
@@ -521,21 +521,30 @@ Daily (after market data fetch):
 - Annualized volatility typically: 15% - 150%
 - Values outside these ranges warrant investigation
 
-**Risk Level Classification (Annualized Volatility):**
-Based on annualized volatility percentage:
+**Risk Level Classification:**
+Based on rigorous analytical standards calibrated for cryptocurrency markets:
 
-| Risk Level | Volatility Range | Color Code | Description |
-|------------|-----------------|------------|-------------|
-| **Low** | < 5% | 🟢 Green | Stable and predictable |
-| **Medium** | 5% - 10% | 🟡 Yellow | Moderate volatility |
-| **High** | 10% - 20% | 🟠 Orange | Significant volatility |
-| **Extreme** | ≥ 20% | 🔴 Red | Very high volatility |
+| Risk Level | Annualized Volatility | Daily Volatility | Color Code | Description |
+|------------|---------------------|------------------|------------|-------------|
+| **Low** | < 10% | < 0.5% | 🟢 Green | Stable mature cryptos, low risk |
+| **Medium** | 10% - 30% | 0.5% - 1.5% | 🟡 Yellow | Moderate volatility, established assets with fluctuations |
+| **High** | 30% - 60% | 1.5% - 3.0% | 🟠 Orange | High volatility, speculative assets or unstable phases |
+| **Extreme** | ≥ 60% | ≥ 3.0% | 🔴 Red | Extreme volatility, high-risk altcoins or strong market turbulence |
+
+**Mathematical Relationship:**
+The daily/annualized conversion follows the formula: σ_annual = σ_daily × √365
+(for markets active 7 days/week)
+
+**Market Context:**
+- Major cryptocurrencies like Bitcoin and Ethereum typically oscillate between Medium and High
+- Less liquid altcoins often exceed 60% annualized, justifying the Extreme category
+- Thresholds are calibrated to recent analytical studies and empirical market reality
 
 **Implementation note:** This classification is used throughout the application for:
 - Portfolio risk level indicators
 - Individual cryptocurrency volatility badges
 - Risk contribution analysis
-- Dashboard volatility gauge
+- Dashboard volatility gauge (with mode switching between annualized and daily)
 
 **Portfolio Metrics:**
 - Weights must sum to 1.0
@@ -567,7 +576,7 @@ assert(portfolioVol > 0 && portfolioVol < 1, 'Daily volatility out of bounds');
   - `logReturn()` - Calculate logarithmic return
   - `mean()` - Calculate arithmetic mean
   - `standardDeviation()` - Calculate standard deviation
-  - `annualizeVolatility()` - Multiply by √252
+  - `annualizeVolatility()` - Multiply by √365
   - `buildCovarianceMatrix()` - Construct covariance matrix
   - `portfolioVolatility()` - Matrix multiplication for portfolio variance
   - `validateWeights()` - Ensure weights sum to 1.0

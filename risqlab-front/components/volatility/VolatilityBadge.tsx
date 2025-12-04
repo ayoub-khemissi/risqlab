@@ -53,6 +53,19 @@ export function VolatilityBadge({
     extreme: "Extreme Risk",
   };
 
+  // Use custom styling for "high" risk level to get orange color
+  if (riskLevel === "high") {
+    return (
+      <Chip
+        className="bg-orange-500/10 text-orange-500"
+        size={size}
+        variant={variant}
+      >
+        {showRiskLevel ? riskLabelMap[riskLevel] : displayValue}
+      </Chip>
+    );
+  }
+
   return (
     <Chip color={color} size={size} variant={variant}>
       {showRiskLevel ? riskLabelMap[riskLevel] : displayValue}

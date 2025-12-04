@@ -89,7 +89,7 @@ export function VolatilityChart({
           {/* Risk zones */}
           <ReferenceLine
             label={{
-              value: "High Risk (>60%)",
+              value: "Extreme Risk (≥60%)",
               position: "right",
               style: { fontSize: "10px", fill: "#ef4444" },
             }}
@@ -101,14 +101,26 @@ export function VolatilityChart({
 
           <ReferenceLine
             label={{
-              value: "Medium Risk (30-60%)",
+              value: "High Risk (≥30%)",
               position: "right",
-              style: { fontSize: "10px", fill: "#f59e0b" },
+              style: { fontSize: "10px", fill: "#ea580c" },
             }}
-            stroke="#f59e0b"
+            stroke="#ea580c"
             strokeDasharray="3 3"
             strokeOpacity={0.3}
             y={30}
+          />
+
+          <ReferenceLine
+            label={{
+              value: "Medium Risk (≥10%)",
+              position: "right",
+              style: { fontSize: "10px", fill: "#F3D42F" },
+            }}
+            stroke="#F3D42F"
+            strokeDasharray="3 3"
+            strokeOpacity={0.3}
+            y={10}
           />
 
           <Tooltip

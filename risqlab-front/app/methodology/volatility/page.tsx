@@ -227,7 +227,7 @@ export default function VolatilityMethodologyPage() {
                     number of trading periods in a year.
                   </p>
                   <code className="text-sm bg-default-100 px-2 py-1 rounded inline-block">
-                    Annual_Volatility = Daily_Volatility × √252
+                    Annual_Volatility = Daily_Volatility × √365
                   </code>
                 </div>
 
@@ -262,10 +262,10 @@ export default function VolatilityMethodologyPage() {
                 <div className="border-l-4 border-warning pl-4">
                   <h3 className="font-bold text-lg">Trading Days</h3>
                   <p className="text-default-600">
-                    For annualization purposes, we assume 252 trading days per
-                    year (365 days minus weekends and holidays). Cryptocurrency
-                    markets trade 24/7, but we use this convention for
-                    consistency with traditional finance.
+                    For annualization purposes, we use 365 trading days per
+                    year. Unlike traditional financial markets that close on
+                    weekends and holidays, cryptocurrency markets operate 24/7,
+                    365 days a year.
                   </p>
                 </div>
               </div>
@@ -279,10 +279,11 @@ export default function VolatilityMethodologyPage() {
                 Risk Level Classification
               </h2>
               <p className="text-default-600 mb-6">
-                We classify volatility into four risk levels based on annualized
-                volatility percentage. This classification provides an intuitive
-                way to understand and compare risk across different assets and
-                portfolios.
+                We classify volatility into four risk levels using rigorous
+                analytical standards calibrated for cryptocurrency markets. This
+                classification covers both annualized and daily volatility,
+                providing an intuitive way to understand and compare risk across
+                different time scales.
               </p>
 
               <div className="overflow-x-auto mb-6">
@@ -290,7 +291,8 @@ export default function VolatilityMethodologyPage() {
                   <thead>
                     <tr className="border-b-2 border-default-300">
                       <th className="text-left py-3 px-4">Risk Level</th>
-                      <th className="text-left py-3 px-4">Volatility Range</th>
+                      <th className="text-left py-3 px-4">Annualized</th>
+                      <th className="text-left py-3 px-4">Daily</th>
                       <th className="text-left py-3 px-4">Color</th>
                       <th className="text-left py-3 px-4">Description</th>
                     </tr>
@@ -302,7 +304,8 @@ export default function VolatilityMethodologyPage() {
                           Low Risk
                         </Chip>
                       </td>
-                      <td className="py-3 px-4 font-semibold">&lt; 5%</td>
+                      <td className="py-3 px-4 font-semibold">&lt; 10%</td>
+                      <td className="py-3 px-4 font-semibold">&lt; 0.5%</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 rounded-full bg-success" />
@@ -310,7 +313,7 @@ export default function VolatilityMethodologyPage() {
                         </div>
                       </td>
                       <td className="py-3 px-4 text-default-600">
-                        Stable and predictable returns
+                        Stable mature cryptos, low risk
                       </td>
                     </tr>
                     <tr className="border-b border-default-200">
@@ -319,7 +322,8 @@ export default function VolatilityMethodologyPage() {
                           Medium Risk
                         </Chip>
                       </td>
-                      <td className="py-3 px-4 font-semibold">5% - 10%</td>
+                      <td className="py-3 px-4 font-semibold">10% - 30%</td>
+                      <td className="py-3 px-4 font-semibold">0.5% - 1.5%</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 rounded-full bg-warning" />
@@ -327,28 +331,30 @@ export default function VolatilityMethodologyPage() {
                         </div>
                       </td>
                       <td className="py-3 px-4 text-default-600">
-                        Moderate volatility with reasonable risk
+                        Moderate volatility, established assets with
+                        fluctuations
                       </td>
                     </tr>
                     <tr className="border-b border-default-200">
                       <td className="py-3 px-4">
                         <Chip
-                          className="bg-orange-600/10 text-orange-600"
+                          className="bg-orange-500/10 text-orange-500"
                           size="sm"
                           variant="flat"
                         >
                           High Risk
                         </Chip>
                       </td>
-                      <td className="py-3 px-4 font-semibold">10% - 20%</td>
+                      <td className="py-3 px-4 font-semibold">30% - 60%</td>
+                      <td className="py-3 px-4 font-semibold">1.5% - 3.0%</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded-full bg-orange-600" />
+                          <div className="w-4 h-4 rounded-full bg-orange-500" />
                           <span className="text-sm">Orange</span>
                         </div>
                       </td>
                       <td className="py-3 px-4 text-default-600">
-                        Significant volatility and price swings
+                        High volatility, speculative assets or unstable phases
                       </td>
                     </tr>
                     <tr className="border-b border-default-200">
@@ -357,7 +363,8 @@ export default function VolatilityMethodologyPage() {
                           Extreme Risk
                         </Chip>
                       </td>
-                      <td className="py-3 px-4 font-semibold">≥ 20%</td>
+                      <td className="py-3 px-4 font-semibold">≥ 60%</td>
+                      <td className="py-3 px-4 font-semibold">≥ 3.0%</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 rounded-full bg-danger" />
@@ -365,7 +372,8 @@ export default function VolatilityMethodologyPage() {
                         </div>
                       </td>
                       <td className="py-3 px-4 text-default-600">
-                        Very high volatility, substantial risk
+                        Extreme volatility, high-risk altcoins or strong market
+                        turbulence
                       </td>
                     </tr>
                   </tbody>
@@ -444,11 +452,11 @@ export default function VolatilityMethodologyPage() {
                       </td>
                       <td className="py-3 px-4">
                         <Chip color="warning" size="sm">
-                          √252 ≈ 15.87
+                          √365 ≈ 19.10
                         </Chip>
                       </td>
                       <td className="py-3 px-4 text-default-600">
-                        Assumes 252 trading days per year
+                        Assumes 365 trading days per year (crypto markets 24/7)
                       </td>
                     </tr>
                     <tr className="border-b border-default-200">
@@ -679,9 +687,10 @@ export default function VolatilityMethodologyPage() {
                     <div>
                       <p className="font-bold mb-2">c) Annualized Volatility</p>
                       <div className="bg-content1 p-4 rounded-lg font-mono text-sm">
-                        <div>σ_annual = σ_daily × √252</div>
+                        <div>σ_annual = σ_daily × √365</div>
                         <div className="text-xs text-default-500 mt-2">
-                          Where 252 = assumed trading days per year
+                          Where 365 = trading days per year (crypto markets
+                          24/7)
                         </div>
                       </div>
                     </div>
@@ -690,14 +699,15 @@ export default function VolatilityMethodologyPage() {
 
                 <div className="bg-warning/5 p-6 rounded-lg border-l-4 border-warning">
                   <h3 className="text-xl font-bold mb-3">
-                    Why Multiply by √252?
+                    Why Multiply by √365?
                   </h3>
                   <p className="text-default-600">
                     The square root of time rule applies under the assumption of
-                    independent and identically distributed returns. This allows
-                    us to convert daily volatility to an annual measure
-                    that&apos;s comparable across different assets and time
-                    periods.
+                    independent and identically distributed returns. Since
+                    cryptocurrency markets operate 24/7 throughout the year, we
+                    use 365 days to convert daily volatility to an annual
+                    measure that&apos;s comparable across different assets and
+                    time periods.
                   </p>
                 </div>
               </div>
@@ -825,7 +835,7 @@ Where:
                   </h3>
                   <div className="bg-content1 p-4 rounded-lg font-mono text-sm space-y-2">
                     <div>σ_portfolio_daily = √(σ²_portfolio)</div>
-                    <div>σ_portfolio_annual = σ_portfolio_daily × √252</div>
+                    <div>σ_portfolio_annual = σ_portfolio_daily × √365</div>
                   </div>
                 </div>
               </div>
@@ -874,14 +884,14 @@ Where:
                     </div>
                     <div>
                       <strong>Annualized volatility:</strong> σ_annual = 0.03 ×
-                      √252 = 0.476
+                      √365 = 0.573
                     </div>
                   </div>
                   <div className="text-default-600 mt-4">
                     <strong>Result:</strong> Bitcoin has an annualized
                     volatility of{" "}
                     <Chip className="ml-1" color="primary" size="sm">
-                      47.6%
+                      57.3%
                     </Chip>
                   </div>
                 </div>
@@ -934,13 +944,13 @@ Where:
                     </div>
                     <div>
                       <strong>Annualized portfolio volatility:</strong>{" "}
-                      σ_p_annual = 0.0313 × √252 = 0.497
+                      σ_p_annual = 0.0313 × √365 = 0.598
                     </div>
                   </div>
                   <div className="text-default-600 mt-4">
                     <strong>Result:</strong> Portfolio volatility is{" "}
                     <Chip className="ml-1" color="success" size="sm">
-                      49.7%
+                      59.8%
                     </Chip>
                   </div>
                 </div>
@@ -974,7 +984,7 @@ Where:
                       Bitcoin individual volatility:
                     </span>
                     <Chip color="primary" size="sm">
-                      47.6%
+                      57.3%
                     </Chip>
                   </div>
                   <div className="flex justify-between items-center">
@@ -982,7 +992,7 @@ Where:
                       Ethereum individual volatility:
                     </span>
                     <Chip color="primary" size="sm">
-                      63.5%
+                      76.4%
                     </Chip>
                   </div>
                   <div className="flex justify-between items-center border-t border-default-200 pt-2 mt-2">
@@ -990,7 +1000,7 @@ Where:
                       Weighted average volatility:
                     </span>
                     <Chip color="warning" size="sm">
-                      54.0%
+                      64.9%
                     </Chip>
                   </div>
                   <div className="flex justify-between items-center">
@@ -998,14 +1008,14 @@ Where:
                       Actual portfolio volatility:
                     </span>
                     <Chip color="success" size="sm">
-                      49.7%
+                      59.8%
                     </Chip>
                   </div>
                 </div>
                 <p className="text-default-600 mt-4">
-                  The portfolio volatility (49.7%) is{" "}
-                  <strong className="text-success">4.3% lower</strong> than the
-                  weighted average (54.0%), demonstrating the benefit of
+                  The portfolio volatility (59.8%) is{" "}
+                  <strong className="text-success">5.1% lower</strong> than the
+                  weighted average (64.9%), demonstrating the benefit of
                   diversification!
                 </p>
               </div>

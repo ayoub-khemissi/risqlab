@@ -42,8 +42,8 @@ export function RiskLevelIndicator({
     },
     high: {
       icon: AlertTriangle,
-      color: "text-danger",
-      bg: "bg-danger/10",
+      color: "text-orange-500",
+      bg: "bg-orange-500/10",
       label: "High Risk",
       description: "Significant volatility",
     },

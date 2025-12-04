@@ -4,8 +4,9 @@ import { useState, useMemo, useEffect } from "react";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import { Info, TrendingUp, Activity, AlertTriangle } from "lucide-react";
+import { Info, Activity, AlertTriangle } from "lucide-react";
 import Link from "next/link";
+import clsx from "clsx";
 
 import { title } from "@/components/primitives";
 import {
@@ -14,10 +15,10 @@ import {
   calculateDiversificationBenefit,
   calculateRiskContributions,
   getRiskLevel,
+  getRiskLevelColorClass,
 } from "@/hooks/usePortfolioVolatility";
 import {
   RiskLevelIndicator,
-  VolatilityBadge,
   DiversificationMeter,
 } from "@/components/volatility";
 import {
@@ -199,36 +200,33 @@ export default function PortfolioRiskPage() {
             </div>
             <div className="space-y-2">
               <div>
-                <p className="text-3xl font-bold text-primary">
+                <p
+                  className={clsx(
+                    "text-3xl font-bold",
+                    getRiskLevelColorClass(riskLevel || "low"),
+                  )}
+                >
                   {(current.annualized_volatility * 100).toFixed(2)}%
                 </p>
                 <p className="text-xs text-default-500">Annualized</p>
               </div>
               <div>
-                <p className="text-lg text-default-600">
+                <p
+                  className={clsx(
+                    "text-lg",
+                    getRiskLevelColorClass(riskLevel || "low"),
+                  )}
+                >
                   {(current.daily_volatility * 100).toFixed(3)}%
                 </p>
                 <p className="text-xs text-default-500">Daily</p>
               </div>
               <div className="pt-2">
-                <VolatilityBadge
-                  showRiskLevel
-                  value={current.annualized_volatility}
-                  variant="solid"
-                />
+                {riskLevel && (
+                  <RiskLevelIndicator level={riskLevel} size="lg" />
+                )}
               </div>
             </div>
-          </CardBody>
-        </Card>
-
-        {/* Risk Level */}
-        <Card>
-          <CardBody className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="text-warning" size={20} />
-              <h3 className="font-semibold">Risk Level</h3>
-            </div>
-            {riskLevel && <RiskLevelIndicator level={riskLevel} size="lg" />}
           </CardBody>
         </Card>
 
