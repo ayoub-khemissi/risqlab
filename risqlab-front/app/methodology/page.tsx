@@ -73,7 +73,7 @@ export default function MethodologyPage() {
         </Card>
       </div>
 
-      <Card className="max-w-5xl mx-auto w-full mt-6">
+      <Card className="max-w-5xl mx-auto w-full">
         <CardBody className="p-8">
           <h2 className="text-xl font-bold mb-4">Why Transparency Matters</h2>
           <p className="text-default-600 mb-4">
