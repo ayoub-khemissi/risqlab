@@ -18,6 +18,7 @@ import { Search } from "lucide-react";
 import { RiskContribution } from "@/types/volatility";
 import { VolatilityBadge } from "@/components/volatility";
 import { getCoinImageUrl } from "@/lib/formatters";
+import { sStorage } from "@/lib/sessionStorage";
 
 interface RiskContributorsTableProps {
   /**
@@ -180,7 +181,13 @@ export function RiskContributorsTable({
             <TableRow
               key={item.crypto_id}
               className="cursor-pointer hover:bg-default-100 transition-colors"
-              onClick={() => router.push(`/crypto/${item.symbol}`)}
+              onClick={() => {
+                sStorage.set(
+                  "CRYPTO_RETURN_PATH",
+                  "/portfolio-risk#risk-contributors",
+                );
+                router.push(`/crypto/${item.symbol}`);
+              }}
             >
               <TableCell>
                 <span className="text-sm text-default-500">

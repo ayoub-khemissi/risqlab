@@ -30,7 +30,7 @@ import {
   CorrelationCard,
 } from "@/components/portfolio-risk";
 import { useCryptoVolatility } from "@/hooks/useCryptoVolatility";
-import { storage } from "@/lib/localStorage";
+import { lStorage } from "@/lib/localStorage";
 
 type Period = "7d" | "30d" | "90d" | "all";
 
@@ -84,22 +84,10 @@ export default function PortfolioRiskPage() {
 
   // Load warning dismissed state from localStorage
   useEffect(() => {
-    const dismissed = storage.get("PORTFOLIO_RISK_WARNING_DISMISSED");
+    const dismissed = lStorage.get("PORTFOLIO_RISK_WARNING_DISMISSED");
 
     if (dismissed === "true") {
       setWarningDismissed(true);
-    }
-  }, []);
-
-  // Remove hash from URL on initial load to prevent auto-scroll on data updates
-  useEffect(() => {
-    if (window.location.hash) {
-      // Remove hash from URL
-      window.history.replaceState(
-        null,
-        "",
-        window.location.pathname + window.location.search,
-      );
     }
   }, []);
 
@@ -124,6 +112,64 @@ export default function PortfolioRiskPage() {
 
     return getRiskLevel(volatilityData.current.annualized_volatility);
   }, [volatilityData]);
+
+  // Scroll to risk contributors table if hash is present, then remove hash from URL
+  useEffect(() => {
+    if (
+      window.location.hash === "#risk-contributors" &&
+      riskContributions?.length > 0
+    ) {
+      // Wait for data to load and page to render
+      const scrollToTable = () => {
+        const element = document.getElementById("risk-contributors");
+
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "start" });
+          // Remove hash from URL to prevent auto-scroll on data updates
+          window.history.replaceState(
+            null,
+            "",
+            window.location.pathname + window.location.search,
+          );
+        }
+      };
+
+      // Try after a delay to ensure DOM is ready
+      const timeoutId = setTimeout(scrollToTable, 300);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [riskContributions]);
+
+  // Handle hash on mount (when returning from crypto detail page)
+  useEffect(() => {
+    const handleHashScroll = () => {
+      if (window.location.hash === "#risk-contributors") {
+        const element = document.getElementById("risk-contributors");
+
+        if (element) {
+          // Wait a bit for the page to fully render
+          setTimeout(() => {
+            element.scrollIntoView({ behavior: "smooth", block: "start" });
+            // Clean up the hash
+            window.history.replaceState(
+              null,
+              "",
+              window.location.pathname + window.location.search,
+            );
+          }, 300);
+        }
+      }
+    };
+
+    // Check on mount
+    handleHashScroll();
+
+    // Also listen for hash changes
+    window.addEventListener("hashchange", handleHashScroll);
+
+    return () => window.removeEventListener("hashchange", handleHashScroll);
+  }, []);
 
   // Loading state (only show full-page loader on initial load)
   if (isInitialLoading) {
@@ -220,7 +266,7 @@ export default function PortfolioRiskPage() {
                   setWarningFading(true);
                   setTimeout(() => {
                     setWarningDismissed(true);
-                    storage.set("PORTFOLIO_RISK_WARNING_DISMISSED", "true");
+                    lStorage.set("PORTFOLIO_RISK_WARNING_DISMISSED", "true");
                   }, 300); // Wait for fade-out animation to complete
                 }}
               >
@@ -414,7 +460,7 @@ export default function PortfolioRiskPage() {
       )}
 
       {/* Risk Contributors */}
-      <Card>
+      <Card id="risk-contributors">
         <CardBody className="p-6">
           <h2 className="text-lg font-semibold mb-4">Risk Contributors</h2>
           <p className="text-sm text-default-500 mb-6">

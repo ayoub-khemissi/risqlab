@@ -27,7 +27,7 @@ import {
   getPercentageColor,
   getCoinImageUrl,
 } from "@/lib/formatters";
-import { STORAGE_KEYS } from "@/lib/localStorage";
+import { sStorage } from "@/lib/sessionStorage";
 
 interface CryptoTableProps {
   data: Cryptocurrency[];
@@ -220,10 +220,7 @@ function CryptoTableComponent({
               key={item.id}
               className="cursor-pointer hover:bg-default-100 transition-colors"
               onClick={() => {
-                sessionStorage.setItem(
-                  STORAGE_KEYS.CRYPTO_RETURN_PATH,
-                  "/#crypto-table",
-                );
+                sStorage.set("CRYPTO_RETURN_PATH", "/#crypto-table");
                 router.push(`/crypto/${item.symbol}`);
               }}
             >

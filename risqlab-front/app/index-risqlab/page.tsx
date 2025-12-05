@@ -67,10 +67,42 @@ export default function IndexPage() {
         }
       };
 
-      // Try after a delay
-      setTimeout(scrollToTable, 300);
+      // Try after a delay to ensure DOM is ready
+      const timeoutId = setTimeout(scrollToTable, 300);
+
+      return () => clearTimeout(timeoutId);
     }
   }, [data]);
+
+  // Handle hash on mount (when returning from crypto detail page)
+  useEffect(() => {
+    const handleHashScroll = () => {
+      if (window.location.hash === "#constituents-table") {
+        const element = document.getElementById("constituents-table");
+
+        if (element) {
+          // Wait a bit for the page to fully render
+          setTimeout(() => {
+            element.scrollIntoView({ behavior: "smooth", block: "start" });
+            // Clean up the hash
+            window.history.replaceState(
+              null,
+              "",
+              window.location.pathname + window.location.search,
+            );
+          }, 300);
+        }
+      }
+    };
+
+    // Check on mount
+    handleHashScroll();
+
+    // Also listen for hash changes
+    window.addEventListener("hashchange", handleHashScroll);
+
+    return () => window.removeEventListener("hashchange", handleHashScroll);
+  }, []);
 
   const fetchIndexDetails = async () => {
     setIsLoading(true);

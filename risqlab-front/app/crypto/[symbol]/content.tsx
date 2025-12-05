@@ -28,7 +28,7 @@ import {
 } from "@/lib/formatters";
 import { title } from "@/components/primitives";
 import { API_BASE_URL } from "@/config/constants";
-import { STORAGE_KEYS } from "@/lib/localStorage";
+import { sStorage } from "@/lib/sessionStorage";
 
 export default function CryptoDetailContent() {
   const params = useParams();
@@ -38,15 +38,13 @@ export default function CryptoDetailContent() {
   const [data, setData] = useState<CryptoDetailResponse["data"] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [returnPath, setReturnPath] = useState<string>("/#crypto-table");
+  const [returnPath, setReturnPath] = useState<string>("/");
 
   useEffect(() => {
     fetchCryptoDetail();
 
     // Get return path from sessionStorage
-    const savedReturnPath = sessionStorage.getItem(
-      STORAGE_KEYS.CRYPTO_RETURN_PATH,
-    );
+    const savedReturnPath = sStorage.get("CRYPTO_RETURN_PATH");
 
     if (savedReturnPath) {
       setReturnPath(savedReturnPath);
@@ -115,7 +113,9 @@ export default function CryptoDetailContent() {
         <Button
           startContent={<ArrowLeft size={18} />}
           variant="light"
-          onPress={() => router.push(returnPath)}
+          onPress={() => {
+            router.push(returnPath);
+          }}
         >
           Back
         </Button>

@@ -24,7 +24,7 @@ import {
   getPercentageColor,
   getCoinImageUrl,
 } from "@/lib/formatters";
-import { STORAGE_KEYS } from "@/lib/localStorage";
+import { sStorage } from "@/lib/sessionStorage";
 
 interface ConstituentsTableProps {
   constituents: IndexConstituent[];
@@ -237,8 +237,8 @@ function ConstituentsTableComponent({ constituents }: ConstituentsTableProps) {
             key={item.cmc_id}
             className="cursor-pointer hover:bg-default-100 transition-colors"
             onClick={() => {
-              sessionStorage.setItem(
-                STORAGE_KEYS.CRYPTO_RETURN_PATH,
+              sStorage.set(
+                "CRYPTO_RETURN_PATH",
                 "/index-risqlab#constituents-table",
               );
               router.push(`/crypto/${item.symbol}`);

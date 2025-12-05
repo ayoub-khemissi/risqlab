@@ -2,12 +2,7 @@
  * LocalStorage keys used throughout the application
  * Centralized to avoid typos and make it easier to manage
  */
-export const STORAGE_KEYS = {
-  /**
-   * Stores the return path when navigating from crypto table to crypto detail page
-   */
-  CRYPTO_RETURN_PATH: "cryptoReturnPath",
-
+export const LOCAL_STORAGE_KEYS = {
   /**
    * Stores whether the user has dismissed the "Limited Historical Data" warning
    * Value: "true" if dismissed
@@ -16,32 +11,37 @@ export const STORAGE_KEYS = {
 } as const;
 
 /**
+ * Type for localStorage keys
+ */
+export type LocalStorageKey = keyof typeof LOCAL_STORAGE_KEYS;
+
+/**
  * Type-safe localStorage helper functions
  */
-export const storage = {
+export const lStorage = {
   /**
    * Get a value from localStorage
    */
-  get: (key: keyof typeof STORAGE_KEYS): string | null => {
+  get: (key: LocalStorageKey): string | null => {
     if (typeof window === "undefined") return null;
 
-    return localStorage.getItem(STORAGE_KEYS[key]);
+    return localStorage.getItem(LOCAL_STORAGE_KEYS[key]);
   },
 
   /**
    * Set a value in localStorage
    */
-  set: (key: keyof typeof STORAGE_KEYS, value: string): void => {
+  set: (key: LocalStorageKey, value: string): void => {
     if (typeof window === "undefined") return;
-    localStorage.setItem(STORAGE_KEYS[key], value);
+    localStorage.setItem(LOCAL_STORAGE_KEYS[key], value);
   },
 
   /**
    * Remove a value from localStorage
    */
-  remove: (key: keyof typeof STORAGE_KEYS): void => {
+  remove: (key: LocalStorageKey): void => {
     if (typeof window === "undefined") return;
-    localStorage.removeItem(STORAGE_KEYS[key]);
+    localStorage.removeItem(LOCAL_STORAGE_KEYS[key]);
   },
 
   /**
