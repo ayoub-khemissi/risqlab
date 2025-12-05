@@ -28,6 +28,7 @@ import {
 } from "@/lib/formatters";
 import { title } from "@/components/primitives";
 import { API_BASE_URL } from "@/config/constants";
+import { STORAGE_KEYS } from "@/lib/localStorage";
 
 export default function CryptoDetailContent() {
   const params = useParams();
@@ -43,7 +44,9 @@ export default function CryptoDetailContent() {
     fetchCryptoDetail();
 
     // Get return path from sessionStorage
-    const savedReturnPath = sessionStorage.getItem("cryptoReturnPath");
+    const savedReturnPath = sessionStorage.getItem(
+      STORAGE_KEYS.CRYPTO_RETURN_PATH,
+    );
 
     if (savedReturnPath) {
       setReturnPath(savedReturnPath);
