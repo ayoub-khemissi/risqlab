@@ -77,12 +77,10 @@ async function calculateVolatilityForCrypto(cryptoId, symbol) {
   let inserted = 0;
   let skipped = 0;
 
-  // Determine the window size to use - prefer DEFAULT_WINDOW_DAYS but use what's available
-  const effectiveWindowDays = Math.min(logReturns.length, DEFAULT_WINDOW_DAYS);
-
   // Calculate volatility for each possible window
-  // Start from the first window that has exactly effectiveWindowDays returns
-  for (let i = effectiveWindowDays - 1; i < logReturns.length; i++) {
+  // Start from MINIMUM_WINDOW_DAYS (7) to have enough data for statistical validity
+  // Window size grows from MINIMUM_WINDOW_DAYS up to DEFAULT_WINDOW_DAYS (90)
+  for (let i = MINIMUM_WINDOW_DAYS - 1; i < logReturns.length; i++) {
     const windowEnd = logReturns[i];
     const currentDate = windowEnd.date;
 
