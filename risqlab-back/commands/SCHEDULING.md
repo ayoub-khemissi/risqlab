@@ -29,13 +29,14 @@ Here is the proposed strategy to optimize data freshness without exceeding the m
 | Task | Frequency | Monthly Cost (Credits) | Justification |
 | :--- | :--- | :--- | :--- |
 | **Main Pipeline** (Market Data + Index) | Every 15 minutes | **8,640** | Ensures maximum freshness for market data and the RisqLab80 index, which are the core of the application. |
+| **End-of-Day Snapshot** (Market Data only) | Daily at 23:59 | **90** | Captures a consistent "closing price" for each day, used for volatility calculations and daily exports. |
 | **Volatility Update** | Once a day (midnight) | **0** | Volatility calculations are computationally intensive and based on historical data. Daily updates are sufficient for this metric. No API calls required. |
 | **Global Metrics** | Every 45 minutes | **~960** | This data (dominance, total market cap) is important but less volatile than prices. A 45-minute interval is an excellent trade-off. |
 | **Fear & Greed Index** | Every 3 hours | **240** | The index provides real-time market sentiment. Fetching it 8 times daily ensures consistent updates throughout the day while staying within budget. |
 | **Crypto Metadata** | Once a week | **~20** | Project logos, descriptions, and websites almost never change. A weekly update is more than sufficient. |
-| **Total Estimated** | | **~9,860 credits/month** | |
+| **Total Estimated** | | **~9,950 credits/month** | |
 
-This plan uses approximately 98.6% of the monthly quota, leaving a small buffer (~140 credits) for safety while ensuring high data freshness where it matters most.
+This plan uses approximately 99.5% of the monthly quota, leaving a small buffer (~50 credits) for safety while ensuring high data freshness where it matters most.
 
 ## Crontab Configuration for Ubuntu
 
@@ -59,19 +60,23 @@ To implement this schedule, open your crontab file by running `crontab -e` in yo
 #    Runs every 15 minutes.
 */15 * * * * cd /home/ubuntu/risqlab/risqlab/risqlab-back && node commands/fetchCryptoMarketData.js && node commands/calculateRisqLab80.js
 
-# 2. Volatility Update: Calculate crypto and portfolio volatility.
+# 2. End-of-Day Snapshot: Fetch market data at 23:59.
+#    Captures the "closing price" for daily volatility calculations.
+59 23 * * * cd /home/ubuntu/risqlab/risqlab/risqlab-back && node commands/fetchCryptoMarketData.js
+
+# 3. Volatility Update: Calculate crypto and portfolio volatility.
 #    Runs once a day at 00:10 (10 minutes past midnight).
 10 0 * * * cd /home/ubuntu/risqlab/risqlab/risqlab-back && node commands/updateVolatility.js
 
-# 3. Global Metrics: Fetch BTC/ETH dominance, total market cap, etc.
+# 4. Global Metrics: Fetch BTC/ETH dominance, total market cap, etc.
 #    Runs every 45 minutes.
 */45 * * * * cd /home/ubuntu/risqlab/risqlab/risqlab-back && node commands/fetchGlobalMetrics.js
 
-# 4. Fear & Greed Index:
+# 5. Fear & Greed Index:
 #    Runs every 3 hours (8 times per day: 0h, 3h, 6h, 9h, 12h, 15h, 18h, 21h).
 0 */3 * * * cd /home/ubuntu/risqlab/risqlab/risqlab-back && node commands/fetchFearAndGreed.js
 
-# 5. Crypto Metadata (logos, descriptions, etc.):
+# 6. Crypto Metadata (logos, descriptions, etc.):
 #    Runs once a week, on Sunday at 3:05 AM.
 5 3 * * 0 cd /home/ubuntu/risqlab/risqlab/risqlab-back && node commands/fetchCryptoMetadata.js
 ```
