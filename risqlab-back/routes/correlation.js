@@ -44,15 +44,15 @@ api.get('/volatility/correlation', async (req, res) => {
             });
         }
 
-        // Get crypto IDs
+        // Get crypto IDs (case-insensitive matching)
         const [cryptos] = await Database.execute(
-            'SELECT id, symbol, name FROM cryptocurrencies WHERE symbol IN (?, ?)',
+            'SELECT id, symbol, name FROM cryptocurrencies WHERE UPPER(symbol) IN (?, ?)',
             [symbol1.toUpperCase(), symbol2.toUpperCase()]
         );
 
         if (cryptos.length !== 2) {
             // Check which one is missing
-            const foundSymbols = cryptos.map(c => c.symbol);
+            const foundSymbols = cryptos.map(c => c.symbol.toUpperCase());
             const missing = [];
             if (!foundSymbols.includes(symbol1.toUpperCase())) missing.push(symbol1);
             if (!foundSymbols.includes(symbol2.toUpperCase())) missing.push(symbol2);
@@ -63,8 +63,8 @@ api.get('/volatility/correlation', async (req, res) => {
             });
         }
 
-        const crypto1 = cryptos.find(c => c.symbol === symbol1.toUpperCase());
-        const crypto2 = cryptos.find(c => c.symbol === symbol2.toUpperCase());
+        const crypto1 = cryptos.find(c => c.symbol.toUpperCase() === symbol1.toUpperCase());
+        const crypto2 = cryptos.find(c => c.symbol.toUpperCase() === symbol2.toUpperCase());
 
         let dateFilter = '';
         switch (period) {
