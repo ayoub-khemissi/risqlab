@@ -34,9 +34,9 @@ async function checkVolatilitySetup() {
     const [marketDataStats] = await Database.execute(`
       SELECT
         COUNT(DISTINCT crypto_id) as num_cryptos,
-        COUNT(DISTINCT DATE(timestamp)) as num_days,
-        MIN(DATE(timestamp)) as first_date,
-        MAX(DATE(timestamp)) as last_date
+        COUNT(DISTINCT price_date) as num_days,
+        MIN(price_date) as first_date,
+        MAX(price_date) as last_date
       FROM market_data
     `);
 
@@ -60,8 +60,8 @@ async function checkVolatilitySetup() {
     const [indexHistory] = await Database.execute(`
       SELECT
         COUNT(*) as count,
-        MIN(DATE(timestamp)) as first_date,
-        MAX(DATE(timestamp)) as last_date
+        MIN(snapshot_date) as first_date,
+        MAX(snapshot_date) as last_date
       FROM index_history ih
       INNER JOIN index_config ic ON ih.index_config_id = ic.id
       WHERE ic.index_name = 'RisqLab 80'

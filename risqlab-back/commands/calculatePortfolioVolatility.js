@@ -27,7 +27,7 @@ async function calculatePortfolioVolatility() {
 
     // Get dates where we have index history
     const [indexDates] = await Database.execute(`
-      SELECT DISTINCT DATE(timestamp) as date, timestamp
+      SELECT DISTINCT snapshot_date as date, timestamp
       FROM index_history
       WHERE index_config_id = ?
       ORDER BY timestamp DESC
@@ -225,12 +225,12 @@ async function getConstituentsForDate(indexConfigId, timestamp, date) {
       (md.price_usd * md.circulating_supply) as market_cap_usd
     FROM market_data md
     WHERE md.crypto_id IN (${cryptoIds.join(',')})
-      AND DATE(md.timestamp) = ?
+      AND md.price_date = ?
       AND md.timestamp = (
         SELECT MAX(md2.timestamp)
         FROM market_data md2
         WHERE md2.crypto_id = md.crypto_id
-          AND DATE(md2.timestamp) = DATE(md.timestamp)
+          AND md2.price_date = md.price_date
       )
   `, [date]);
 

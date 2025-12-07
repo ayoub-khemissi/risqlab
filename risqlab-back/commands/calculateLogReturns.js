@@ -18,7 +18,7 @@ async function calculateLogReturns() {
       FROM cryptocurrencies c
       INNER JOIN market_data md ON c.id = md.crypto_id
       GROUP BY c.id, c.symbol, c.name
-      HAVING COUNT(DISTINCT DATE(md.timestamp)) >= 2
+      HAVING COUNT(DISTINCT md.price_date) >= 2
       ORDER BY c.symbol
     `);
 
@@ -60,20 +60,20 @@ async function calculateLogReturnsForCrypto(cryptoId, symbol) {
   // We use the latest price for each day (at 23:59)
   const [prices] = await Database.execute(`
     SELECT
-      DATE(md.timestamp) as date,
+      md.price_date as date,
       md.price_usd,
       md.timestamp
     FROM market_data md
     WHERE md.crypto_id = ?
       AND md.price_usd > 0
       AND md.timestamp = (
-        SELECT MAX(timestamp)
+        SELECT MAX(md2.timestamp)
         FROM market_data md2
         WHERE md2.crypto_id = md.crypto_id
-          AND DATE(md2.timestamp) = DATE(md.timestamp)
+          AND md2.price_date = md.price_date
           AND md2.price_usd > 0
       )
-    ORDER BY DATE(md.timestamp) ASC
+    ORDER BY md.price_date ASC
   `, [cryptoId]);
 
   if (prices.length < 2) {

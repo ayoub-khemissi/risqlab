@@ -24,17 +24,17 @@ async function exportConstituentsPrices() {
     const [yesterdaySnapshot] = await Database.execute(`
       SELECT
         ih.id as index_history_id,
-        DATE(ih.timestamp) as snapshot_date,
+        ih.snapshot_date,
         ih.timestamp
       FROM index_history ih
       INNER JOIN index_config cfg ON ih.index_config_id = cfg.id
       WHERE cfg.is_active = TRUE
-        AND DATE(ih.timestamp) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+        AND ih.snapshot_date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
         AND ih.timestamp = (
           SELECT MAX(ih2.timestamp)
           FROM index_history ih2
           WHERE ih2.index_config_id = ih.index_config_id
-            AND DATE(ih2.timestamp) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+            AND ih2.snapshot_date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
         )
       LIMIT 1
     `);
@@ -67,19 +67,19 @@ async function exportConstituentsPrices() {
     const [constituentsData] = await Database.execute(`
       SELECT
         md.crypto_id,
-        DATE(md.timestamp) as price_date,
+        md.price_date,
         md.price_usd
       FROM market_data md
       WHERE md.crypto_id IN (${cryptoIds.join(',')})
-        AND DATE(md.timestamp) >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
-        AND DATE(md.timestamp) < CURDATE()
+        AND md.price_date >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
+        AND md.price_date < CURDATE()
         AND md.timestamp = (
           SELECT MAX(md2.timestamp)
           FROM market_data md2
           WHERE md2.crypto_id = md.crypto_id
-            AND DATE(md2.timestamp) = DATE(md.timestamp)
+            AND md2.price_date = md.price_date
         )
-      ORDER BY md.timestamp ASC
+      ORDER BY md.price_date ASC
     `);
 
     log.info(`Retrieved ${constituentsData.length} constituent records`);
@@ -88,7 +88,10 @@ async function exportConstituentsPrices() {
     const dataMap = new Map();
     const datesSet = new Set();
     for (const row of constituentsData) {
-      const dateKey = new Date(row.price_date).toISOString().split('T')[0];
+      // price_date is already a DATE, format it as YYYY-MM-DD
+      const dateKey = row.price_date instanceof Date
+        ? row.price_date.toISOString().split('T')[0]
+        : new Date(row.price_date).toISOString().split('T')[0];
       const key = `${row.crypto_id}_${dateKey}`;
       dataMap.set(key, row);
       datesSet.add(dateKey);

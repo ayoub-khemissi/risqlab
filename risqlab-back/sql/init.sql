@@ -154,9 +154,12 @@ CREATE TABLE IF NOT EXISTS `market_data` (
     `total_supply` DECIMAL(30, 8) NULL,
     `fully_diluted_valuation` DECIMAL(40, 8) NULL,
     `timestamp` DATETIME NOT NULL,
+    `price_date` DATE GENERATED ALWAYS AS (DATE(`timestamp`)) STORED COMMENT 'Generated column for optimized date-based queries',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY `fk_market_data_crypto_idx` (`crypto_id`) REFERENCES `cryptocurrencies`(`id`) ON DELETE CASCADE,
     KEY `idx_timestamp` (`timestamp`),
+    KEY `idx_timestamp_desc` (`timestamp` DESC),
+    KEY `idx_crypto_price_date` (`crypto_id`, `price_date`),
     UNIQUE KEY `idx_crypto_timestamp` (`crypto_id`, `timestamp`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -165,6 +168,7 @@ CREATE TABLE IF NOT EXISTS `index_history` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `index_config_id` INT UNSIGNED NOT NULL,
     `timestamp` DATETIME NOT NULL,
+    `snapshot_date` DATE GENERATED ALWAYS AS (DATE(`timestamp`)) STORED COMMENT 'Generated column for optimized date-based queries',
     `total_market_cap_usd` DECIMAL(40, 8) NOT NULL,
     `index_level` DECIMAL(20, 8) NOT NULL,
     `divisor` DECIMAL(30, 8) NOT NULL,
@@ -174,6 +178,7 @@ CREATE TABLE IF NOT EXISTS `index_history` (
     FOREIGN KEY `fk_index_history_index_config_idx` (`index_config_id`) REFERENCES `index_config`(`id`) ON DELETE CASCADE,
     KEY `idx_timestamp` (`timestamp`),
     KEY `idx_index_level` (`index_level`),
+    KEY `idx_config_snapshot_date` (`index_config_id`, `snapshot_date`),
     UNIQUE KEY `idx_config_timestamp` (`index_config_id`, `timestamp`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

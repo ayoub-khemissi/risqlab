@@ -44,15 +44,15 @@ For each cryptocurrency, retrieve daily closing prices:
 
 ```sql
 SELECT
-  DATE(timestamp) as date,
+  price_date as date,
   price_usd,
   timestamp
 FROM market_data
 WHERE crypto_id = ?
   AND price_usd > 0
-GROUP BY DATE(timestamp)
+GROUP BY price_date
 HAVING timestamp = MAX(timestamp)
-ORDER BY DATE(timestamp) ASC
+ORDER BY price_date ASC
 ```
 
 **Selection criteria:**
