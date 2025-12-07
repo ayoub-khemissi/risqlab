@@ -106,8 +106,8 @@ async function calculatePortfolioVolatilityForDate(indexConfigId, date, timestam
     return { calculated: false };
   }
 
-  // Get constituents for this date
-  const constituents = await getConstituentsForDate(indexConfigId, timestamp);
+  // Get constituents for this date (uses market_data for price/market cap)
+  const constituents = await getConstituentsForDate(indexConfigId, timestamp, date);
 
   if (constituents.length === 0) {
     log.debug(`No constituents found for ${date}`);
@@ -193,16 +193,15 @@ async function calculatePortfolioVolatilityForDate(indexConfigId, date, timestam
 
 /**
  * Get index constituents for a specific date
+ * Uses market_data for price/market cap (last price of the day) for consistency
  */
-async function getConstituentsForDate(indexConfigId, timestamp) {
-  const [rows] = await Database.execute(`
+async function getConstituentsForDate(indexConfigId, timestamp, date) {
+  // Get the list of constituents from index_constituents
+  const [constituents] = await Database.execute(`
     SELECT
       ic.crypto_id,
       c.symbol,
-      c.name,
-      ic.price_usd,
-      ic.circulating_supply,
-      (ic.price_usd * ic.circulating_supply) as market_cap_usd
+      c.name
     FROM index_constituents ic
     INNER JOIN index_history ih ON ic.index_history_id = ih.id
     INNER JOIN cryptocurrencies c ON ic.crypto_id = c.id
@@ -211,12 +210,48 @@ async function getConstituentsForDate(indexConfigId, timestamp) {
     ORDER BY ic.rank_position ASC
   `, [indexConfigId, timestamp]);
 
-  return rows.map(row => ({
-    crypto_id: row.crypto_id,
-    symbol: row.symbol,
-    name: row.name,
-    marketCap: parseFloat(row.market_cap_usd)
-  }));
+  if (constituents.length === 0) {
+    return [];
+  }
+
+  const cryptoIds = constituents.map(c => c.crypto_id);
+
+  // Get the last price of the day from market_data for each constituent
+  const [marketData] = await Database.execute(`
+    SELECT
+      md.crypto_id,
+      md.price_usd,
+      md.circulating_supply,
+      (md.price_usd * md.circulating_supply) as market_cap_usd
+    FROM market_data md
+    WHERE md.crypto_id IN (${cryptoIds.join(',')})
+      AND DATE(md.timestamp) = ?
+      AND md.timestamp = (
+        SELECT MAX(md2.timestamp)
+        FROM market_data md2
+        WHERE md2.crypto_id = md.crypto_id
+          AND DATE(md2.timestamp) = DATE(md.timestamp)
+      )
+  `, [date]);
+
+  // Build a map of crypto_id -> market data
+  const marketDataMap = new Map();
+  for (const row of marketData) {
+    marketDataMap.set(row.crypto_id, row);
+  }
+
+  // Combine constituents with their market data
+  return constituents
+    .filter(c => marketDataMap.has(c.crypto_id))
+    .map(c => {
+      const md = marketDataMap.get(c.crypto_id);
+      return {
+        crypto_id: c.crypto_id,
+        symbol: c.symbol,
+        name: c.name,
+        marketCap: parseFloat(md.market_cap_usd)
+      };
+    });
 }
 
 /**
