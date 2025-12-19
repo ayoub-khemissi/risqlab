@@ -8,11 +8,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /**
- * Export historical data for the 80 index constituents over the last 90 days
- * - Takes the 80 cryptos from yesterday's (D-1) last snapshot
- * - For each crypto, retrieves price from D-90 to D-1, and weight from D-1
- * Output: CSV file with 80 rows (one per crypto) and columns:
- *   Rank, Symbol, Name, Weight (D-1), then for each date: Date_Price
+ * Export historical prices for portfolio volatility constituents
+ * - Uses the same crypto list as the frontend (from portfolio_volatility_constituents)
+ * - Retrieves prices from market_data for the window period
+ * Output: CSV file with columns:
+ *   Rank, Symbol, Name, Weight, then for each date: Date_Price
  */
 async function exportConstituentsPrices() {
   const startTime = Date.now();
@@ -20,59 +20,60 @@ async function exportConstituentsPrices() {
   try {
     log.info('Starting constituents prices export...');
 
-    // 1. Get yesterday's (D-1) last snapshot to identify the 80 cryptos
-    const [yesterdaySnapshot] = await Database.execute(`
-      SELECT
-        ih.id as index_history_id,
-        ih.snapshot_date,
-        ih.timestamp
-      FROM index_history ih
-      INNER JOIN index_config cfg ON ih.index_config_id = cfg.id
-      WHERE cfg.is_active = TRUE
-        AND ih.snapshot_date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
-        AND ih.timestamp = (
-          SELECT MAX(ih2.timestamp)
-          FROM index_history ih2
-          WHERE ih2.index_config_id = ih.index_config_id
-            AND ih2.snapshot_date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
-        )
+    // 1. Get the latest portfolio volatility record (same as frontend API)
+    const [pvRecords] = await Database.execute(`
+      SELECT pv.id, pv.date, pv.window_days, pv.index_config_id
+      FROM portfolio_volatility pv
+      INNER JOIN index_config ic ON pv.index_config_id = ic.id
+      WHERE ic.index_name = 'RisqLab 80'
+      ORDER BY pv.date DESC
       LIMIT 1
     `);
 
-    if (yesterdaySnapshot.length === 0) {
-      throw new Error('No index history found for yesterday');
+    if (pvRecords.length === 0) {
+      throw new Error('No portfolio volatility data found');
     }
 
-    log.info(`Using snapshot from ${yesterdaySnapshot[0].timestamp}`);
+    const { id: pvId, date: pvDate, window_days: windowDays } = pvRecords[0];
+    const pvDateStr = pvDate instanceof Date
+      ? pvDate.toISOString().split('T')[0]
+      : new Date(pvDate).toISOString().split('T')[0];
 
-    // 2. Get the 80 crypto IDs from yesterday's snapshot (with weight)
-    const [yesterdayCryptos] = await Database.execute(`
+    log.info(`Using portfolio volatility from ${pvDateStr} (${windowDays} days window)`);
+
+    // 2. Get constituents from portfolio_volatility_constituents (same source as frontend)
+    const [constituents] = await Database.execute(`
       SELECT
-        c.id as crypto_id,
+        pvc.crypto_id,
         c.symbol,
         c.name,
-        ic.rank_position,
-        ic.weight_in_index
-      FROM index_constituents ic
-      INNER JOIN cryptocurrencies c ON ic.crypto_id = c.id
-      WHERE ic.index_history_id = ?
-      ORDER BY ic.rank_position ASC
-    `, [yesterdaySnapshot[0].index_history_id]);
+        pvc.weight,
+        pvc.annualized_volatility,
+        pvc.market_cap_usd
+      FROM portfolio_volatility_constituents pvc
+      INNER JOIN cryptocurrencies c ON pvc.crypto_id = c.id
+      WHERE pvc.portfolio_volatility_id = ?
+      ORDER BY pvc.weight DESC
+    `, [pvId]);
 
-    log.info(`Found ${yesterdayCryptos.length} constituents from yesterday`);
+    log.info(`Found ${constituents.length} constituents from volatility calculation`);
 
-    const cryptoIds = yesterdayCryptos.map(c => c.crypto_id);
+    if (constituents.length === 0) {
+      throw new Error('No constituents found in portfolio volatility');
+    }
 
-    // 3. Get historical prices for the 80 cryptos from market_data (last price of each day, D-90 to D-1)
-    const [constituentsData] = await Database.execute(`
+    const cryptoIds = constituents.map(c => c.crypto_id);
+
+    // 3. Get historical prices for constituents from market_data (D-1 to D-1-window, excludes today)
+    const [pricesData] = await Database.execute(`
       SELECT
         md.crypto_id,
         md.price_date,
         md.price_usd
       FROM market_data md
       WHERE md.crypto_id IN (${cryptoIds.join(',')})
-        AND md.price_date >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
-        AND md.price_date < CURDATE()
+        AND md.price_date > DATE_SUB(DATE_SUB(CURDATE(), INTERVAL 1 DAY), INTERVAL ${windowDays} DAY)
+        AND md.price_date <= DATE_SUB(CURDATE(), INTERVAL 1 DAY)
         AND md.timestamp = (
           SELECT MAX(md2.timestamp)
           FROM market_data md2
@@ -82,13 +83,13 @@ async function exportConstituentsPrices() {
       ORDER BY md.price_date ASC
     `);
 
-    log.info(`Retrieved ${constituentsData.length} constituent records`);
+    log.info(`Retrieved ${pricesData.length} price records`);
 
     // 4. Build a map for quick lookup: crypto_id + date -> price
     const dataMap = new Map();
     const datesSet = new Set();
-    for (const row of constituentsData) {
-      // price_date is already a DATE, format it as YYYY-MM-DD
+
+    for (const row of pricesData) {
       const dateKey = row.price_date instanceof Date
         ? row.price_date.toISOString().split('T')[0]
         : new Date(row.price_date).toISOString().split('T')[0];
@@ -97,11 +98,9 @@ async function exportConstituentsPrices() {
       datesSet.add(dateKey);
     }
 
-    // Get sorted dates
     const sortedDates = [...datesSet].sort();
 
     // 5. Build CSV content
-    // Helper to format number (replace dot with comma for Excel)
     const formatNumber = (num) => {
       if (num === null || num === undefined) return '';
       return num.toString().replace('.', ',');
@@ -116,9 +115,9 @@ async function exportConstituentsPrices() {
     }
     csvContent += '\n';
 
-    // Data rows: one per crypto (80 rows)
-    for (const crypto of yesterdayCryptos) {
-      csvContent += `${crypto.rank_position};${crypto.symbol};${crypto.name};${formatNumber(crypto.weight_in_index)}`;
+    // Data rows: one per constituent (sorted by weight desc)
+    constituents.forEach((crypto, index) => {
+      csvContent += `${index + 1};${crypto.symbol};${crypto.name};${formatNumber(crypto.weight)}`;
 
       for (const date of sortedDates) {
         const key = `${crypto.crypto_id}_${date}`;
@@ -126,7 +125,7 @@ async function exportConstituentsPrices() {
         csvContent += `;${data ? formatNumber(data.price_usd) : ''}`;
       }
       csvContent += '\n';
-    }
+    });
 
     // 6. Write to file
     const exportDir = path.join(__dirname, '..', 'exports');
@@ -135,7 +134,7 @@ async function exportConstituentsPrices() {
     }
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const filename = `Constituents_Prices_90days_${timestamp}.csv`;
+    const filename = `Constituents_Prices_${windowDays}days_${timestamp}.csv`;
     const filepath = path.join(exportDir, filename);
 
     fs.writeFileSync(filepath, csvContent, 'utf8');
@@ -143,7 +142,7 @@ async function exportConstituentsPrices() {
     const duration = Date.now() - startTime;
     log.info(`Constituents prices exported successfully to: ${filepath}`);
     log.info(`Export completed in ${duration}ms`);
-    log.info(`Exported ${yesterdayCryptos.length} cryptos x ${sortedDates.length} days (${sortedDates.length + 4} columns)`);
+    log.info(`Exported ${constituents.length} cryptos x ${sortedDates.length} days`);
 
     return filepath;
 

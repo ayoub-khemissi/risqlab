@@ -149,7 +149,7 @@ async function calculatePortfolioVolatilityForDate(indexConfigId, date, timestam
   const excludedConstituents = constituentsWithReturns.filter(c => c.returns.length < effectiveWindowDays);
 
   if (excludedConstituents.length > 0) {
-    const excludedInfo = excludedConstituents.map(c => `${c.symbol}(${c.returns.length}j)`).join(', ');
+    const excludedInfo = excludedConstituents.map(c => `${c.symbol}(${c.returns.length}d)`).join(', ');
     log.warn(`${date}: ${excludedConstituents.length} constituents excluded (insufficient data): ${excludedInfo}`);
   }
 
