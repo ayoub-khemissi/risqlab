@@ -16,19 +16,19 @@ export function mean(values) {
 }
 
 /**
- * Calculate the variance of an array of numbers
+ * Calculate the sample variance of an array of numbers (using n-1 for unbiased estimator)
  * @param {number[]} values - Array of numbers
  * @param {number} [meanValue] - Pre-calculated mean (optional)
- * @returns {number} Variance
+ * @returns {number} Sample variance
  */
 export function variance(values, meanValue = null) {
-  if (!values || values.length === 0) {
+  if (!values || values.length < 2) {
     return 0;
   }
 
   const mu = meanValue !== null ? meanValue : mean(values);
-  const squaredDiffs = values.map(val => Math.pow(val - mu, 2));
-  return mean(squaredDiffs);
+  const squaredDiffs = values.reduce((sum, val) => sum + Math.pow(val - mu, 2), 0);
+  return squaredDiffs / (values.length - 1);
 }
 
 /**
@@ -65,13 +65,13 @@ export function annualizeVolatility(dailyVolatility, tradingDays = 365) {
 }
 
 /**
- * Calculate covariance between two arrays of returns
+ * Calculate sample covariance between two arrays of returns (using n-1 for unbiased estimator)
  * @param {number[]} returns1 - Array of returns for asset 1
  * @param {number[]} returns2 - Array of returns for asset 2
- * @returns {number} Covariance
+ * @returns {number} Sample covariance
  */
 export function covariance(returns1, returns2) {
-  if (!returns1 || !returns2 || returns1.length !== returns2.length || returns1.length === 0) {
+  if (!returns1 || !returns2 || returns1.length !== returns2.length || returns1.length < 2) {
     return 0;
   }
 
@@ -83,7 +83,7 @@ export function covariance(returns1, returns2) {
     cov += (returns1[i] - mean1) * (returns2[i] - mean2);
   }
 
-  return cov / returns1.length;
+  return cov / (returns1.length - 1);
 }
 
 /**

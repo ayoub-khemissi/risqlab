@@ -129,10 +129,10 @@ Where:
 
 **b) Daily Volatility (Standard Deviation):**
 ```
-σ_daily = √[(1/n) × Σ(i=1 to n) (r[i] - μ)²]
+σ_daily = √[(1/(n-1)) × Σ(i=1 to n) (r[i] - μ)²]
 ```
 
-This is the sample standard deviation of log returns over the window period.
+This is the sample standard deviation of log returns over the window period. The division by `n-1` is known as **Bessel's Correction**, providing an unbiased estimate from a data sample.
 
 **c) Annualized Volatility:**
 ```
@@ -228,13 +228,15 @@ Where:
 Build the covariance matrix for all constituent pairs:
 
 ```
-Cov(i,j) = (1/T) × Σ(t=1 to T) [(r[i,t] - μ[i]) × (r[j,t] - μ[j])]
+Cov(i,j) = (1/(T-1)) × Σ(t=1 to T) [(r[i,t] - μ[i]) × (r[j,t] - μ[j])]
 
 Where:
   r[i,t] = log return of asset i at time t
   μ[i] = mean log return of asset i
   T = 90 (window size)
 ```
+
+The use of `T-1` is Bessel's correction for sample covariance, ensuring an unbiased estimate.
 
 The covariance matrix is an n×n symmetric matrix where:
 - Diagonal elements: variances of individual assets
@@ -320,7 +322,7 @@ r[t] = ln(P[t] / P[t-1])
 
 ### Variance
 ```
-σ² = (1/n) × Σ(r[i] - μ)²
+σ² = (1/(n-1)) × Σ(r[i] - μ)²
 ```
 
 ### Standard Deviation (Volatility)
@@ -335,7 +337,7 @@ r[t] = ln(P[t] / P[t-1])
 
 ### Covariance
 ```
-Cov(X,Y) = (1/n) × Σ[(x[i] - μ_x) × (y[i] - μ_y)]
+Cov(X,Y) = (1/(n-1)) × Σ[(x[i] - μ_x) × (y[i] - μ_y)]
 ```
 
 ### Portfolio Variance (Matrix Form)
@@ -348,6 +350,8 @@ Cov(X,Y) = (1/n) × Σ[(x[i] - μ_x) × (y[i] - μ_y)]
 ```
 ρ(X,Y) = Cov(X,Y) / (σ_X × σ_Y)
 ```
+
+**Note on Formulas:** The formulas for variance and covariance use a divisor of `n-1`. This is **Bessel's Correction**, applied because the calculations are based on a sample of data, not the entire population. This provides an unbiased estimate.
 
 ---
 

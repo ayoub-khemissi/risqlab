@@ -268,6 +268,18 @@ export default function VolatilityMethodologyPage() {
                     365 days a year.
                   </p>
                 </div>
+
+                <div className="border-l-4 border-secondary pl-4">
+                  <h3 className="font-bold text-lg">
+                    Bessel&apos;s Correction
+                  </h3>
+                  <p className="text-default-600">
+                    When calculating variance from a sample of data (like 90
+                    days of returns), we divide by <code>n-1</code> instead of{" "}
+                    <code>n</code> to get an unbiased estimate. This is applied
+                    to all our variance and covariance calculations.
+                  </p>
+                </div>
               </div>
             </CardBody>
           </Card>
@@ -680,7 +692,9 @@ export default function VolatilityMethodologyPage() {
                         b) Daily Volatility (Standard Deviation)
                       </p>
                       <div className="bg-content1 p-4 rounded-lg font-mono text-sm">
-                        <div>σ_daily = √[(1/n) × Σ(i=1 to n) (r[i] - μ)²]</div>
+                        <div>
+                          σ_daily = √[(1/(n-1)) × Σ(i=1 to n) (r[i] - μ)²]
+                        </div>
                       </div>
                     </div>
 
@@ -783,8 +797,8 @@ export default function VolatilityMethodologyPage() {
                   </p>
                   <div className="bg-content1 p-4 rounded-lg font-mono text-sm mb-4">
                     <div>
-                      Cov(i,j) = (1/T) × Σ(t=1 to T) [(r[i,t] - μ[i]) × (r[j,t]
-                      - μ[j])]
+                      Cov(i,j) = (1/(T-1)) × Σ(t=1 to T) [(r[i,t] - μ[i]) ×
+                      (r[j,t] - μ[j])]
                     </div>
                     <div className="text-xs text-default-500 mt-2">
                       Where r[i,t] = log return of asset i at time t, T = 90
