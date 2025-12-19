@@ -60,12 +60,14 @@ async function calculateCryptoVolatility() {
  */
 async function calculateVolatilityForCrypto(cryptoId, symbol) {
   // Get all log returns for this crypto, ordered by date
+  // Exclude current day - we only calculate for D-1 and earlier
   const [logReturns] = await Database.execute(`
     SELECT
       date,
       log_return
     FROM crypto_log_returns
     WHERE crypto_id = ?
+      AND date < CURDATE()
     ORDER BY date ASC
   `, [cryptoId]);
 

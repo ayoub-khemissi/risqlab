@@ -27,10 +27,12 @@ async function calculatePortfolioVolatility() {
     log.info(`Using index config ID: ${indexConfig.id}`);
 
     // Get dates where we have index history (one row per day, with latest timestamp)
+    // Exclude current day - we only calculate for D-1 and earlier
     const [indexDates] = await Database.execute(`
       SELECT snapshot_date as date, MAX(timestamp) as timestamp
       FROM index_history
       WHERE index_config_id = ?
+        AND snapshot_date < CURDATE()
       GROUP BY snapshot_date
       ORDER BY snapshot_date DESC
       LIMIT 100
