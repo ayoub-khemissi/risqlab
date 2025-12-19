@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
+import { Tooltip } from "@heroui/tooltip";
 import { Info, Activity, AlertTriangle, X } from "lucide-react";
 import Link from "next/link";
 import clsx from "clsx";
@@ -335,9 +336,19 @@ export default function PortfolioRiskPage() {
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-sm text-default-500">Constituents</span>
-                <Chip color="primary" size="sm" variant="flat">
-                  {current.num_constituents}
-                </Chip>
+                <div className="flex items-center gap-2">
+                  {current.num_constituents < 80 && (
+                    <Tooltip content="The index has fewer than 80 constituents due to insufficient historical data for some candidates.">
+                      <AlertTriangle
+                        className="text-warning cursor-help"
+                        size={16}
+                      />
+                    </Tooltip>
+                  )}
+                  <Chip color="primary" size="sm" variant="flat">
+                    {current.num_constituents}
+                  </Chip>
+                </div>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-default-500">Window</span>

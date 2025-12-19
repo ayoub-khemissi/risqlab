@@ -78,7 +78,24 @@ api.get('/volatility/portfolio', async (req, res) => {
  */
 api.get('/volatility/portfolio/constituents', async (req, res) => {
   try {
-    const [constituents] = await Database.execute(`
+    // 1. Get the latest portfolio volatility record
+    const [pvRecords] = await Database.execute(`
+      SELECT pv.id, pv.date, pv.index_config_id
+      FROM portfolio_volatility pv
+      INNER JOIN index_config ic ON pv.index_config_id = ic.id
+      WHERE ic.index_name = 'RisqLab 80'
+      ORDER BY pv.date DESC
+      LIMIT 1
+    `);
+
+    if (pvRecords.length === 0) {
+      return res.json({ data: [] });
+    }
+
+    const { id: pvId, date: pvDate, index_config_id: indexConfigId } = pvRecords[0];
+
+    // 2. Get calculated constituents
+    const [calculatedConstituents] = await Database.execute(`
       SELECT
         pvc.crypto_id,
         c.symbol,
@@ -89,24 +106,79 @@ api.get('/volatility/portfolio/constituents', async (req, res) => {
         pvc.annualized_volatility,
         pvc.market_cap_usd
       FROM portfolio_volatility_constituents pvc
-      INNER JOIN portfolio_volatility pv ON pvc.portfolio_volatility_id = pv.id
       INNER JOIN cryptocurrencies c ON pvc.crypto_id = c.id
-      WHERE pv.id = (
-        SELECT pv2.id
-        FROM portfolio_volatility pv2
-        INNER JOIN index_config ic ON pv2.index_config_id = ic.id
-        WHERE ic.index_name = 'RisqLab 80'
-        ORDER BY pv2.date DESC
+      WHERE pvc.portfolio_volatility_id = ?
+      ORDER BY pvc.weight DESC
+    `, [pvId]);
+
+    // 3. Get all index constituents for the specific index history snapshot used
+    // We target the latest snapshot for that date to avoid duplicates from multiple runs
+    const [allIndexConstituents] = await Database.execute(`
+      SELECT
+        ic.crypto_id,
+        c.symbol,
+        c.name,
+        c.cmc_id
+      FROM index_constituents ic
+      INNER JOIN index_history ih ON ic.index_history_id = ih.id
+      INNER JOIN cryptocurrencies c ON ic.crypto_id = c.id
+      WHERE ih.id = (
+        SELECT id
+        FROM index_history
+        WHERE index_config_id = ?
+          AND snapshot_date = ?
+        ORDER BY timestamp DESC
         LIMIT 1
       )
-      ORDER BY pvc.weight DESC
-    `);
+    `, [indexConfigId, pvDate]);
 
-    res.json({
-      data: constituents
+    // 4. Merge lists
+    // Create a Set of calculated crypto IDs for fast lookup
+    const calculatedIds = new Set(calculatedConstituents.map(c => c.crypto_id));
+    const mergedConstituents = [...calculatedConstituents];
+
+    // Find excluded constituents
+    const excludedConstituents = allIndexConstituents.filter(c => !calculatedIds.has(c.crypto_id));
+
+    // Get available days count for excluded constituents
+    if (excludedConstituents.length > 0) {
+      const excludedIds = excludedConstituents.map(c => c.crypto_id);
+      const [availableDaysData] = await Database.execute(`
+        SELECT crypto_id, COUNT(*) as available_days
+        FROM crypto_log_returns
+        WHERE crypto_id IN (${excludedIds.join(',')})
+          AND date <= ?
+        GROUP BY crypto_id
+      `, [pvDate]);
+
+      const availableDaysMap = new Map(availableDaysData.map(d => [d.crypto_id, d.available_days]));
+
+      for (const constituent of excludedConstituents) {
+        mergedConstituents.push({
+          crypto_id: constituent.crypto_id,
+          symbol: constituent.symbol,
+          name: constituent.name,
+          cmc_id: constituent.cmc_id,
+          weight: 0,
+          daily_volatility: 0,
+          annualized_volatility: 0,
+          market_cap_usd: 0,
+          available_days: availableDaysMap.get(constituent.crypto_id) || 0
+        });
+      }
+    }
+
+    // Sort again by weight desc, then by symbol for the 0-weight ones to be stable
+    mergedConstituents.sort((a, b) => {
+      if (b.weight !== a.weight) return b.weight - a.weight;
+      return a.symbol.localeCompare(b.symbol);
     });
 
-    log.debug('Fetched portfolio volatility constituents');
+    res.json({
+      data: mergedConstituents
+    });
+
+    log.debug(`Fetched portfolio volatility constituents (found ${allIndexConstituents.length} expected, returning ${mergedConstituents.length})`);
   } catch (error) {
     log.error(`Error fetching portfolio constituents volatility: ${error.message}`);
     res.status(500).json({

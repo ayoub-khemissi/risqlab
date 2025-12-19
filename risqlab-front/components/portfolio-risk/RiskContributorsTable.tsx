@@ -13,7 +13,7 @@ import {
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Image } from "@heroui/image";
-import { Search } from "lucide-react";
+import { Search, AlertTriangle } from "lucide-react";
 
 import { RiskContribution } from "@/types/volatility";
 import { VolatilityBadge } from "@/components/volatility";
@@ -44,12 +44,20 @@ export function RiskContributorsTable({
     "annualized",
   );
 
+  // Check for constituents with missing data
+  const missingDataContributors = useMemo(() => {
+    return contributors.filter(
+      (c) => !c.annualized_volatility || c.annualized_volatility === 0,
+    );
+  }, [contributors]);
+
   // Filter and sort data
   const filteredAndSortedData = useMemo(() => {
     let filtered = contributors.filter(
       (item) =>
-        item.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()),
+        (item.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.name.toLowerCase().includes(searchTerm.toLowerCase())) &&
+        item.annualized_volatility > 0,
     );
 
     // Sort
@@ -131,6 +139,36 @@ export function RiskContributorsTable({
           </Button>
         </div>
       </div>
+
+      {/* Warning for insufficient data */}
+      {missingDataContributors.length > 0 && (
+        <div className="bg-warning/10 border border-warning rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle
+              className="text-warning mt-0.5 flex-shrink-0"
+              size={20}
+            />
+            <div>
+              <h3 className="font-semibold text-warning mb-1">
+                Limited Historical Data
+              </h3>
+              <p className="text-sm text-default-700">
+                The following assets have insufficient historical data for
+                volatility calculation:{" "}
+                <strong>
+                  {missingDataContributors
+                    .map(
+                      (c) =>
+                        `${c.symbol} (${c.available_days ?? 0}d)`,
+                    )
+                    .join(", ")}
+                </strong>
+                . They will be included once they have 90 days of market data.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Table */}
       <Table key={volatilityMode} aria-label="Risk contributors table">

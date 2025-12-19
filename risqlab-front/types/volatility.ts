@@ -29,6 +29,7 @@ export interface PortfolioVolatilityConstituent {
   daily_volatility: number;
   annualized_volatility: number;
   market_cap_usd: number;
+  available_days?: number; // Only present for excluded constituents (insufficient data)
 }
 
 /**

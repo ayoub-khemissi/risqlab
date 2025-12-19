@@ -4,7 +4,8 @@ import {
   buildCovarianceMatrix,
   portfolioVolatility,
   annualizeVolatility,
-  validateWeights
+  validateWeights,
+  variance
 } from '../utils/statistics.js';
 
 const DEFAULT_WINDOW_DAYS = 90;
@@ -120,26 +121,49 @@ async function calculatePortfolioVolatilityForDate(indexConfigId, date, timestam
   // Get log returns for all constituents over the window period
   const constituentReturns = await getConstituentReturns(constituents, date);
 
-  // Filter out constituents with insufficient data (minimum required)
-  const validConstituents = constituentReturns.filter(
-    c => c.returns.length >= MINIMUM_WINDOW_DAYS
-  );
+  // Check if any constituent has no returns at all
+  const constituentsWithReturns = constituentReturns.filter(c => c.returns.length > 0);
+  const constituentsWithoutReturns = constituentReturns.filter(c => c.returns.length === 0);
 
-  if (validConstituents.length < 10) {
-    log.debug(`${date}: Insufficient data - only ${validConstituents.length} constituents with at least ${MINIMUM_WINDOW_DAYS} returns`);
+  if (constituentsWithoutReturns.length > 0) {
+    log.warn(`${date}: ${constituentsWithoutReturns.length} constituents have no log returns: ${constituentsWithoutReturns.map(c => c.symbol).join(', ')}`);
+  }
+
+  if (constituentsWithReturns.length < 10) {
+    log.debug(`${date}: Insufficient data - only ${constituentsWithReturns.length} constituents with any returns`);
     return { calculated: false };
   }
 
-  // Find the minimum number of days available across all constituents
-  const minAvailableDays = Math.min(...validConstituents.map(c => c.returns.length));
-  const effectiveWindowDays = Math.min(minAvailableDays, DEFAULT_WINDOW_DAYS);
+  // Target DEFAULT_WINDOW_DAYS (90j) - use max available if no one has 90 days yet
+  const maxAvailableDays = Math.max(...constituentsWithReturns.map(c => c.returns.length));
+  let effectiveWindowDays = Math.min(maxAvailableDays, DEFAULT_WINDOW_DAYS);
 
-  log.debug(`${date}: Using ${effectiveWindowDays} days window (min available: ${minAvailableDays})`);
+  // Minimum threshold for statistical validity
+  if (effectiveWindowDays < MINIMUM_WINDOW_DAYS) {
+    log.debug(`${date}: Window too small (${effectiveWindowDays} days) - need at least ${MINIMUM_WINDOW_DAYS}`);
+    return { calculated: false };
+  }
 
-  // Truncate all constituents' returns to the same window size
-  const normalizedConstituents = validConstituents.map(c => ({
+  // Filter constituents that have enough data for the target window
+  const eligibleConstituents = constituentsWithReturns.filter(c => c.returns.length >= effectiveWindowDays);
+  const excludedConstituents = constituentsWithReturns.filter(c => c.returns.length < effectiveWindowDays);
+
+  if (excludedConstituents.length > 0) {
+    const excludedInfo = excludedConstituents.map(c => `${c.symbol}(${c.returns.length}j)`).join(', ');
+    log.warn(`${date}: ${excludedConstituents.length} constituents excluded (insufficient data): ${excludedInfo}`);
+  }
+
+  if (eligibleConstituents.length < 10) {
+    log.debug(`${date}: Not enough eligible constituents (${eligibleConstituents.length}) for ${effectiveWindowDays} days window`);
+    return { calculated: false };
+  }
+
+  log.debug(`${date}: Using ${effectiveWindowDays} days window (${eligibleConstituents.length} constituents, ${excludedConstituents.length} excluded)`);
+
+  // Truncate all eligible constituents' returns to the same window size
+  const normalizedConstituents = eligibleConstituents.map(c => ({
     ...c,
-    returns: c.returns.slice(-effectiveWindowDays) // Take last N days
+    returns: c.returns.slice(-effectiveWindowDays)
   }));
 
   // Calculate total market cap and weights
@@ -241,6 +265,12 @@ async function getConstituentsForDate(indexConfigId, timestamp, date) {
     marketDataMap.set(row.crypto_id, row);
   }
 
+  // Log any missing constituents for debugging
+  const missingConstituents = constituents.filter(c => !marketDataMap.has(c.crypto_id));
+  if (missingConstituents.length > 0) {
+    log.warn(`${date}: ${missingConstituents.length} constituents missing market_data: ${missingConstituents.map(c => c.symbol).join(', ')}`);
+  }
+
   // Combine constituents with their market data
   return constituents
     .filter(c => marketDataMap.has(c.crypto_id))
@@ -294,14 +324,9 @@ async function storeConstituentVolatilities(portfolioVolatilityId, constituents,
     const constituent = constituents[i];
     const weight = weights[i];
 
-    // Calculate individual volatility from returns
+    // Calculate individual volatility from returns (using n-1 for sample variance)
     const returns = constituent.returns;
-    const variance = returns.reduce((sum, r) => {
-      const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
-      return sum + Math.pow(r - mean, 2);
-    }, 0) / returns.length;
-
-    const dailyVol = Math.sqrt(variance);
+    const dailyVol = Math.sqrt(variance(returns));
     const annualizedVol = annualizeVolatility(dailyVol);
 
     await Database.execute(`
