@@ -11,7 +11,7 @@ interface MarketCapCellProps {
   circulatingSupply: string;
 }
 
-// Ce composant re-render UNIQUEMENT quand SON prix change
+// This component re-render only when its price changes
 function MarketCapCellComponent({
   symbol,
   fallbackPrice,

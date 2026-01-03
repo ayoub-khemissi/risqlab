@@ -1,6 +1,7 @@
 import api from '../lib/api.js';
 import Database from '../lib/database.js';
 import log from '../lib/log.js';
+import { getDateFilter } from '../utils/queryHelpers.js';
 
 /**
  * Get portfolio volatility data
@@ -10,24 +11,7 @@ import log from '../lib/log.js';
 api.get('/volatility/portfolio', async (req, res) => {
   try {
     const { period = 'all' } = req.query;
-
-    let dateFilter = '';
-    switch (period) {
-      case '24h':
-        dateFilter = 'AND pv.date >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)';
-        break;
-      case '7d':
-        dateFilter = 'AND pv.date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)';
-        break;
-      case '30d':
-        dateFilter = 'AND pv.date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
-        break;
-      case '90d':
-        dateFilter = 'AND pv.date >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)';
-        break;
-      default:
-        dateFilter = '';
-    }
+    const dateFilter = getDateFilter(period, 'pv.date');
 
     // Get current portfolio volatility
     const [current] = await Database.execute(`
@@ -213,21 +197,7 @@ api.get('/volatility/crypto/:symbol', async (req, res) => {
     }
 
     const cryptoId = crypto[0].id;
-
-    let dateFilter = '';
-    switch (period) {
-      case '7d':
-        dateFilter = 'AND date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)';
-        break;
-      case '30d':
-        dateFilter = 'AND date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
-        break;
-      case '90d':
-        dateFilter = 'AND date >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)';
-        break;
-      default:
-        dateFilter = '';
-    }
+    const dateFilter = getDateFilter(period);
 
     // Get latest volatility
     const [latest] = await Database.execute(`

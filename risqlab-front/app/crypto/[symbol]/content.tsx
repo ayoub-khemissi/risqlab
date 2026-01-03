@@ -1,15 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
 import { Progress } from "@heroui/progress";
 import {
-  TrendingUp,
-  TrendingDown,
   ArrowLeft,
   Globe,
   FileText,
@@ -19,26 +17,92 @@ import {
 } from "lucide-react";
 
 import { CryptoDetailResponse } from "@/types/crypto-detail";
-import {
-  formatCryptoPrice,
-  formatUSD,
-  formatNumber,
-  formatPercentage,
-  getPercentageColor,
-} from "@/lib/formatters";
+import { RiskPanel, RiskPeriod } from "@/types/risk-metrics";
+import { formatUSD, formatNumber } from "@/lib/formatters";
 import { title } from "@/components/primitives";
 import { API_BASE_URL } from "@/config/constants";
 import { sStorage } from "@/lib/sessionStorage";
+import {
+  PanelSidebar,
+  PricePanel,
+  VolatilityPanel,
+  StressTestPanel,
+  VaRPanel,
+  BetaPanel,
+  DistributionPanel,
+  SMLPanel,
+} from "@/components/risk-panels";
+import { useRiskSummary, usePriceHistory } from "@/hooks/useRiskMetrics";
+
+const VALID_PANELS: RiskPanel[] = [
+  "price",
+  "volatility",
+  "stress-test",
+  "var",
+  "beta",
+  "distribution",
+  "sml",
+];
 
 export default function CryptoDetailContent() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const symbol = params.symbol as string;
 
   const [data, setData] = useState<CryptoDetailResponse["data"] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [returnPath, setReturnPath] = useState<string>("/");
+
+  // Get initial panel from URL or default to "price"
+  const panelFromUrl = searchParams.get("panel") as RiskPanel | null;
+  const initialPanel =
+    panelFromUrl && VALID_PANELS.includes(panelFromUrl)
+      ? panelFromUrl
+      : "price";
+
+  // Panel state
+  const [activePanel, setActivePanel] = useState<RiskPanel>(initialPanel);
+  const [period, setPeriod] = useState<RiskPeriod>("90d");
+
+  // Risk metrics for sidebar
+  const { data: riskSummary, isLoading: isRiskSummaryLoading } = useRiskSummary(
+    symbol,
+    period,
+  );
+  const { data: priceData } = usePriceHistory(symbol, period);
+
+  // Update URL when panel changes
+  const handlePanelChange = useCallback(
+    (panel: RiskPanel) => {
+      setActivePanel(panel);
+      const newParams = new URLSearchParams(searchParams.toString());
+
+      if (panel === "price") {
+        newParams.delete("panel");
+      } else {
+        newParams.set("panel", panel);
+      }
+      const query = newParams.toString();
+
+      router.replace(`/crypto/${symbol}${query ? `?${query}` : ""}`, {
+        scroll: false,
+      });
+    },
+    [router, searchParams, symbol],
+  );
+
+  // Sync activePanel with URL on mount/URL change
+  useEffect(() => {
+    const panelParam = searchParams.get("panel") as RiskPanel | null;
+    const validPanel =
+      panelParam && VALID_PANELS.includes(panelParam) ? panelParam : "price";
+
+    if (validPanel !== activePanel) {
+      setActivePanel(validPanel);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchCryptoDetail();
@@ -106,6 +170,63 @@ export default function CryptoDetailContent() {
       ? (market.circulating_supply / market.total_supply) * 100
       : 0;
 
+  const renderActivePanel = () => {
+    switch (activePanel) {
+      case "price":
+        return (
+          <PricePanel
+            period={period}
+            symbol={symbol}
+            onPeriodChange={setPeriod}
+          />
+        );
+      case "volatility":
+        return (
+          <VolatilityPanel
+            period={period}
+            symbol={symbol}
+            onPeriodChange={setPeriod}
+          />
+        );
+      case "stress-test":
+        return <StressTestPanel symbol={symbol} />;
+      case "var":
+        return (
+          <VaRPanel
+            period={period}
+            symbol={symbol}
+            onPeriodChange={setPeriod}
+          />
+        );
+      case "beta":
+        return (
+          <BetaPanel
+            period={period}
+            symbol={symbol}
+            onPeriodChange={setPeriod}
+          />
+        );
+      case "distribution":
+        return (
+          <DistributionPanel
+            period={period}
+            symbol={symbol}
+            onPeriodChange={setPeriod}
+          />
+        );
+      case "sml":
+        return (
+          <SMLPanel
+            period={period}
+            symbol={symbol}
+            onPeriodChange={setPeriod}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <section className="flex flex-col gap-6">
       {/* Back Button */}
@@ -121,7 +242,7 @@ export default function CryptoDetailContent() {
         </Button>
       </div>
 
-      {/* Header */}
+      {/* Header - Always visible */}
       <div className="flex items-center gap-4">
         {basic.logo_url && (
           <Image
@@ -154,100 +275,6 @@ export default function CryptoDetailContent() {
           )}
         </div>
       </div>
-
-      {/* Price & Change */}
-      <Card>
-        <CardBody className="p-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <p className="text-sm text-default-500 mb-1">
-                {basic.symbol} Price
-              </p>
-              <p className="text-4xl font-bold">
-                {formatCryptoPrice(market.price_usd)}
-              </p>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {market.percent_change_1h !== null && (
-                <div>
-                  <p className="text-xs text-default-500">1h</p>
-                  <Chip
-                    color={getPercentageColor(market.percent_change_1h)}
-                    size="sm"
-                    startContent={
-                      market.percent_change_1h > 0 ? (
-                        <TrendingUp size={14} />
-                      ) : (
-                        <TrendingDown size={14} />
-                      )
-                    }
-                    variant="flat"
-                  >
-                    {formatPercentage(market.percent_change_1h)}
-                  </Chip>
-                </div>
-              )}
-              {market.percent_change_24h !== null && (
-                <div>
-                  <p className="text-xs text-default-500">24h</p>
-                  <Chip
-                    color={getPercentageColor(market.percent_change_24h)}
-                    size="sm"
-                    startContent={
-                      market.percent_change_24h > 0 ? (
-                        <TrendingUp size={14} />
-                      ) : (
-                        <TrendingDown size={14} />
-                      )
-                    }
-                    variant="flat"
-                  >
-                    {formatPercentage(market.percent_change_24h)}
-                  </Chip>
-                </div>
-              )}
-              {market.percent_change_7d !== null && (
-                <div>
-                  <p className="text-xs text-default-500">7d</p>
-                  <Chip
-                    color={getPercentageColor(market.percent_change_7d)}
-                    size="sm"
-                    startContent={
-                      market.percent_change_7d > 0 ? (
-                        <TrendingUp size={14} />
-                      ) : (
-                        <TrendingDown size={14} />
-                      )
-                    }
-                    variant="flat"
-                  >
-                    {formatPercentage(market.percent_change_7d)}
-                  </Chip>
-                </div>
-              )}
-              {market.percent_change_30d !== null && (
-                <div>
-                  <p className="text-xs text-default-500">30d</p>
-                  <Chip
-                    color={getPercentageColor(market.percent_change_30d)}
-                    size="sm"
-                    startContent={
-                      market.percent_change_30d > 0 ? (
-                        <TrendingUp size={14} />
-                      ) : (
-                        <TrendingDown size={14} />
-                      )
-                    }
-                    variant="flat"
-                  >
-                    {formatPercentage(market.percent_change_30d)}
-                  </Chip>
-                </div>
-              )}
-            </div>
-          </div>
-        </CardBody>
-      </Card>
 
       {/* Links */}
       {(links.website ||
@@ -324,6 +351,25 @@ export default function CryptoDetailContent() {
           )}
         </div>
       )}
+
+      {/* Main Grid: Sidebar + Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Sidebar - First on mobile, sticky on desktop */}
+        <div className="lg:col-span-1 order-1 lg:order-1">
+          <PanelSidebar
+            activePanel={activePanel}
+            currentPrice={priceData?.current?.price}
+            isLoading={isRiskSummaryLoading}
+            riskSummary={riskSummary}
+            onPanelChange={handlePanelChange}
+          />
+        </div>
+
+        {/* Main Content */}
+        <div className="lg:col-span-3 order-2 lg:order-2">
+          {renderActivePanel()}
+        </div>
+      </div>
 
       {/* Market Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

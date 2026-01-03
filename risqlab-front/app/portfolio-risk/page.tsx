@@ -47,6 +47,8 @@ export default function PortfolioRiskPage() {
   const [isMobile, setIsMobile] = useState(false);
   const [warningDismissed, setWarningDismissed] = useState(false);
   const [warningFading, setWarningFading] = useState(false);
+  const [isConstituentsTooltipOpen, setIsConstituentsTooltipOpen] =
+    useState(false);
 
   // Fetch portfolio volatility data
   const {
@@ -338,10 +340,30 @@ export default function PortfolioRiskPage() {
                 <span className="text-sm text-default-500">Constituents</span>
                 <div className="flex items-center gap-2">
                   {current.num_constituents < 80 && (
-                    <Tooltip content="The index has fewer than 80 constituents due to insufficient historical data for some candidates.">
+                    <Tooltip
+                      content={
+                        <div className="px-1 py-2 max-w-xs">
+                          <div className="text-small font-bold">
+                            Fewer Than 80 Constituents
+                          </div>
+                          <div className="text-tiny">
+                            The index has fewer than 80 constituents due to
+                            insufficient historical data for some candidates.
+                          </div>
+                        </div>
+                      }
+                      isOpen={isConstituentsTooltipOpen}
+                    >
                       <AlertTriangle
                         className="text-warning cursor-help"
                         size={16}
+                        onClick={() =>
+                          setIsConstituentsTooltipOpen(
+                            !isConstituentsTooltipOpen,
+                          )
+                        }
+                        onMouseLeave={() => setIsConstituentsTooltipOpen(false)}
+                        onMouseOver={() => setIsConstituentsTooltipOpen(true)}
                       />
                     </Tooltip>
                   )}

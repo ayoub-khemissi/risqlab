@@ -460,6 +460,7 @@ export default function IndexPage() {
                               ? "url(#colorIndexGreen)"
                               : "url(#colorIndexRed)"
                           }
+                          isAnimationActive={true}
                           stroke={isAbove100 ? "#037bfc" : "#037bfc"}
                           strokeWidth={2}
                           type="linear"

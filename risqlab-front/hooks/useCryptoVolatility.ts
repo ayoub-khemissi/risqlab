@@ -25,8 +25,14 @@ export function useCryptoVolatility(
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
+  // Create a stable string key from symbols array
+  const symbolsKey = symbols.join(",");
+
   useEffect(() => {
-    if (symbols.length === 0) {
+    // Parse the key back to array to avoid using the original symbols reference
+    const symbolsList = symbolsKey ? symbolsKey.split(",") : [];
+
+    if (symbolsList.length === 0) {
       setData([]);
 
       return;
@@ -37,7 +43,7 @@ export function useCryptoVolatility(
       setError(null);
 
       try {
-        const promises = symbols.map(async (symbol, index) => {
+        const promises = symbolsList.map(async (symbol, index) => {
           const response = await fetch(
             `${API_BASE_URL}/volatility/crypto/${symbol}?period=${period}`,
           );
@@ -68,7 +74,7 @@ export function useCryptoVolatility(
     };
 
     fetchData();
-  }, [symbols, period]);
+  }, [symbolsKey, period]);
 
   return { data, isLoading, error };
 }

@@ -1,6 +1,7 @@
 import api from '../lib/api.js';
 import Database from '../lib/database.js';
 import log from '../lib/log.js';
+import { getMaxDataPoints } from '../utils/queryHelpers.js';
 
 api.get('/index-details', async (req, res) => {
   try {
@@ -20,6 +21,8 @@ api.get('/index-details', async (req, res) => {
       default:
         timeFilter = '';
     }
+
+    const maxPoints = getMaxDataPoints(period);
 
     const [latestIndex] = await Database.execute(`
       SELECT
@@ -73,16 +76,25 @@ api.get('/index-details', async (req, res) => {
       LIMIT 1
     `);
 
+    // Get index history with intelligent downsampling for chart visualization
     const [indexHistory] = await Database.execute(`
-      SELECT
-        ih.index_level,
-        ih.timestamp
-      FROM index_history ih
-      INNER JOIN index_config ic ON ih.index_config_id = ic.id
-      WHERE ic.index_name = 'RisqLab 80'
-        ${timeFilter}
-      ORDER BY ih.timestamp ASC
-    `);
+      SELECT index_level, timestamp FROM (
+        SELECT
+          ih.index_level,
+          ih.timestamp,
+          ROW_NUMBER() OVER (ORDER BY ih.timestamp) as rn,
+          COUNT(*) OVER () as total_count
+        FROM index_history ih
+        INNER JOIN index_config ic ON ih.index_config_id = ic.id
+        WHERE ic.index_name = 'RisqLab 80'
+          ${timeFilter}
+      ) sub
+      WHERE
+        rn = 1
+        OR rn = total_count
+        OR MOD(rn - 1, GREATEST(1, FLOOR(total_count / ?))) = 0
+      ORDER BY timestamp ASC
+    `, [maxPoints]);
 
     const [constituents] = await Database.execute(`
       SELECT

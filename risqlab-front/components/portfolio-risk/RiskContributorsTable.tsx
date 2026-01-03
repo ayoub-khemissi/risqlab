@@ -157,10 +157,7 @@ export function RiskContributorsTable({
                 volatility calculation:{" "}
                 <strong>
                   {missingDataContributors
-                    .map(
-                      (c) =>
-                        `${c.symbol} (${c.available_days ?? 0}d)`,
-                    )
+                    .map((c) => `${c.symbol} (${c.available_days ?? 0}d)`)
                     .join(", ")}
                 </strong>
                 . They will be included once they have 90 days of market data.
