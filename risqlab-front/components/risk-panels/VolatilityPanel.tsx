@@ -3,6 +3,7 @@
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
+import { TrendingUp, TrendingDown } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -13,11 +14,12 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from "recharts";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 import { RiskPeriod } from "@/types/risk-metrics";
 import { useCryptoVolatility } from "@/hooks/useCryptoVolatility";
-import { VolatilityPeriod } from "@/types/volatility";
+import { CryptoVolatility, VolatilityPeriod } from "@/types/volatility";
+import { formatPercentage, getPercentageColor } from "@/lib/formatters";
 
 interface VolatilityPanelProps {
   symbol: string;
@@ -62,6 +64,68 @@ function getRiskLevel(volatility: number, isAnnualized: boolean) {
   return { level: "Low", color: "success" as const };
 }
 
+function calculateVolatilityChanges(
+  history: CryptoVolatility[],
+  currentVol: CryptoVolatility | null,
+  mode: "annualized" | "daily",
+): Record<string, number | null> {
+  if (!currentVol || history.length === 0) {
+    return { "24h": null, "7d": null, "30d": null, "90d": null };
+  }
+
+  const currentValue =
+    mode === "annualized"
+      ? Number(currentVol.annualized_volatility) * 100
+      : Number(currentVol.daily_volatility) * 100;
+
+  const currentDate = new Date(currentVol.date);
+  const changes: Record<string, number | null> = {};
+  const periods = [
+    { key: "24h", days: 1 },
+    { key: "7d", days: 7 },
+    { key: "30d", days: 30 },
+    { key: "90d", days: 90 },
+  ];
+
+  for (const { key, days } of periods) {
+    const targetDate = new Date(currentDate);
+
+    targetDate.setDate(targetDate.getDate() - days);
+
+    // Find the closest entry to the target date
+    let closestEntry: CryptoVolatility | null = null;
+    let minDiff = Infinity;
+
+    for (const entry of history) {
+      const entryDate = new Date(entry.date);
+      const diff = Math.abs(entryDate.getTime() - targetDate.getTime());
+
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestEntry = entry;
+      }
+    }
+
+    // Only use if within 2 days of target
+    if (closestEntry && minDiff <= 2 * 24 * 60 * 60 * 1000) {
+      const pastValue =
+        mode === "annualized"
+          ? Number(closestEntry.annualized_volatility) * 100
+          : Number(closestEntry.daily_volatility) * 100;
+
+      if (pastValue !== 0) {
+        changes[key] = ((currentValue - pastValue) / pastValue) * 100;
+      } else {
+        changes[key] = null;
+      }
+    } else {
+      changes[key] = null;
+    }
+  }
+
+  return changes;
+}
+
 export function VolatilityPanel({
   symbol,
   period,
@@ -104,6 +168,11 @@ export function VolatilityPanel({
   const riskZones =
     mode === "annualized" ? RISK_ZONES_ANNUAL : RISK_ZONES_DAILY;
 
+  const volatilityChanges = useMemo(
+    () => calculateVolatilityChanges(history, currentVol ?? null, mode),
+    [history, currentVol, mode],
+  );
+
   return (
     <div className="flex flex-col gap-4">
       {/* Current Volatility Card */}
@@ -127,21 +196,54 @@ export function VolatilityPanel({
                 )}
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant={mode === "annualized" ? "solid" : "bordered"}
-                onPress={() => setMode("annualized")}
-              >
-                Annualized
-              </Button>
-              <Button
-                size="sm"
-                variant={mode === "daily" ? "solid" : "bordered"}
-                onPress={() => setMode("daily")}
-              >
-                Daily
-              </Button>
+            <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {(["24h", "7d", "30d", "90d"] as const).map((key) => {
+                  const change = volatilityChanges[key];
+
+                  return (
+                    <div key={key}>
+                      <p className="text-xs text-default-500">{key}</p>
+                      {change !== null ? (
+                        <Chip
+                          color={getPercentageColor(change)}
+                          size="sm"
+                          startContent={
+                            change > 0 ? (
+                              <TrendingUp size={14} />
+                            ) : (
+                              <TrendingDown size={14} />
+                            )
+                          }
+                          variant="flat"
+                        >
+                          {formatPercentage(change)}
+                        </Chip>
+                      ) : (
+                        <Chip color="default" size="sm" variant="flat">
+                          -
+                        </Chip>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex gap-2 sm:justify-end">
+                <Button
+                  size="sm"
+                  variant={mode === "annualized" ? "solid" : "bordered"}
+                  onPress={() => setMode("annualized")}
+                >
+                  Annualized
+                </Button>
+                <Button
+                  size="sm"
+                  variant={mode === "daily" ? "solid" : "bordered"}
+                  onPress={() => setMode("daily")}
+                >
+                  Daily
+                </Button>
+              </div>
             </div>
           </div>
         </CardBody>
