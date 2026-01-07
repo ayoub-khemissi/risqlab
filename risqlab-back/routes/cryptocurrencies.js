@@ -8,6 +8,7 @@ api.get('/cryptocurrencies', async (req, res) => {
     const limit = parseInt(req.query.limit) || 100;
     const sortBy = req.query.sortBy || 'market_cap_usd';
     const sortOrder = (req.query.sortOrder || 'desc').toUpperCase();
+    const search = req.query.search || '';
 
     const allowedSortColumns = [
       'market_cap_usd',
@@ -38,6 +39,14 @@ api.get('/cryptocurrencies', async (req, res) => {
 
     const orderByClause = `ORDER BY ${sortBy === 'market_cap_usd' ? '(md.price_usd * md.circulating_supply)' : sortBy} ${sortOrder}`;
 
+    // Build search condition
+    const searchCondition = search
+      ? `AND (c.symbol LIKE ? OR c.name LIKE ?)`
+      : '';
+    const searchParams = search
+      ? [`%${search}%`, `%${search}%`]
+      : [];
+
     const [rows] = await Database.execute(`
       SELECT
         c.id,
@@ -64,9 +73,10 @@ api.get('/cryptocurrencies', async (req, res) => {
       ) ranked ON c.id = ranked.crypto_id
       WHERE md.timestamp = (SELECT MAX(timestamp) FROM market_data)
         AND (md.price_usd * md.circulating_supply) > 0
+        ${searchCondition}
       ${orderByClause}
       LIMIT ${limit} OFFSET ${offset}
-    `);
+    `, searchParams);
 
     const [countResult] = await Database.execute(`
       SELECT COUNT(DISTINCT c.id) as total
@@ -74,7 +84,8 @@ api.get('/cryptocurrencies', async (req, res) => {
       INNER JOIN market_data md ON c.id = md.crypto_id
       WHERE md.timestamp = (SELECT MAX(timestamp) FROM market_data)
         AND (md.price_usd * md.circulating_supply) > 0
-    `);
+        ${searchCondition}
+    `, searchParams);
 
     const total = countResult[0].total;
 

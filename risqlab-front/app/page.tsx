@@ -20,6 +20,7 @@ export default function Home() {
   const [totalPages, setTotalPages] = useState(1);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [metricsData, setMetricsData] = useState<
     MetricsResponse["data"] | null
   >(null);
@@ -31,7 +32,7 @@ export default function Home() {
     fetchCryptocurrencies();
     fetchMetrics();
     fetchVolatility();
-  }, [page, sortColumn, sortOrder]);
+  }, [page, sortColumn, sortOrder, searchTerm]);
 
   // Scroll to crypto table if hash is present, then remove hash from URL
   useEffect(() => {
@@ -91,10 +92,21 @@ export default function Home() {
   const fetchCryptocurrencies = async () => {
     setIsLoading(true);
     try {
-      const url =
-        sortColumn && sortOrder
-          ? `${API_BASE_URL}/cryptocurrencies?page=${page}&limit=100&sortBy=${sortColumn}&sortOrder=${sortOrder}`
-          : `${API_BASE_URL}/cryptocurrencies?page=${page}&limit=100`;
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: "100",
+      });
+
+      if (sortColumn && sortOrder) {
+        params.set("sortBy", sortColumn);
+        params.set("sortOrder", sortOrder);
+      }
+
+      if (searchTerm) {
+        params.set("search", searchTerm);
+      }
+
+      const url = `${API_BASE_URL}/cryptocurrencies?${params.toString()}`;
 
       const response = await fetch(url);
 
@@ -114,6 +126,11 @@ export default function Home() {
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setPage(1); // Reset to first page when searching
   };
 
   const fetchMetrics = async () => {
@@ -190,10 +207,12 @@ export default function Home() {
             data={data}
             isLoading={isLoading}
             page={page}
+            searchTerm={searchTerm}
             sortColumn={sortColumn}
             sortOrder={sortOrder}
             totalPages={totalPages}
             onPageChange={handlePageChange}
+            onSearchChange={handleSearchChange}
             onSort={handleSort}
           />
         </div>

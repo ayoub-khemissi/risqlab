@@ -281,12 +281,6 @@ export function RiskContributorsTable({
           )}
         </TableBody>
       </Table>
-
-      {/* Summary */}
-      <div className="text-sm text-default-500 text-center">
-        Showing {filteredAndSortedData.length} of {contributors.length}{" "}
-        constituents
-      </div>
     </div>
   );
 }

@@ -14,7 +14,8 @@ import { Image } from "@heroui/image";
 import { Chip } from "@heroui/chip";
 import { Pagination } from "@heroui/pagination";
 import { Spinner } from "@heroui/spinner";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { Input } from "@heroui/input";
+import { TrendingUp, TrendingDown, Search } from "lucide-react";
 
 import { PriceCell } from "./PriceCell";
 import { MarketCapCell } from "./MarketCapCell";
@@ -38,6 +39,8 @@ interface CryptoTableProps {
   onSort: (column: string) => void;
   sortColumn: string | null;
   sortOrder: "asc" | "desc" | null;
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
 }
 
 function CryptoTableComponent({
@@ -49,6 +52,8 @@ function CryptoTableComponent({
   onSort,
   sortColumn,
   sortOrder,
+  searchTerm,
+  onSearchChange,
 }: CryptoTableProps) {
   const router = useRouter();
 
@@ -163,75 +168,87 @@ function CryptoTableComponent({
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <Table
-        aria-label="Cryptocurrency table"
-        bottomContent={
-          totalPages > 1 ? (
-            <div className="flex w-full justify-center">
-              <Pagination
-                isCompact
-                showControls
-                showShadow
-                color="primary"
-                page={page}
-                total={totalPages}
-                onChange={onPageChange}
-              />
-            </div>
-          ) : null
-        }
-        classNames={{
-          wrapper: "min-h-[400px]",
-        }}
-        sortDescriptor={
-          sortColumn && sortOrder
-            ? {
-                column: sortColumn,
-                direction: sortOrder === "asc" ? "ascending" : "descending",
-              }
-            : undefined
-        }
-        onSortChange={(descriptor) => {
-          if (descriptor.column) {
-            const column = descriptor.column as string;
-            const columnConfig = columns.find((col) => col.key === column);
-            const dbColumn = columnConfig?.dbColumn || column;
+    <Table
+      aria-label="Cryptocurrency table"
+      bottomContent={
+        totalPages > 1 ? (
+          <div className="flex w-full justify-center">
+            <Pagination
+              isCompact
+              showControls
+              showShadow
+              color="primary"
+              page={page}
+              total={totalPages}
+              onChange={onPageChange}
+            />
+          </div>
+        ) : null
+      }
+      classNames={{
+        wrapper: "",
+      }}
+      sortDescriptor={
+        sortColumn && sortOrder
+          ? {
+              column: sortColumn,
+              direction: sortOrder === "asc" ? "ascending" : "descending",
+            }
+          : undefined
+      }
+      topContent={
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h2 className="text-lg font-semibold">All Cryptocurrencies</h2>
+          <Input
+            isClearable
+            className="w-full sm:max-w-xs"
+            placeholder="Search by symbol or name..."
+            startContent={<Search size={18} />}
+            value={searchTerm}
+            onClear={() => onSearchChange("")}
+            onValueChange={onSearchChange}
+          />
+        </div>
+      }
+      onSortChange={(descriptor) => {
+        if (descriptor.column) {
+          const column = descriptor.column as string;
+          const columnConfig = columns.find((col) => col.key === column);
+          const dbColumn = columnConfig?.dbColumn || column;
 
-            onSort(dbColumn);
-          }
-        }}
+          onSort(dbColumn);
+        }
+      }}
+    >
+      <TableHeader columns={columns}>
+        {(column) => (
+          <TableColumn key={column.key} allowsSorting={column.sortable}>
+            {column.label}
+          </TableColumn>
+        )}
+      </TableHeader>
+      <TableBody
+        emptyContent={"No cryptocurrencies found"}
+        isLoading={isLoading}
+        items={data}
+        loadingContent={<Spinner label="Loading..." />}
       >
-        <TableHeader columns={columns}>
-          {(column) => (
-            <TableColumn key={column.key} allowsSorting={column.sortable}>
-              {column.label}
-            </TableColumn>
-          )}
-        </TableHeader>
-        <TableBody
-          emptyContent={"No cryptocurrencies found"}
-          isLoading={isLoading}
-          items={data}
-          loadingContent={<Spinner label="Loading..." />}
-        >
-          {(item) => (
-            <TableRow
-              key={item.id}
-              className="cursor-pointer hover:bg-default-100 transition-colors"
-              onClick={() => {
-                sStorage.set("CRYPTO_RETURN_PATH", "/#crypto-table");
-                router.push(`/crypto/${item.symbol}`);
-              }}
-            >
-              {(columnKey) => (
-                <TableCell>{renderCell(item, columnKey)}</TableCell>
-              )}
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </div>
+        {(item) => (
+          <TableRow
+            key={item.id}
+            className="cursor-pointer hover:bg-default-100 transition-colors"
+            onClick={() => {
+              sStorage.set("CRYPTO_RETURN_PATH", "/#crypto-table");
+              router.push(`/crypto/${item.symbol}`);
+            }}
+          >
+            {(columnKey) => (
+              <TableCell>{renderCell(item, columnKey)}</TableCell>
+            )}
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
   );
 }
 

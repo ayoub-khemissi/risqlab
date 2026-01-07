@@ -12,7 +12,8 @@ import {
 } from "@heroui/table";
 import { Image } from "@heroui/image";
 import { Chip } from "@heroui/chip";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { Input } from "@heroui/input";
+import { TrendingUp, TrendingDown, Search } from "lucide-react";
 
 import { PriceCell } from "./PriceCell";
 import { MarketCapCell } from "./MarketCapCell";
@@ -32,6 +33,7 @@ interface ConstituentsTableProps {
 
 function ConstituentsTableComponent({ constituents }: ConstituentsTableProps) {
   const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState("");
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>(null);
 
@@ -46,12 +48,24 @@ function ConstituentsTableComponent({ constituents }: ConstituentsTableProps) {
     { key: "weight_in_index", label: "Weight", sortable: true },
   ];
 
-  const sortedConstituents = useMemo(() => {
-    if (!sortColumn || !sortOrder) {
-      return constituents;
+  const filteredAndSortedConstituents = useMemo(() => {
+    let filtered = constituents;
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = constituents.filter(
+        (c) =>
+          c.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          c.name.toLowerCase().includes(searchTerm.toLowerCase()),
+      );
     }
 
-    return [...constituents].sort((a, b) => {
+    // Sort if needed
+    if (!sortColumn || !sortOrder) {
+      return filtered;
+    }
+
+    return [...filtered].sort((a, b) => {
       let aValue: any = a[sortColumn as keyof IndexConstituent];
       let bValue: any = b[sortColumn as keyof IndexConstituent];
 
@@ -69,7 +83,7 @@ function ConstituentsTableComponent({ constituents }: ConstituentsTableProps) {
         return aValue < bValue ? 1 : -1;
       }
     });
-  }, [constituents, sortColumn, sortOrder]);
+  }, [constituents, searchTerm, sortColumn, sortOrder]);
 
   const handleSort = (column: string) => {
     if (column === sortColumn) {
@@ -198,7 +212,7 @@ function ConstituentsTableComponent({ constituents }: ConstituentsTableProps) {
     <Table
       aria-label="RisqLab 80 Index constituents table"
       classNames={{
-        wrapper: "min-h-[400px]",
+        wrapper: "",
       }}
       sortDescriptor={
         sortColumn && sortOrder
@@ -209,10 +223,19 @@ function ConstituentsTableComponent({ constituents }: ConstituentsTableProps) {
           : undefined
       }
       topContent={
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h2 className="text-lg font-semibold">
             RisqLab 80 Index Constituents
           </h2>
+          <Input
+            isClearable
+            className="w-full sm:max-w-xs"
+            placeholder="Search by symbol or name..."
+            startContent={<Search size={18} />}
+            value={searchTerm}
+            onClear={() => setSearchTerm("")}
+            onValueChange={setSearchTerm}
+          />
         </div>
       }
       onSortChange={(descriptor) => {
@@ -230,7 +253,7 @@ function ConstituentsTableComponent({ constituents }: ConstituentsTableProps) {
       </TableHeader>
       <TableBody
         emptyContent={"No constituents found"}
-        items={sortedConstituents}
+        items={filteredAndSortedConstituents}
       >
         {(item) => (
           <TableRow
