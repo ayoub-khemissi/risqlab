@@ -5,8 +5,9 @@ import { Chip } from "@heroui/chip";
 import { Tooltip } from "@heroui/tooltip";
 import { AlertTriangle } from "lucide-react";
 import {
-  BarChart,
+  ComposedChart,
   Bar,
+  Line,
   XAxis,
   YAxis,
   Tooltip as RechartsTooltip,
@@ -14,7 +15,7 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from "recharts";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 import { useVaR } from "@/hooks/useRiskMetrics";
 import { RiskPeriod } from "@/types/risk-metrics";
@@ -25,17 +26,48 @@ interface VaRPanelProps {
   onPeriodChange: (period: RiskPeriod) => void;
 }
 
+// Gaussian PDF function
+function gaussianPDF(x: number, mean: number, stdDev: number): number {
+  const coefficient = 1 / (stdDev * Math.sqrt(2 * Math.PI));
+  const exponent = -Math.pow(x - mean, 2) / (2 * Math.pow(stdDev, 2));
+
+  return coefficient * Math.exp(exponent);
+}
+
 export function VaRPanel({ symbol }: VaRPanelProps) {
   const { data, isLoading, error } = useVaR(symbol, "all");
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
 
-  const chartData =
-    data?.histogram?.map((bin) => ({
-      x: bin.binCenter,
-      count: bin.count,
-      percentage: bin.percentage,
-      range: `${bin.binStart.toFixed(2)}% to ${bin.binEnd.toFixed(2)}%`,
-    })) || [];
+  const chartData = useMemo(() => {
+    if (!data?.histogram) return [];
+
+    const histogram = data.histogram;
+    const stats = data.statistics;
+
+    // Calculate total count and bin width for scaling
+    const totalCount = histogram.reduce((sum, bin) => sum + bin.count, 0);
+    const binWidth =
+      histogram.length > 0 ? histogram[0].binEnd - histogram[0].binStart : 1;
+
+    return histogram.map((bin) => {
+      let normalCount = 0;
+
+      if (stats && stats.stdDev > 0) {
+        // Calculate the Gaussian PDF value and scale it to match histogram
+        const pdfValue = gaussianPDF(bin.binCenter, stats.mean, stats.stdDev);
+
+        normalCount = pdfValue * totalCount * binWidth;
+      }
+
+      return {
+        x: bin.binCenter,
+        count: bin.count,
+        normalCount,
+        percentage: bin.percentage,
+        range: `${bin.binStart.toFixed(2)}% to ${bin.binEnd.toFixed(2)}%`,
+      };
+    });
+  }, [data?.histogram, data?.statistics]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -135,7 +167,7 @@ export function VaRPanel({ symbol }: VaRPanelProps) {
             </div>
           ) : (
             <ResponsiveContainer height={300} width="100%">
-              <BarChart data={chartData}>
+              <ComposedChart data={chartData}>
                 <CartesianGrid opacity={0.1} strokeDasharray="3 3" />
                 <XAxis
                   dataKey="x"
@@ -158,9 +190,16 @@ export function VaRPanel({ symbol }: VaRPanelProps) {
                       return (
                         <div className="bg-content1 border border-default-200 rounded-lg p-3 shadow-lg">
                           <p className="text-sm text-default-500">{d.range}</p>
-                          <p className="text-lg font-semibold">
+                          <p className="text-sm">
+                            <span className="text-primary">Actual:</span>{" "}
                             {d.count} days ({d.percentage.toFixed(1)}%)
                           </p>
+                          {d.normalCount > 0 && (
+                            <p className="text-sm">
+                              <span className="text-warning">Normal:</span>{" "}
+                              {d.normalCount.toFixed(1)} days
+                            </p>
+                          )}
                         </div>
                       );
                     }
@@ -198,8 +237,22 @@ export function VaRPanel({ symbol }: VaRPanelProps) {
                     x={-data.var99}
                   />
                 )}
-                <Bar dataKey="count" fill="#3b82f6" radius={[2, 2, 0, 0]} />
-              </BarChart>
+                <Bar
+                  dataKey="count"
+                  fill="#3b82f6"
+                  fillOpacity={0.6}
+                  radius={[2, 2, 0, 0]}
+                />
+                <Line
+                  activeDot={false}
+                  dataKey="normalCount"
+                  dot={false}
+                  name="Normal Distribution"
+                  stroke="#f97316"
+                  strokeWidth={2}
+                  type="monotone"
+                />
+              </ComposedChart>
             </ResponsiveContainer>
           )}
           {data && (

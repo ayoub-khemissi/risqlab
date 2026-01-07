@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
@@ -29,6 +30,14 @@ interface DistributionPanelProps {
 
 const PERIODS: RiskPeriod[] = ["7d", "30d", "90d", "all"];
 
+// Gaussian PDF function
+function gaussianPDF(x: number, mean: number, stdDev: number): number {
+  const coefficient = 1 / (stdDev * Math.sqrt(2 * Math.PI));
+  const exponent = -Math.pow(x - mean, 2) / (2 * Math.pow(stdDev, 2));
+
+  return coefficient * Math.exp(exponent);
+}
+
 export function DistributionPanel({
   symbol,
   period,
@@ -41,24 +50,38 @@ export function DistributionPanel({
   const kurtosisInterp =
     data?.kurtosis != null ? getKurtosisInterpretation(data.kurtosis) : null;
 
-  // Combine histogram and normal curve for overlay
-  const chartData =
-    data?.histogram?.map((bin) => {
-      // Find corresponding normal curve point
-      const normalPoint = data?.normalCurve?.find(
-        (p) =>
-          Math.abs(p.x - bin.binCenter) <
-          Math.abs(bin.binEnd - bin.binStart) / 2,
-      );
+  // Combine histogram and Gaussian curve for overlay
+  const chartData = useMemo(() => {
+    if (!data?.histogram) return [];
+
+    const histogram = data.histogram;
+    const mean = data.mean;
+    const stdDev = data.stdDev;
+
+    // Calculate total count and bin width for scaling
+    const totalCount = histogram.reduce((sum, bin) => sum + bin.count, 0);
+    const binWidth =
+      histogram.length > 0 ? histogram[0].binEnd - histogram[0].binStart : 1;
+
+    return histogram.map((bin) => {
+      let normalCount = 0;
+
+      if (stdDev > 0) {
+        // Calculate the Gaussian PDF value and scale it to match histogram
+        const pdfValue = gaussianPDF(bin.binCenter, mean, stdDev);
+
+        normalCount = pdfValue * totalCount * binWidth;
+      }
 
       return {
         x: bin.binCenter,
-        density: bin.density,
-        normalDensity: normalPoint?.y || 0,
         count: bin.count,
+        normalCount,
+        density: bin.density,
         range: `${bin.binStart.toFixed(2)}% to ${bin.binEnd.toFixed(2)}%`,
       };
-    }) || [];
+    });
+  }, [data?.histogram, data?.mean, data?.stdDev]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -201,10 +224,12 @@ export function DistributionPanel({
                             <span className="text-primary">Actual:</span>{" "}
                             {d.count} days
                           </p>
-                          <p className="text-sm">
-                            <span className="text-warning">Density:</span>{" "}
-                            {d.density.toFixed(4)}
-                          </p>
+                          {d.normalCount > 0 && (
+                            <p className="text-sm">
+                              <span className="text-warning">Normal:</span>{" "}
+                              {d.normalCount.toFixed(1)} days
+                            </p>
+                          )}
                         </div>
                       );
                     }
@@ -213,7 +238,7 @@ export function DistributionPanel({
                   }}
                 />
                 <Bar
-                  dataKey="density"
+                  dataKey="count"
                   fill="#3b82f6"
                   fillOpacity={0.6}
                   name="Actual Distribution"
@@ -221,13 +246,13 @@ export function DistributionPanel({
                 />
                 <Line
                   activeDot={false}
-                  dataKey="normalDensity"
+                  dataKey="normalCount"
                   dot={false}
                   isAnimationActive={true}
                   name="Normal Distribution"
                   stroke="#f97316"
                   strokeWidth={2}
-                  type="linear"
+                  type="monotone"
                 />
               </ComposedChart>
             </ResponsiveContainer>
