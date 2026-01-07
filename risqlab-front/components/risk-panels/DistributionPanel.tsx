@@ -227,7 +227,7 @@ export function DistributionPanel({
                   name="Normal Distribution"
                   stroke="#f97316"
                   strokeWidth={2}
-                  type="monotone"
+                  type="linear"
                 />
               </ComposedChart>
             </ResponsiveContainer>

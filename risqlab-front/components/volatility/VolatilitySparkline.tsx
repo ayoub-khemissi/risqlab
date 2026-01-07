@@ -57,7 +57,7 @@ export function VolatilitySparkline({
           dot={false}
           stroke={color}
           strokeWidth={2}
-          type="monotone"
+          type="linear"
         />
       </LineChart>
     </ResponsiveContainer>

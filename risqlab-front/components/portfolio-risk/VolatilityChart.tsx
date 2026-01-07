@@ -233,7 +233,7 @@ export function VolatilityChart({
             name="Portfolio"
             stroke="#037bfc"
             strokeWidth={3}
-            type="monotone"
+            type="linear"
           />
 
           {comparisonData.map((comp) => (
@@ -245,7 +245,7 @@ export function VolatilityChart({
               name={comp.symbol}
               stroke={comp.color}
               strokeWidth={2}
-              type="monotone"
+              type="linear"
             />
           ))}
         </LineChart>
