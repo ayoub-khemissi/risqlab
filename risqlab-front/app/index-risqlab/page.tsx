@@ -171,7 +171,7 @@ export default function IndexPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-1">
-            <Card>
+            <Card className="sticky top-6">
               <CardBody className="p-6">
                 <div className="flex flex-col gap-4">
                   <h2 className="text-sm text-default-500">RISQLAB 80 INDEX</h2>
