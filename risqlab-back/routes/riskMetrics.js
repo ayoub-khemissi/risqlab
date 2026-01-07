@@ -89,17 +89,18 @@ api.get('/risk/crypto/:symbol/price-history', async (req, res) => {
       });
     }
 
-    const dateFilter = getDateFilter(period, 'price_date');
+    const dateFilter = getDateFilter(period, 'timestamp');
     const maxPoints = getMaxDataPoints(period);
 
     // Get price history with intelligent downsampling
     // Uses ROW_NUMBER to evenly sample data points for better chart visualization
+    // Uses timestamp for granular data (hourly) instead of price_date (daily)
     const [prices] = await Database.execute(`
       SELECT date, price FROM (
         SELECT
-          price_date as date,
+          timestamp as date,
           price_usd as price,
-          ROW_NUMBER() OVER (ORDER BY price_date) as rn,
+          ROW_NUMBER() OVER (ORDER BY timestamp) as rn,
           COUNT(*) OVER () as total_count
         FROM market_data
         WHERE crypto_id = ?

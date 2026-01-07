@@ -38,13 +38,21 @@ export function PricePanel({
   const { data, isLoading, error } = usePriceHistory(symbol, period);
 
   const chartData =
-    data?.prices.map((p) => ({
-      date: new Date(p.date).toLocaleDateString("fr-FR", {
+    data?.prices.map((p, index) => ({
+      index,
+      timestamp: new Date(p.date).getTime(),
+      dateLabel: new Date(p.date).toLocaleDateString("fr-FR", {
         month: "short",
         day: "numeric",
       }),
       price: p.price,
-      fullDate: p.date,
+      fullDateTime: new Date(p.date).toLocaleString("fr-FR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
     })) || [];
 
   return (
@@ -181,9 +189,17 @@ export function PricePanel({
               <LineChart data={chartData}>
                 <CartesianGrid opacity={0.1} strokeDasharray="3 3" />
                 <XAxis
-                  dataKey="date"
+                  dataKey="timestamp"
                   fontSize={12}
                   stroke="#888"
+                  tickFormatter={(value) => {
+                    const date = new Date(value);
+
+                    return date.toLocaleDateString("fr-FR", {
+                      day: "numeric",
+                      month: "short",
+                    });
+                  }}
                   tickLine={false}
                 />
                 <YAxis
@@ -202,14 +218,7 @@ export function PricePanel({
                       return (
                         <div className="bg-content1 border border-default-200 rounded-lg p-3 shadow-lg">
                           <p className="text-sm text-default-500">
-                            {new Date(data.fullDate).toLocaleDateString(
-                              "fr-FR",
-                              {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                              },
-                            )}
+                            {data.fullDateTime}
                           </p>
                           <p className="text-lg font-semibold">
                             {formatCryptoPrice(data.price)}
