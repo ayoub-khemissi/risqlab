@@ -1,18 +1,20 @@
 "use client";
 
 import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
+import { Tooltip } from "@heroui/tooltip";
+import { AlertTriangle } from "lucide-react";
 import {
   BarChart,
   Bar,
   XAxis,
   YAxis,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
   CartesianGrid,
   ReferenceLine,
 } from "recharts";
+import { useState } from "react";
 
 import { useVaR } from "@/hooks/useRiskMetrics";
 import { RiskPeriod } from "@/types/risk-metrics";
@@ -23,10 +25,9 @@ interface VaRPanelProps {
   onPeriodChange: (period: RiskPeriod) => void;
 }
 
-const PERIODS: RiskPeriod[] = ["7d", "30d", "90d", "all"];
-
-export function VaRPanel({ symbol, period, onPeriodChange }: VaRPanelProps) {
-  const { data, isLoading, error } = useVaR(symbol, period);
+export function VaRPanel({ symbol }: VaRPanelProps) {
+  const { data, isLoading, error } = useVaR(symbol, "all");
+  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
 
   const chartData =
     data?.histogram?.map((bin) => ({
@@ -86,23 +87,37 @@ export function VaRPanel({ symbol, period, onPeriodChange }: VaRPanelProps) {
       <Card>
         <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-0">
           <div>
-            <h3 className="text-lg font-semibold">Returns Distribution</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold">Returns Distribution</h3>
+              {data && data.dataPoints < 365 && (
+                <Tooltip
+                  content={
+                    <div className="p-2 max-w-xs">
+                      <div className="font-semibold mb-1">
+                        Less Than 1 Year of Data
+                      </div>
+                      <div className="text-tiny">
+                        Only {data.dataPoints} days of historical data
+                        available. VaR calculations are more reliable with at
+                        least 365 days of data.
+                      </div>
+                    </div>
+                  }
+                  isOpen={isTooltipOpen}
+                >
+                  <AlertTriangle
+                    className="text-warning cursor-help"
+                    size={18}
+                    onClick={() => setIsTooltipOpen(!isTooltipOpen)}
+                    onMouseLeave={() => setIsTooltipOpen(false)}
+                    onMouseOver={() => setIsTooltipOpen(true)}
+                  />
+                </Tooltip>
+              )}
+            </div>
             <p className="text-sm text-default-500">
               Histogram of daily log returns
             </p>
-          </div>
-          <div className="flex gap-1">
-            {PERIODS.map((p) => (
-              <Button
-                key={p}
-                isDisabled={isLoading}
-                size="sm"
-                variant={period === p ? "solid" : "bordered"}
-                onPress={() => onPeriodChange(p)}
-              >
-                {p.toUpperCase()}
-              </Button>
-            ))}
           </div>
         </CardHeader>
         <CardBody className="p-4">
@@ -135,7 +150,7 @@ export function VaRPanel({ symbol, period, onPeriodChange }: VaRPanelProps) {
                   tickLine={false}
                   width={40}
                 />
-                <Tooltip
+                <RechartsTooltip
                   content={({ active, payload }) => {
                     if (active && payload && payload.length > 0) {
                       const d = payload[0].payload;
