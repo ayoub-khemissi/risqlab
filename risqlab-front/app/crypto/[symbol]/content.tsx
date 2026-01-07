@@ -376,7 +376,7 @@ export default function CryptoDetailContent() {
         <Card>
           <CardBody className="p-4">
             <p className="text-sm text-default-500">Market Cap</p>
-            <p className="text-2xl font-bold">
+            <p className="text-lg font-bold">
               {formatUSD(market.market_cap_usd)}
             </p>
           </CardBody>
@@ -384,7 +384,7 @@ export default function CryptoDetailContent() {
         <Card>
           <CardBody className="p-4">
             <p className="text-sm text-default-500">Volume 24h</p>
-            <p className="text-2xl font-bold">
+            <p className="text-lg font-bold">
               {formatUSD(market.volume_24h_usd)}
             </p>
           </CardBody>
@@ -392,7 +392,7 @@ export default function CryptoDetailContent() {
         <Card>
           <CardBody className="p-4">
             <p className="text-sm text-default-500">Circulating Supply</p>
-            <p className="text-2xl font-bold">
+            <p className="text-lg font-bold">
               {formatNumber(market.circulating_supply)} {basic.symbol}
             </p>
           </CardBody>
@@ -403,7 +403,7 @@ export default function CryptoDetailContent() {
               <p className="text-sm text-default-500">
                 Fully Diluted Valuation
               </p>
-              <p className="text-2xl font-bold">
+              <p className="text-lg font-bold">
                 {formatUSD(market.fully_diluted_valuation)}
               </p>
             </CardBody>
