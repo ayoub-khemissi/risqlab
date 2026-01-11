@@ -141,7 +141,7 @@ export function BetaPanel({ symbol, period, onPeriodChange }: BetaPanelProps) {
             </div>
           ) : (
             <ResponsiveContainer height={350} width="100%">
-              <ComposedChart>
+              <ComposedChart margin={{ bottom: 20 }}>
                 <CartesianGrid opacity={0.1} strokeDasharray="3 3" />
                 <XAxis
                   dataKey="x"
@@ -150,7 +150,7 @@ export function BetaPanel({ symbol, period, onPeriodChange }: BetaPanelProps) {
                   label={{
                     value: "Market Return (%)",
                     position: "bottom",
-                    offset: 0,
+                    offset: 5,
                   }}
                   stroke="#888"
                   tickFormatter={(value) => `${value.toFixed(1)}%`}

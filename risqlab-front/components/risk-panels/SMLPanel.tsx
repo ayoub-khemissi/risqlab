@@ -165,7 +165,7 @@ export function SMLPanel({ symbol, period, onPeriodChange }: SMLPanelProps) {
             </div>
           ) : (
             <ResponsiveContainer height={350} width="100%">
-              <ComposedChart>
+              <ComposedChart margin={{ bottom: 20 }}>
                 <CartesianGrid opacity={0.1} strokeDasharray="3 3" />
                 <XAxis
                   dataKey="beta"
@@ -174,7 +174,7 @@ export function SMLPanel({ symbol, period, onPeriodChange }: SMLPanelProps) {
                   label={{
                     value: "Beta (Systematic Risk)",
                     position: "bottom",
-                    offset: 0,
+                    offset: 5,
                   }}
                   stroke="#888"
                   tickLine={false}
