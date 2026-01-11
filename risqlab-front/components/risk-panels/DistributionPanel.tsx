@@ -175,7 +175,7 @@ export function DistributionPanel({
                 variant={period === p ? "solid" : "bordered"}
                 onPress={() => onPeriodChange(p)}
               >
-                {p.toUpperCase()}
+                {p === "all" ? "All" : p}
               </Button>
             ))}
           </div>

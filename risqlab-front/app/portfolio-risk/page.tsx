@@ -408,7 +408,7 @@ export default function PortfolioRiskPage() {
                     variant={selectedPeriod === period ? "solid" : "bordered"}
                     onPress={() => setSelectedPeriod(period)}
                   >
-                    {period === "all" ? "All" : period.toUpperCase()}
+                    {period === "all" ? "All" : period}
                   </Button>
                 ))}
               </div>
