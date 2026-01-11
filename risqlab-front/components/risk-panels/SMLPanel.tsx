@@ -149,128 +149,133 @@ export function SMLPanel({ symbol, period, onPeriodChange }: SMLPanelProps) {
           </div>
         </CardHeader>
         <CardBody className="p-4">
-          {isLoading ? (
-            <div className="h-[350px] flex items-center justify-center">
-              <p className="text-default-500">Loading...</p>
-            </div>
-          ) : error ? (
+          {error ? (
             <div className="h-[350px] flex items-center justify-center">
               <p className="text-danger">Error loading data</p>
             </div>
-          ) : !data?.smlLine ? (
+          ) : !data ? (
+            <div className="h-[350px] flex items-center justify-center">
+              <p className="text-default-500">Loading...</p>
+            </div>
+          ) : !data.smlLine ? (
             <div className="h-[350px] flex items-center justify-center">
               <p className="text-default-500">
                 {data?.msg || "No data available"}
               </p>
             </div>
           ) : (
-            <ResponsiveContainer height={350} width="100%">
-              <ComposedChart margin={{ bottom: 20 }}>
-                <CartesianGrid opacity={0.1} strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="beta"
-                  domain={[0, 2.5]}
-                  fontSize={12}
-                  label={{
-                    value: "Beta (Systematic Risk)",
-                    position: "bottom",
-                    offset: 5,
-                  }}
-                  stroke="#888"
-                  tickLine={false}
-                  type="number"
-                />
-                <YAxis
-                  domain={["auto", "auto"]}
-                  fontSize={12}
-                  label={{
-                    value: "Expected Return (%)",
-                    angle: -90,
-                    position: "insideLeft",
-                  }}
-                  stroke="#888"
-                  tickFormatter={(value) => `${value}%`}
-                  tickLine={false}
-                  width={60}
-                />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length > 0) {
-                      const d = payload[0].payload;
+            <div
+              className="transition-opacity"
+              style={{ opacity: isLoading ? 0.5 : 1 }}
+            >
+              <ResponsiveContainer height={350} width="100%">
+                <ComposedChart margin={{ bottom: 20 }}>
+                  <CartesianGrid opacity={0.1} strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="beta"
+                    domain={[0, 2.5]}
+                    fontSize={12}
+                    label={{
+                      value: "Beta (Systematic Risk)",
+                      position: "bottom",
+                      offset: 5,
+                    }}
+                    stroke="#888"
+                    tickLine={false}
+                    type="number"
+                  />
+                  <YAxis
+                    domain={["auto", "auto"]}
+                    fontSize={12}
+                    label={{
+                      value: "Expected Return (%)",
+                      angle: -90,
+                      position: "insideLeft",
+                    }}
+                    stroke="#888"
+                    tickFormatter={(value) => `${value}%`}
+                    tickLine={false}
+                    width={60}
+                  />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length > 0) {
+                        const d = payload[0].payload;
 
-                      return (
-                        <div className="bg-content1 border border-default-200 rounded-lg p-3 shadow-lg">
-                          <p className="font-semibold mb-1">
-                            {d.name || "SML Point"}
-                          </p>
-                          <p className="text-sm">
-                            Beta:{" "}
-                            {d.beta?.toFixed(2) ||
-                              payload[0].payload?.beta?.toFixed(2)}
-                          </p>
-                          <p className="text-sm">
-                            Return:{" "}
-                            {d.return?.toFixed(2) ||
-                              d.expectedReturn?.toFixed(2)}
-                            %
-                          </p>
-                        </div>
-                      );
-                    }
+                        return (
+                          <div className="bg-content1 border border-default-200 rounded-lg p-3 shadow-lg">
+                            <p className="font-semibold mb-1">
+                              {d.name || "SML Point"}
+                            </p>
+                            <p className="text-sm">
+                              Beta:{" "}
+                              {d.beta?.toFixed(2) ||
+                                payload[0].payload?.beta?.toFixed(2)}
+                            </p>
+                            <p className="text-sm">
+                              Return:{" "}
+                              {d.return?.toFixed(2) ||
+                                d.expectedReturn?.toFixed(2)}
+                              %
+                            </p>
+                          </div>
+                        );
+                      }
 
-                    return null;
-                  }}
-                />
-                <ReferenceLine stroke="#888" strokeOpacity={0.3} x={1} />
-                <ReferenceLine stroke="#888" strokeOpacity={0.3} y={0} />
-                {/* SML Line */}
-                <Line
-                  activeDot={false}
-                  data={data.smlLine}
-                  dataKey="expectedReturn"
-                  dot={false}
-                  isAnimationActive={true}
-                  name="SML"
-                  stroke="#888"
-                  strokeDasharray="5 5"
-                  strokeWidth={2}
-                  type="linear"
-                />
-                {/* Market point */}
-                <Scatter
-                  data={marketPoint.map((p) => ({
-                    ...p,
-                    return: p.return,
-                  }))}
-                  dataKey="return"
-                  fill="#f97316"
-                  name="Market"
-                  shape="diamond"
-                />
-                {/* Expected point on SML */}
-                <Scatter
-                  data={expectedPoint.map((p) => ({
-                    ...p,
-                    return: p.return,
-                  }))}
-                  dataKey="return"
-                  fill="#888"
-                  name="Expected"
-                  shape="circle"
-                />
-                {/* Actual crypto point */}
-                <Scatter
-                  data={cryptoPoint.map((p) => ({
-                    ...p,
-                    return: p.return,
-                  }))}
-                  dataKey="return"
-                  fill={data.isOvervalued ? "#ef4444" : "#22c55e"}
-                  name={symbol.toUpperCase()}
-                  shape="star"
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
+                      return null;
+                    }}
+                  />
+                  <ReferenceLine stroke="#888" strokeOpacity={0.3} x={1} />
+                  <ReferenceLine stroke="#888" strokeOpacity={0.3} y={0} />
+                  {/* SML Line */}
+                  <Line
+                    activeDot={false}
+                    data={data.smlLine}
+                    dataKey="expectedReturn"
+                    dot={false}
+                    isAnimationActive={true}
+                    name="SML"
+                    stroke="#888"
+                    strokeDasharray="5 5"
+                    strokeWidth={2}
+                    type="linear"
+                  />
+                  {/* Market point */}
+                  <Scatter
+                    data={marketPoint.map((p) => ({
+                      ...p,
+                      return: p.return,
+                    }))}
+                    dataKey="return"
+                    fill="#f97316"
+                    name="Market"
+                    shape="diamond"
+                  />
+                  {/* Expected point on SML */}
+                  <Scatter
+                    data={expectedPoint.map((p) => ({
+                      ...p,
+                      return: p.return,
+                    }))}
+                    dataKey="return"
+                    fill="#888"
+                    name="Expected"
+                    shape="circle"
+                  />
+                  {/* Actual crypto point */}
+                  <Scatter
+                    data={cryptoPoint.map((p) => ({
+                      ...p,
+                      return: p.return,
+                    }))}
+                    dataKey="return"
+                    fill={data.isOvervalued ? "#ef4444" : "#22c55e"}
+                    name={symbol.toUpperCase()}
+                    shape="star"
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
           )}
           {data && (
             <div className="flex justify-between items-center mt-2">

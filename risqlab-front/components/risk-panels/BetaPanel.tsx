@@ -125,109 +125,114 @@ export function BetaPanel({ symbol, period, onPeriodChange }: BetaPanelProps) {
           </div>
         </CardHeader>
         <CardBody className="p-4">
-          {isLoading ? (
-            <div className="h-[350px] flex items-center justify-center">
-              <p className="text-default-500">Loading...</p>
-            </div>
-          ) : error ? (
+          {error ? (
             <div className="h-[350px] flex items-center justify-center">
               <p className="text-danger">Error loading data</p>
             </div>
-          ) : !data?.scatterData || data.scatterData.length === 0 ? (
+          ) : !data ? (
+            <div className="h-[350px] flex items-center justify-center">
+              <p className="text-default-500">Loading...</p>
+            </div>
+          ) : !data.scatterData || data.scatterData.length === 0 ? (
             <div className="h-[350px] flex items-center justify-center">
               <p className="text-default-500">
                 {data?.msg || "No data available"}
               </p>
             </div>
           ) : (
-            <ResponsiveContainer height={350} width="100%">
-              <ComposedChart margin={{ bottom: 20 }}>
-                <CartesianGrid opacity={0.1} strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="x"
-                  domain={["auto", "auto"]}
-                  fontSize={12}
-                  label={{
-                    value: "Market Return (%)",
-                    position: "bottom",
-                    offset: 5,
-                  }}
-                  stroke="#888"
-                  tickFormatter={(value) => `${value.toFixed(1)}%`}
-                  tickLine={false}
-                  type="number"
-                />
-                <YAxis
-                  dataKey="y"
-                  domain={["auto", "auto"]}
-                  fontSize={12}
-                  label={{
-                    value: `${symbol.toUpperCase()} Return (%)`,
-                    angle: -90,
-                    position: "insideLeft",
-                  }}
-                  stroke="#888"
-                  tickFormatter={(value) => `${value.toFixed(1)}%`}
-                  tickLine={false}
-                  type="number"
-                  width={60}
-                />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length > 0) {
-                      const d = payload[0].payload;
-
-                      return (
-                        <div className="bg-content1 border border-default-200 rounded-lg p-3 shadow-lg">
-                          {d.date && (
-                            <p className="text-sm text-default-500 mb-1">
-                              {d.date}
-                            </p>
-                          )}
-                          <p className="text-sm">
-                            Market:{" "}
-                            {d.marketReturn?.toFixed(2) || d.x?.toFixed(2)}%
-                          </p>
-                          <p className="text-sm">
-                            {symbol.toUpperCase()}:{" "}
-                            {d.cryptoReturn?.toFixed(2) || d.y?.toFixed(2)}%
-                          </p>
-                        </div>
-                      );
-                    }
-
-                    return null;
-                  }}
-                />
-                <ReferenceLine stroke="#888" strokeOpacity={0.5} x={0} />
-                <ReferenceLine stroke="#888" strokeOpacity={0.5} y={0} />
-                {/* Scatter points */}
-                <Scatter
-                  data={data.scatterData.map((d) => ({
-                    x: d.marketReturn,
-                    y: d.cryptoReturn,
-                    date: d.date,
-                    marketReturn: d.marketReturn,
-                    cryptoReturn: d.cryptoReturn,
-                  }))}
-                  fill="#3b82f6"
-                  name="Returns"
-                />
-                {/* Regression line */}
-                {regressionLineData.length > 0 && (
-                  <Line
-                    activeDot={false}
-                    data={regressionLineData}
-                    dataKey="y"
-                    dot={false}
-                    isAnimationActive={true}
-                    stroke="#ef4444"
-                    strokeWidth={2}
-                    type="linear"
+            <div
+              className="transition-opacity"
+              style={{ opacity: isLoading ? 0.5 : 1 }}
+            >
+              <ResponsiveContainer height={350} width="100%">
+                <ComposedChart margin={{ bottom: 20 }}>
+                  <CartesianGrid opacity={0.1} strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="x"
+                    domain={["auto", "auto"]}
+                    fontSize={12}
+                    label={{
+                      value: "Market Return (%)",
+                      position: "bottom",
+                      offset: 5,
+                    }}
+                    stroke="#888"
+                    tickFormatter={(value) => `${value.toFixed(1)}%`}
+                    tickLine={false}
+                    type="number"
                   />
-                )}
-              </ComposedChart>
-            </ResponsiveContainer>
+                  <YAxis
+                    dataKey="y"
+                    domain={["auto", "auto"]}
+                    fontSize={12}
+                    label={{
+                      value: `${symbol.toUpperCase()} Return (%)`,
+                      angle: -90,
+                      position: "insideLeft",
+                    }}
+                    stroke="#888"
+                    tickFormatter={(value) => `${value.toFixed(1)}%`}
+                    tickLine={false}
+                    type="number"
+                    width={60}
+                  />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length > 0) {
+                        const d = payload[0].payload;
+
+                        return (
+                          <div className="bg-content1 border border-default-200 rounded-lg p-3 shadow-lg">
+                            {d.date && (
+                              <p className="text-sm text-default-500 mb-1">
+                                {d.date}
+                              </p>
+                            )}
+                            <p className="text-sm">
+                              Market:{" "}
+                              {d.marketReturn?.toFixed(2) || d.x?.toFixed(2)}%
+                            </p>
+                            <p className="text-sm">
+                              {symbol.toUpperCase()}:{" "}
+                              {d.cryptoReturn?.toFixed(2) || d.y?.toFixed(2)}%
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      return null;
+                    }}
+                  />
+                  <ReferenceLine stroke="#888" strokeOpacity={0.5} x={0} />
+                  <ReferenceLine stroke="#888" strokeOpacity={0.5} y={0} />
+                  {/* Scatter points */}
+                  <Scatter
+                    data={data.scatterData.map((d) => ({
+                      x: d.marketReturn,
+                      y: d.cryptoReturn,
+                      date: d.date,
+                      marketReturn: d.marketReturn,
+                      cryptoReturn: d.cryptoReturn,
+                    }))}
+                    fill="#3b82f6"
+                    name="Returns"
+                  />
+                  {/* Regression line */}
+                  {regressionLineData.length > 0 && (
+                    <Line
+                      activeDot={false}
+                      data={regressionLineData}
+                      dataKey="y"
+                      dot={false}
+                      isAnimationActive={true}
+                      stroke="#ef4444"
+                      strokeWidth={2}
+                      type="linear"
+                    />
+                  )}
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
           )}
           {data && (
             <p className="text-xs text-default-400 mt-2 text-right">

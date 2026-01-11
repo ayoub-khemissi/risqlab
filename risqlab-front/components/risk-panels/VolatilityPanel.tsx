@@ -268,84 +268,89 @@ export function VolatilityPanel({
           </div>
         </CardHeader>
         <CardBody className="p-4">
-          {isLoading ? (
-            <div className="h-[300px] flex items-center justify-center">
-              <p className="text-default-500">Loading...</p>
-            </div>
-          ) : error ? (
+          {error ? (
             <div className="h-[300px] flex items-center justify-center">
               <p className="text-danger">Error loading data</p>
+            </div>
+          ) : !volatilityData ? (
+            <div className="h-[300px] flex items-center justify-center">
+              <p className="text-default-500">Loading...</p>
             </div>
           ) : chartData.length === 0 ? (
             <div className="h-[300px] flex items-center justify-center">
               <p className="text-default-500">No data available</p>
             </div>
           ) : (
-            <ResponsiveContainer height={300} width="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid opacity={0.1} strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="date"
-                  fontSize={12}
-                  stroke="#888"
-                  tickLine={false}
-                />
-                <YAxis
-                  domain={[0, "auto"]}
-                  fontSize={12}
-                  stroke="#888"
-                  tickFormatter={(value) => `${value.toFixed(0)}%`}
-                  tickLine={false}
-                  width={50}
-                />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length > 0) {
-                      const data = payload[0].payload;
-
-                      return (
-                        <div className="bg-content1 border border-default-200 rounded-lg p-3 shadow-lg">
-                          <p className="text-sm text-default-500">
-                            {new Date(data.fullDate).toLocaleDateString(
-                              "fr-FR",
-                              {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                              },
-                            )}
-                          </p>
-                          <p className="text-lg font-semibold">
-                            {data.volatility.toFixed(2)}%
-                          </p>
-                        </div>
-                      );
-                    }
-
-                    return null;
-                  }}
-                />
-                {/* Risk zone lines */}
-                {riskZones.map((zone) => (
-                  <ReferenceLine
-                    key={zone.label}
-                    stroke={zone.color}
-                    strokeDasharray="5 5"
-                    strokeOpacity={0.5}
-                    y={zone.value}
+            <div
+              className="transition-opacity"
+              style={{ opacity: isLoading ? 0.5 : 1 }}
+            >
+              <ResponsiveContainer height={300} width="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid opacity={0.1} strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="date"
+                    fontSize={12}
+                    stroke="#888"
+                    tickLine={false}
                   />
-                ))}
-                <Line
-                  activeDot={false}
-                  dataKey="volatility"
-                  dot={false}
-                  isAnimationActive={true}
-                  stroke="#8b5cf6"
-                  strokeWidth={2}
-                  type="linear"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+                  <YAxis
+                    domain={[0, "auto"]}
+                    fontSize={12}
+                    stroke="#888"
+                    tickFormatter={(value) => `${value.toFixed(0)}%`}
+                    tickLine={false}
+                    width={50}
+                  />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length > 0) {
+                        const data = payload[0].payload;
+
+                        return (
+                          <div className="bg-content1 border border-default-200 rounded-lg p-3 shadow-lg">
+                            <p className="text-sm text-default-500">
+                              {new Date(data.fullDate).toLocaleDateString(
+                                "fr-FR",
+                                {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                },
+                              )}
+                            </p>
+                            <p className="text-lg font-semibold">
+                              {data.volatility.toFixed(2)}%
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      return null;
+                    }}
+                  />
+                  {/* Risk zone lines */}
+                  {riskZones.map((zone) => (
+                    <ReferenceLine
+                      key={zone.label}
+                      stroke={zone.color}
+                      strokeDasharray="5 5"
+                      strokeOpacity={0.5}
+                      y={zone.value}
+                    />
+                  ))}
+                  <Line
+                    activeDot={false}
+                    dataKey="volatility"
+                    dot={false}
+                    isAnimationActive={true}
+                    stroke="#8b5cf6"
+                    strokeWidth={2}
+                    type="linear"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           )}
           {volatilityData && (
             <p className="text-xs text-default-400 mt-2 text-right">

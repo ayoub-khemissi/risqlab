@@ -181,13 +181,13 @@ export function DistributionPanel({
           </div>
         </CardHeader>
         <CardBody className="p-4">
-          {isLoading ? (
-            <div className="h-[300px] flex items-center justify-center">
-              <p className="text-default-500">Loading...</p>
-            </div>
-          ) : error ? (
+          {error ? (
             <div className="h-[300px] flex items-center justify-center">
               <p className="text-danger">Error loading data</p>
+            </div>
+          ) : !data ? (
+            <div className="h-[300px] flex items-center justify-center">
+              <p className="text-default-500">Loading...</p>
             </div>
           ) : chartData.length === 0 ? (
             <div className="h-[300px] flex items-center justify-center">
@@ -196,66 +196,73 @@ export function DistributionPanel({
               </p>
             </div>
           ) : (
-            <ResponsiveContainer height={300} width="100%">
-              <ComposedChart data={chartData}>
-                <CartesianGrid opacity={0.1} strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="x"
-                  fontSize={12}
-                  stroke="#888"
-                  tickFormatter={(value) => `${value.toFixed(1)}%`}
-                  tickLine={false}
-                />
-                <YAxis
-                  fontSize={12}
-                  stroke="#888"
-                  tickLine={false}
-                  width={50}
-                />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length > 0) {
-                      const d = payload[0].payload;
+            <div
+              className="transition-opacity"
+              style={{ opacity: isLoading ? 0.5 : 1 }}
+            >
+              <ResponsiveContainer height={300} width="100%">
+                <ComposedChart data={chartData}>
+                  <CartesianGrid opacity={0.1} strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="x"
+                    fontSize={12}
+                    stroke="#888"
+                    tickFormatter={(value) => `${value.toFixed(1)}%`}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    fontSize={12}
+                    stroke="#888"
+                    tickLine={false}
+                    width={50}
+                  />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length > 0) {
+                        const d = payload[0].payload;
 
-                      return (
-                        <div className="bg-content1 border border-default-200 rounded-lg p-3 shadow-lg">
-                          <p className="text-sm text-default-500">{d.range}</p>
-                          <p className="text-sm">
-                            <span className="text-primary">Actual:</span>{" "}
-                            {d.count} days
-                          </p>
-                          {d.normalCount > 0 && (
-                            <p className="text-sm">
-                              <span className="text-warning">Normal:</span>{" "}
-                              {d.normalCount.toFixed(1)} days
+                        return (
+                          <div className="bg-content1 border border-default-200 rounded-lg p-3 shadow-lg">
+                            <p className="text-sm text-default-500">
+                              {d.range}
                             </p>
-                          )}
-                        </div>
-                      );
-                    }
+                            <p className="text-sm">
+                              <span className="text-primary">Actual:</span>{" "}
+                              {d.count} days
+                            </p>
+                            {d.normalCount > 0 && (
+                              <p className="text-sm">
+                                <span className="text-warning">Normal:</span>{" "}
+                                {d.normalCount.toFixed(1)} days
+                              </p>
+                            )}
+                          </div>
+                        );
+                      }
 
-                    return null;
-                  }}
-                />
-                <Bar
-                  dataKey="count"
-                  fill="#3b82f6"
-                  fillOpacity={0.6}
-                  name="Actual Distribution"
-                  radius={[2, 2, 0, 0]}
-                />
-                <Line
-                  activeDot={false}
-                  dataKey="normalCount"
-                  dot={false}
-                  isAnimationActive={true}
-                  name="Normal Distribution"
-                  stroke="#f97316"
-                  strokeWidth={2}
-                  type="monotone"
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
+                      return null;
+                    }}
+                  />
+                  <Bar
+                    dataKey="count"
+                    fill="#3b82f6"
+                    fillOpacity={0.6}
+                    name="Actual Distribution"
+                    radius={[2, 2, 0, 0]}
+                  />
+                  <Line
+                    activeDot={false}
+                    dataKey="normalCount"
+                    dot={false}
+                    isAnimationActive={true}
+                    name="Normal Distribution"
+                    stroke="#f97316"
+                    strokeWidth={2}
+                    type="monotone"
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
           )}
           {data && (
             <div className="flex justify-between items-center mt-2">

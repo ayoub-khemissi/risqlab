@@ -172,75 +172,80 @@ export function PricePanel({
           </div>
         </CardHeader>
         <CardBody className="p-4">
-          {isLoading ? (
-            <div className="h-[300px] flex items-center justify-center">
-              <p className="text-default-500">Loading...</p>
-            </div>
-          ) : error ? (
+          {error ? (
             <div className="h-[300px] flex items-center justify-center">
               <p className="text-danger">Error loading data</p>
+            </div>
+          ) : !data ? (
+            <div className="h-[300px] flex items-center justify-center">
+              <p className="text-default-500">Loading...</p>
             </div>
           ) : chartData.length === 0 ? (
             <div className="h-[300px] flex items-center justify-center">
               <p className="text-default-500">No data available</p>
             </div>
           ) : (
-            <ResponsiveContainer height={300} width="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid opacity={0.1} strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="timestamp"
-                  fontSize={12}
-                  stroke="#888"
-                  tickFormatter={(value) => {
-                    const date = new Date(value);
+            <div
+              className="transition-opacity"
+              style={{ opacity: isLoading ? 0.5 : 1 }}
+            >
+              <ResponsiveContainer height={300} width="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid opacity={0.1} strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="timestamp"
+                    fontSize={12}
+                    stroke="#888"
+                    tickFormatter={(value) => {
+                      const date = new Date(value);
 
-                    return date.toLocaleDateString("fr-FR", {
-                      day: "numeric",
-                      month: "short",
-                    });
-                  }}
-                  tickLine={false}
-                />
-                <YAxis
-                  domain={["auto", "auto"]}
-                  fontSize={12}
-                  stroke="#888"
-                  tickFormatter={(value) => formatCryptoPrice(value)}
-                  tickLine={false}
-                  width={80}
-                />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length > 0) {
-                      const data = payload[0].payload;
+                      return date.toLocaleDateString("fr-FR", {
+                        day: "numeric",
+                        month: "short",
+                      });
+                    }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    domain={["auto", "auto"]}
+                    fontSize={12}
+                    stroke="#888"
+                    tickFormatter={(value) => formatCryptoPrice(value)}
+                    tickLine={false}
+                    width={80}
+                  />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length > 0) {
+                        const data = payload[0].payload;
 
-                      return (
-                        <div className="bg-content1 border border-default-200 rounded-lg p-3 shadow-lg">
-                          <p className="text-sm text-default-500">
-                            {data.fullDateTime}
-                          </p>
-                          <p className="text-lg font-semibold">
-                            {formatCryptoPrice(data.price)}
-                          </p>
-                        </div>
-                      );
-                    }
+                        return (
+                          <div className="bg-content1 border border-default-200 rounded-lg p-3 shadow-lg">
+                            <p className="text-sm text-default-500">
+                              {data.fullDateTime}
+                            </p>
+                            <p className="text-lg font-semibold">
+                              {formatCryptoPrice(data.price)}
+                            </p>
+                          </div>
+                        );
+                      }
 
-                    return null;
-                  }}
-                />
-                <Line
-                  activeDot={false}
-                  dataKey="price"
-                  dot={false}
-                  isAnimationActive={true}
-                  stroke="#3b82f6"
-                  strokeWidth={2}
-                  type="linear"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+                      return null;
+                    }}
+                  />
+                  <Line
+                    activeDot={false}
+                    dataKey="price"
+                    dot={false}
+                    isAnimationActive={true}
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    type="linear"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           )}
           {data && (
             <p className="text-xs text-default-400 mt-2 text-right">
