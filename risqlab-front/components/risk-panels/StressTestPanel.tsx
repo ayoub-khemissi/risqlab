@@ -96,72 +96,77 @@ export function StressTestPanel({ symbol }: StressTestPanelProps) {
               <p className="text-default-500">No data available</p>
             </div>
           ) : (
-            <ResponsiveContainer height={300} width="100%">
-              <BarChart data={chartData} layout="vertical">
-                <XAxis
-                  domain={["dataMin", 0]}
-                  fontSize={12}
-                  stroke="#888"
-                  tickFormatter={(value) => `${value.toFixed(0)}%`}
-                  type="number"
-                />
-                <YAxis
-                  dataKey="name"
-                  fontSize={12}
-                  stroke="#888"
-                  type="category"
-                  width={80}
-                />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length > 0) {
-                      const d = payload[0].payload;
+            <>
+              <ResponsiveContainer height={300} width="100%">
+                <BarChart data={chartData} layout="vertical">
+                  <XAxis
+                    domain={["dataMin", 0]}
+                    fontSize={12}
+                    stroke="#888"
+                    tickFormatter={(value) => `${value.toFixed(0)}%`}
+                    type="number"
+                  />
+                  <YAxis
+                    dataKey="name"
+                    fontSize={12}
+                    stroke="#888"
+                    type="category"
+                    width={80}
+                  />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length > 0) {
+                        const d = payload[0].payload;
 
-                      return (
-                        <div className="bg-content1 border border-default-200 rounded-lg p-3 shadow-lg">
-                          <p className="font-semibold mb-2">
-                            {d.name} Scenario
-                          </p>
-                          <div className="space-y-1 text-sm">
-                            <p>
-                              <span className="text-default-500">
-                                Market Shock:{" "}
-                              </span>
-                              {d.marketShock}%
+                        return (
+                          <div className="bg-content1 border border-default-200 rounded-lg p-3 shadow-lg">
+                            <p className="font-semibold mb-2">
+                              {d.name} Scenario
                             </p>
-                            <p>
-                              <span className="text-default-500">
-                                Expected Impact:{" "}
-                              </span>
-                              <span className="text-danger">
-                                {d.impact.toFixed(2)}%
-                              </span>
-                            </p>
-                            <p>
-                              <span className="text-default-500">
-                                New Price:{" "}
-                              </span>
-                              {formatCryptoPrice(d.newPrice)}
-                            </p>
+                            <div className="space-y-1 text-sm">
+                              <p>
+                                <span className="text-default-500">
+                                  Market Shock:{" "}
+                                </span>
+                                {d.marketShock}%
+                              </p>
+                              <p>
+                                <span className="text-default-500">
+                                  Expected Impact:{" "}
+                                </span>
+                                <span className="text-danger">
+                                  {d.impact.toFixed(2)}%
+                                </span>
+                              </p>
+                              <p>
+                                <span className="text-default-500">
+                                  New Price:{" "}
+                                </span>
+                                {formatCryptoPrice(d.newPrice)}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      );
-                    }
+                        );
+                      }
 
-                    return null;
-                  }}
-                />
-                <ReferenceLine stroke="#888" strokeDasharray="3 3" x={0} />
-                <Bar dataKey="impact" radius={[0, 4, 4, 0]}>
-                  {chartData.map((entry) => (
-                    <Cell
-                      key={entry.name}
-                      fill={SCENARIO_COLORS[entry.name] || "#888"}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+                      return null;
+                    }}
+                  />
+                  <ReferenceLine stroke="#888" strokeDasharray="3 3" x={0} />
+                  <Bar dataKey="impact" radius={[0, 4, 4, 0]}>
+                    {chartData.map((entry) => (
+                      <Cell
+                        key={entry.name}
+                        fill={SCENARIO_COLORS[entry.name] || "#888"}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              <p className="text-xs text-default-400 mt-2 text-right">
+                {chartData.length} scenarios
+              </p>
+            </>
           )}
         </CardBody>
       </Card>

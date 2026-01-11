@@ -480,6 +480,11 @@ export default function PortfolioRiskPage() {
               mode={volatilityMode}
             />
           </div>
+          {history && (
+            <p className="text-xs text-default-400 mt-2 text-right">
+              {history.length} data points
+            </p>
+          )}
         </CardBody>
       </Card>
 
@@ -517,6 +522,11 @@ export default function PortfolioRiskPage() {
             height={isMobile ? 250 : 350}
             portfolioVolatility={current.annualized_volatility}
           />
+          {constituentsData && (
+            <p className="text-xs text-default-400 mt-2 text-right">
+              {constituentsData.length} constituents
+            </p>
+          )}
         </CardBody>
       </Card>
 

@@ -468,6 +468,11 @@ export default function IndexPage() {
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
+                  {history && (
+                    <p className="text-xs text-default-400 mt-2 text-right">
+                      {history.length} data points
+                    </p>
+                  )}
                 </div>
               </CardBody>
             </Card>
