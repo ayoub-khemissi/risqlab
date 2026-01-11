@@ -8,9 +8,10 @@ const MAX_CONSTITUENTS = 80;
 
 /**
  * Main function to calculate the RisqLab 80 Index
+ * Now supports retroactive calculation for all missing timestamps
  */
 async function calculateRisqLab80() {
-  const startTime = Date.now();
+  const globalStartTime = Date.now();
 
   try {
     log.info('Starting RisqLab 80 Index calculation...');
@@ -19,53 +20,114 @@ async function calculateRisqLab80() {
     const indexConfig = await getOrCreateIndexConfig();
     log.info(`Using index config ID: ${indexConfig.id}, Divisor: ${indexConfig.divisor}`);
 
-    // 2. Get the most recent market data for each cryptocurrency
-    const marketData = await getMostRecentMarketData();
-    log.info(`Retrieved ${marketData.length} cryptocurrencies with market data`);
+    // 2. Find all market data timestamps that don't have an index calculation
+    const missingTimestamps = await getMissingIndexTimestamps(indexConfig.id);
 
-    // 3. Filter out excluded symbols and select top 80 by market cap
-    const constituents = selectConstituents(marketData);
-    log.info(`Selected ${constituents.length} constituents after filtering`);
-
-    if (constituents.length === 0) {
-      throw new Error('No valid constituents found for index calculation');
+    if (missingTimestamps.length === 0) {
+      log.info('All market data timestamps already have index calculations. Nothing to do.');
+      return;
     }
 
-    // 4. Calculate total market capitalization
-    const totalMarketCap = constituents.reduce((sum, c) => sum + (parseFloat(c.price_usd) * parseFloat(c.circulating_supply)), 0);
-    log.info(`Total market cap: $${(totalMarketCap / 1e9).toFixed(2)}B`);
+    log.info(`Found ${missingTimestamps.length} timestamp(s) without index calculation`);
 
-    // 5. Calculate index level
-    const indexLevel = totalMarketCap / parseFloat(indexConfig.divisor);
-    log.info(`Index Level: ${indexLevel.toFixed(8)}`);
+    // 3. Calculate index for each missing timestamp (oldest first)
+    let successCount = 0;
+    let errorCount = 0;
+    const total = missingTimestamps.length;
 
-    // 6. Get timestamp from the latest market data
-    const timestamp = constituents[0].timestamp;
+    for (let i = 0; i < total; i++) {
+      const timestamp = missingTimestamps[i];
+      const isLast = i === total - 1;
+      // Be verbose only for the last calculation (or if single timestamp)
+      const verbose = isLast;
 
-    // 7. Calculate duration before storing (to store it in DB)
-    const calculationDuration = Date.now() - startTime;
+      try {
+        await calculateIndexForTimestamp(indexConfig, timestamp, verbose);
+        successCount++;
+      } catch (error) {
+        log.error(`Error calculating index for timestamp ${timestamp}: ${error.message}`);
+        errorCount++;
+      }
+    }
 
-    // 8. Store index history
-    const indexHistoryId = await storeIndexHistory(
-      indexConfig.id,
-      timestamp,
-      totalMarketCap,
-      indexLevel,
-      indexConfig.divisor,
-      constituents.length,
-      calculationDuration
-    );
-
-    // 9. Store constituents
-    await storeConstituents(indexHistoryId, constituents, totalMarketCap);
-
-    log.info(`Index calculation completed successfully in ${calculationDuration}ms`);
-    log.info(`Index Level: ${indexLevel.toFixed(8)} | Constituents: ${constituents.length} | Market Cap: $${(totalMarketCap / 1e9).toFixed(2)}B`);
+    const totalDuration = Date.now() - globalStartTime;
+    log.info(`Index calculation completed in ${totalDuration}ms`);
+    log.info(`Results: ${successCount} successful, ${errorCount} failed out of ${missingTimestamps.length} timestamps`);
 
   } catch (error) {
     log.error(`Error calculating RisqLab 80 Index: ${error.message}`);
     throw error;
   }
+}
+
+/**
+ * Get all market data timestamps that don't have a corresponding index calculation
+ */
+async function getMissingIndexTimestamps(indexConfigId) {
+  const [rows] = await Database.execute(`
+    SELECT DISTINCT md.timestamp
+    FROM market_data md
+    WHERE md.timestamp NOT IN (
+      SELECT ih.timestamp
+      FROM index_history ih
+      WHERE ih.index_config_id = ?
+    )
+    ORDER BY md.timestamp ASC
+  `, [indexConfigId]);
+
+  return rows.map(row => row.timestamp);
+}
+
+/**
+ * Calculate the index for a specific timestamp
+ * @param {boolean} verbose - Whether to log detailed information
+ */
+async function calculateIndexForTimestamp(indexConfig, timestamp, verbose = false) {
+  const startTime = Date.now();
+
+  log.info(`Calculating index for timestamp: ${timestamp}`);
+
+  // Get market data for this specific timestamp
+  const marketData = await getMarketDataForTimestamp(timestamp);
+
+  if (marketData.length === 0) {
+    throw new Error(`No market data found for timestamp ${timestamp}`);
+  }
+
+  // Filter out excluded symbols and select top 80 by market cap
+  const constituents = selectConstituents(marketData, verbose);
+
+  if (constituents.length === 0) {
+    throw new Error(`No valid constituents found for timestamp ${timestamp}`);
+  }
+
+  // Calculate total market capitalization
+  const totalMarketCap = constituents.reduce(
+    (sum, c) => sum + (parseFloat(c.price_usd) * parseFloat(c.circulating_supply)),
+    0
+  );
+
+  // Calculate index level
+  const indexLevel = totalMarketCap / parseFloat(indexConfig.divisor);
+
+  // Calculate duration
+  const calculationDuration = Date.now() - startTime;
+
+  // Store index history
+  const indexHistoryId = await storeIndexHistory(
+    indexConfig.id,
+    timestamp,
+    totalMarketCap,
+    indexLevel,
+    indexConfig.divisor,
+    constituents.length,
+    calculationDuration
+  );
+
+  // Store constituents
+  await storeConstituents(indexHistoryId, constituents, totalMarketCap, verbose);
+
+  log.info(`  -> Index Level: ${indexLevel.toFixed(8)} | Constituents: ${constituents.length} | Market Cap: $${(totalMarketCap / 1e9).toFixed(2)}B (${calculationDuration}ms)`);
 }
 
 /**
@@ -80,7 +142,7 @@ async function getOrCreateIndexConfig() {
 
   // Get initial market data to calculate divisor
   const marketData = await getMostRecentMarketData();
-  const constituents = selectConstituents(marketData);
+  const constituents = selectConstituents(marketData, true);
 
   if (constituents.length === 0) {
     throw new Error('Cannot initialize index: no valid constituents found. Please run fetch-crypto-data first.');
@@ -147,7 +209,38 @@ async function getOrCreateIndexConfig() {
 }
 
 /**
- * Get the most recent market data for each cryptocurrency with metadata
+ * Get market data for a specific timestamp with metadata
+ */
+async function getMarketDataForTimestamp(timestamp) {
+  const [rows] = await Database.execute(`
+    SELECT
+      md.id as market_data_id,
+      md.crypto_id,
+      c.symbol,
+      c.name,
+      md.price_usd,
+      md.circulating_supply,
+      md.volume_24h_usd,
+      (md.price_usd * md.circulating_supply) as market_cap_usd,
+      md.percent_change_24h,
+      md.percent_change_7d,
+      md.timestamp,
+      COALESCE(cm.is_stablecoin, 0) as is_stablecoin,
+      COALESCE(cm.is_wrapped, 0) as is_wrapped,
+      COALESCE(cm.is_liquid_staking, 0) as is_liquid_staking
+    FROM market_data md
+    INNER JOIN cryptocurrencies c ON md.crypto_id = c.id
+    LEFT JOIN cryptocurrency_metadata cm ON c.id = cm.crypto_id
+    WHERE md.timestamp = ?
+      AND (md.price_usd * md.circulating_supply) > 0
+    ORDER BY (md.price_usd * md.circulating_supply) DESC
+  `, [timestamp]);
+
+  return rows;
+}
+
+/**
+ * Get the most recent market data (used for initial divisor calculation)
  */
 async function getMostRecentMarketData() {
   const [rows] = await Database.execute(`
@@ -179,25 +272,28 @@ async function getMostRecentMarketData() {
 
 /**
  * Select top constituents after filtering exclusions
+ * @param {boolean} verbose - Whether to log detailed information
  */
-function selectConstituents(marketData) {
+function selectConstituents(marketData, verbose = false) {
   // Filter out excluded symbols using metadata-aware function
   const filtered = marketData.filter(crypto => !isExcluded(crypto));
 
-  const excludedCount = marketData.length - filtered.length;
-  log.info(`Filtered out ${excludedCount} excluded symbols (stablecoins, wrapped, liquid staking)`);
+  if (verbose) {
+    const excludedCount = marketData.length - filtered.length;
+    log.info(`Filtered out ${excludedCount} excluded symbols (stablecoins, wrapped, liquid staking)`);
 
-  // Log some examples of excluded cryptos for debugging
-  const excluded = marketData.filter(crypto => isExcluded(crypto)).slice(0, 10);
-  if (excluded.length > 0) {
-    log.debug('Examples of excluded cryptos:');
-    excluded.forEach(crypto => {
-      const reasons = [];
-      if (crypto.is_stablecoin) reasons.push('stablecoin');
-      if (crypto.is_wrapped) reasons.push('wrapped');
-      if (crypto.is_liquid_staking) reasons.push('liquid-staking');
-      log.debug(`  - ${crypto.symbol}: ${reasons.join(', ')}`);
-    });
+    // Log some examples of excluded cryptos for debugging
+    const excluded = marketData.filter(crypto => isExcluded(crypto)).slice(0, 10);
+    if (excluded.length > 0) {
+      log.debug('Examples of excluded cryptos:');
+      excluded.forEach(crypto => {
+        const reasons = [];
+        if (crypto.is_stablecoin) reasons.push('stablecoin');
+        if (crypto.is_wrapped) reasons.push('wrapped');
+        if (crypto.is_liquid_staking) reasons.push('liquid-staking');
+        log.debug(`  - ${crypto.symbol}: ${reasons.join(', ')}`);
+      });
+    }
   }
 
   // Select top MAX_CONSTITUENTS by market cap
@@ -247,8 +343,9 @@ async function storeIndexHistory(
 
 /**
  * Store index constituents
+ * @param {boolean} verbose - Whether to log detailed information
  */
-async function storeConstituents(indexHistoryId, constituents, totalMarketCap) {
+async function storeConstituents(indexHistoryId, constituents, totalMarketCap, verbose = false) {
   // Delete existing constituents for this index history (in case of recalculation)
   await Database.execute(
     'DELETE FROM index_constituents WHERE index_history_id = ?',
@@ -278,15 +375,17 @@ async function storeConstituents(indexHistoryId, constituents, totalMarketCap) {
     );
   }
 
-  log.info(`Stored ${constituents.length} constituents`);
+  if (verbose) {
+    log.info(`Stored ${constituents.length} constituents`);
 
-  // Log top 10 constituents
-  log.info('Top 10 constituents:');
-  for (let i = 0; i < Math.min(10, constituents.length); i++) {
-    const crypto = constituents[i];
-    const marketCap = parseFloat(crypto.price_usd) * parseFloat(crypto.circulating_supply);
-    const weight = (marketCap / totalMarketCap) * 100;
-    log.info(`  ${i + 1}. ${crypto.symbol} (${crypto.name}) - Weight: ${weight.toFixed(2)}%`);
+    // Log top 10 constituents
+    log.info('Top 10 constituents:');
+    for (let i = 0; i < Math.min(10, constituents.length); i++) {
+      const crypto = constituents[i];
+      const marketCap = parseFloat(crypto.price_usd) * parseFloat(crypto.circulating_supply);
+      const weight = (marketCap / totalMarketCap) * 100;
+      log.info(`  ${i + 1}. ${crypto.symbol} (${crypto.name}) - Weight: ${weight.toFixed(2)}%`);
+    }
   }
 }
 
