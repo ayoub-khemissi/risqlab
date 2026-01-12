@@ -78,21 +78,28 @@ export default function CryptoDetailContent() {
   // Update URL when panel changes
   const handlePanelChange = useCallback(
     (panel: RiskPanel) => {
-      setActivePanel(panel);
-      const newParams = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams(searchParams.toString());
 
       if (panel === "price") {
-        newParams.delete("panel");
+        params.delete("panel");
       } else {
-        newParams.set("panel", panel);
+        params.set("panel", panel);
       }
-      const query = newParams.toString();
 
-      router.replace(`/crypto/${symbol}${query ? `?${query}` : ""}`, {
-        scroll: false,
+      router.replace(`?${params.toString()}`, { scroll: false });
+
+      requestAnimationFrame(() => {
+        const mainGrid = document.getElementById("main-grid");
+
+        if (mainGrid) {
+          const top =
+            mainGrid.getBoundingClientRect().top + window.scrollY - 70;
+
+          window.scrollTo({ behavior: "smooth", top });
+        }
       });
     },
-    [router, searchParams, symbol],
+    [router, searchParams],
   );
 
   // Sync activePanel with URL on mount/URL change
@@ -339,7 +346,7 @@ export default function CryptoDetailContent() {
       )}
 
       {/* Main Grid: Sidebar + Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6" id="main-grid">
         {/* Sidebar - First on mobile, sticky on desktop */}
         <div className="lg:col-span-1 order-1 lg:order-1">
           <PanelSidebar
