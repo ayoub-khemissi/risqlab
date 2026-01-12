@@ -30,6 +30,60 @@ interface PricePanelProps {
 
 const PERIODS: RiskPeriod[] = ["7d", "30d", "90d", "all"];
 
+// Helper to calculate changes from history (for 90d which might be missing from current.changes)
+function calculatePriceChanges(
+  history: { date: string; price: number }[],
+  currentPrice: number,
+): Record<string, number | null> {
+  if (!currentPrice || history.length === 0) return {};
+
+  const changes: Record<string, number | null> = {};
+  const periods = {
+    "90d": 90,
+  };
+
+  const targetDate = new Date();
+
+  for (const [key, days] of Object.entries(periods)) {
+    const pastTargetDate = new Date(targetDate);
+
+    pastTargetDate.setDate(pastTargetDate.getDate() - days);
+
+    // Find closest entry
+    let closestEntry: { date: string; price: number } | null = null;
+    let minDiff = Infinity;
+
+    for (const entry of history) {
+      const entryDate = new Date(entry.date);
+      const diff = Math.abs(entryDate.getTime() - pastTargetDate.getTime());
+
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestEntry = entry;
+      }
+    }
+
+    if (closestEntry) {
+      // Tolerance check (2 days)
+      if (minDiff <= 2 * 24 * 60 * 60 * 1000) {
+        const pastValue = closestEntry.price;
+
+        if (pastValue !== 0) {
+          changes[key] = ((currentPrice - pastValue) / pastValue) * 100;
+        } else {
+          changes[key] = null;
+        }
+      } else {
+        changes[key] = null;
+      }
+    } else {
+      changes[key] = null;
+    }
+  }
+
+  return changes;
+}
+
 export function PricePanel({
   symbol,
   period,
@@ -55,6 +109,17 @@ export function PricePanel({
       }),
     })) || [];
 
+  // Calculate extra changes (90d)
+  const history = data?.prices || [];
+  const currentPrice = data?.current?.price || 0;
+  const computedChanges = calculatePriceChanges(history, currentPrice);
+
+  // Merge API changes with computed changes
+  const displayChanges: Record<string, number | null> = {
+    ...data?.current?.changes,
+    ...computedChanges,
+  };
+
   return (
     <div className="flex flex-col gap-4">
       {/* Current Price Card */}
@@ -66,87 +131,52 @@ export function PricePanel({
                 <p className="text-sm text-default-500 mb-1">
                   {symbol.toUpperCase()} Price
                 </p>
-                <p className="text-4xl font-bold">
-                  {formatCryptoPrice(data.current.price)}
-                </p>
+                <div className="flex items-center gap-3">
+                  <p className="text-4xl font-bold">
+                    {formatCryptoPrice(data.current.price)}
+                  </p>
+                </div>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {data.current.changes["1h"] !== null && (
-                  <div>
-                    <p className="text-xs text-default-500">1h</p>
-                    <Chip
-                      color={getPercentageColor(data.current.changes["1h"])}
-                      size="sm"
-                      startContent={
-                        data.current.changes["1h"] > 0 ? (
-                          <TrendingUp size={14} />
-                        ) : (
-                          <TrendingDown size={14} />
-                        )
-                      }
-                      variant="flat"
-                    >
-                      {formatPercentage(data.current.changes["1h"])}
-                    </Chip>
-                  </div>
-                )}
-                {data.current.changes["24h"] !== null && (
-                  <div>
-                    <p className="text-xs text-default-500">24h</p>
-                    <Chip
-                      color={getPercentageColor(data.current.changes["24h"])}
-                      size="sm"
-                      startContent={
-                        data.current.changes["24h"] > 0 ? (
-                          <TrendingUp size={14} />
-                        ) : (
-                          <TrendingDown size={14} />
-                        )
-                      }
-                      variant="flat"
-                    >
-                      {formatPercentage(data.current.changes["24h"])}
-                    </Chip>
-                  </div>
-                )}
-                {data.current.changes["7d"] !== null && (
-                  <div>
-                    <p className="text-xs text-default-500">7d</p>
-                    <Chip
-                      color={getPercentageColor(data.current.changes["7d"])}
-                      size="sm"
-                      startContent={
-                        data.current.changes["7d"] > 0 ? (
-                          <TrendingUp size={14} />
-                        ) : (
-                          <TrendingDown size={14} />
-                        )
-                      }
-                      variant="flat"
-                    >
-                      {formatPercentage(data.current.changes["7d"])}
-                    </Chip>
-                  </div>
-                )}
-                {data.current.changes["30d"] !== null && (
-                  <div>
-                    <p className="text-xs text-default-500">30d</p>
-                    <Chip
-                      color={getPercentageColor(data.current.changes["30d"])}
-                      size="sm"
-                      startContent={
-                        data.current.changes["30d"] > 0 ? (
-                          <TrendingUp size={14} />
-                        ) : (
-                          <TrendingDown size={14} />
-                        )
-                      }
-                      variant="flat"
-                    >
-                      {formatPercentage(data.current.changes["30d"])}
-                    </Chip>
-                  </div>
-                )}
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap justify-center sm:justify-end gap-2">
+                  {(["24h", "7d", "30d", "90d"] as const).map((key) => {
+                    const change = displayChanges[key];
+                    const hasValue = typeof change === "number";
+
+                    if (!hasValue) return null;
+
+                    const isPositive = change > 0;
+                    const color = getPercentageColor(change);
+
+                    return (
+                      <div
+                        key={key}
+                        className="p-3 flex flex-col items-center justify-center min-w-[80px] gap-2"
+                      >
+                        <span className="text-sm font-medium text-default-500">
+                          {key}
+                        </span>
+                        <Chip
+                          classNames={{
+                            base: "h-7 px-2",
+                          }}
+                          color={color}
+                          size="sm"
+                          startContent={
+                            isPositive ? (
+                              <TrendingUp size={14} />
+                            ) : (
+                              <TrendingDown size={14} />
+                            )
+                          }
+                          variant="flat"
+                        >
+                          {formatPercentage(change)}
+                        </Chip>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </CardBody>

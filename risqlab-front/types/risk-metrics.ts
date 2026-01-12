@@ -269,13 +269,34 @@ export interface SMLResponse {
 export interface RiskSummaryData {
   crypto: CryptoInfo;
   hasData: boolean;
+  price: {
+    current: number;
+    changes: PriceChanges;
+  } | null;
   volatility: {
     daily: number;
     annualized: number;
+    changes: {
+      "24h": number | null;
+      "7d": number | null;
+      "30d": number | null;
+      "90d": number | null;
+    } | null;
   } | null;
   beta: number | null;
   alpha: number | null;
+  sml: {
+    alpha: number;
+    isOvervalued: boolean;
+  } | null;
   var95: number | null;
+  var99: number | null;
+  cvar99: number | null;
+  stressTest: {
+    newPrice: number;
+    priceChange: number;
+    impactPercentage: number;
+  } | null;
   skewness: number | null;
   kurtosis: number | null;
   period: string;
@@ -444,6 +465,7 @@ export interface SkewnessInterpretation {
   type: "negative" | "symmetric" | "positive";
   label: string;
   description: string;
+  color: "success" | "warning" | "danger" | "default" | "primary";
 }
 
 export function getSkewnessInterpretation(
@@ -454,6 +476,7 @@ export function getSkewnessInterpretation(
       type: "negative",
       label: "Negative Skew",
       description: "More extreme losses than gains (left tail)",
+      color: "danger",
     };
   }
   if (skewness > 0.5) {
@@ -461,6 +484,7 @@ export function getSkewnessInterpretation(
       type: "positive",
       label: "Positive Skew",
       description: "More extreme gains than losses (right tail)",
+      color: "success",
     };
   }
 
@@ -468,6 +492,7 @@ export function getSkewnessInterpretation(
     type: "symmetric",
     label: "Symmetric",
     description: "Balanced distribution of returns",
+    color: "default",
   };
 }
 
@@ -475,6 +500,7 @@ export interface KurtosisInterpretation {
   type: "leptokurtic" | "mesokurtic" | "platykurtic";
   label: string;
   description: string;
+  color: "success" | "warning" | "danger" | "default" | "primary";
 }
 
 export function getKurtosisInterpretation(
@@ -485,6 +511,7 @@ export function getKurtosisInterpretation(
       type: "leptokurtic",
       label: "Fat Tails",
       description: "Higher probability of extreme events",
+      color: "warning",
     };
   }
   if (kurtosis < -1) {
@@ -492,6 +519,7 @@ export function getKurtosisInterpretation(
       type: "platykurtic",
       label: "Thin Tails",
       description: "Lower probability of extreme events",
+      color: "success",
     };
   }
 
@@ -499,5 +527,6 @@ export function getKurtosisInterpretation(
     type: "mesokurtic",
     label: "Normal Tails",
     description: "Similar to normal distribution",
+    color: "default",
   };
 }

@@ -19,7 +19,6 @@ import { useState, useMemo } from "react";
 import { RiskPeriod } from "@/types/risk-metrics";
 import { useCryptoVolatility } from "@/hooks/useCryptoVolatility";
 import { CryptoVolatility, VolatilityPeriod } from "@/types/volatility";
-import { formatPercentage, getPercentageColor } from "@/lib/formatters";
 
 interface VolatilityPanelProps {
   symbol: string;
@@ -55,13 +54,13 @@ function getRiskLevel(volatility: number, isAnnualized: boolean) {
     : { low: 0.5, medium: 1.5, high: 3.0 };
 
   if (volatility >= thresholds.high)
-    return { level: "Extreme", color: "danger" as const };
+    return { level: "Extreme", color: "#EA3943" };
   if (volatility >= thresholds.medium)
-    return { level: "High", color: "warning" as const };
+    return { level: "High", color: "#EA580C" };
   if (volatility >= thresholds.low)
-    return { level: "Medium", color: "warning" as const };
+    return { level: "Medium", color: "#F3D42F" };
 
-  return { level: "Low", color: "success" as const };
+  return { level: "Low", color: "#16C784" };
 }
 
 function calculateVolatilityChanges(
@@ -69,36 +68,50 @@ function calculateVolatilityChanges(
   currentVol: CryptoVolatility | null,
   mode: "annualized" | "daily",
 ): Record<string, number | null> {
-  if (!currentVol || history.length === 0) {
-    return { "24h": null, "7d": null, "30d": null, "90d": null };
-  }
+  if (!currentVol || history.length === 0) return {};
+
+  const changes: Record<string, number | null> = {};
+  const periods = {
+    "24h": 1,
+    "7d": 7,
+    "30d": 30,
+    "90d": 90,
+  };
 
   const currentValue =
     mode === "annualized"
       ? Number(currentVol.annualized_volatility) * 100
       : Number(currentVol.daily_volatility) * 100;
 
-  const currentDate = new Date(currentVol.date);
-  const changes: Record<string, number | null> = {};
-  const periods = [
-    { key: "24h", days: 1 },
-    { key: "7d", days: 7 },
-    { key: "30d", days: 30 },
-    { key: "90d", days: 90 },
-  ];
+  const targetDate = new Date(currentVol.date);
 
-  for (const { key, days } of periods) {
-    const targetDate = new Date(currentDate);
+  for (const [key, days] of Object.entries(periods)) {
+    // Backend logic often looks back 'days' exactly.
+    // If not found, it finds the closest date.
 
-    targetDate.setDate(targetDate.getDate() - days);
+    // Calculate target past date
+    const pastTargetDate = new Date(targetDate);
 
-    // Find the closest entry to the target date
+    pastTargetDate.setDate(pastTargetDate.getDate() - days);
+
+    // Find entry with date <= pastTargetDate (closest to it)
+    // History is usually sorted desc? or asc? Backend sorts DESC in SQL normally for limit 1,
+    // but history array might be ASC for chart.
+    // Let's assume history might be unsorted or ASC.
+    // Let's sort to be safe if needed, or scan.
+
+    // Actually efficient way: find entry closest to pastTargetDate
     let closestEntry: CryptoVolatility | null = null;
     let minDiff = Infinity;
 
     for (const entry of history) {
       const entryDate = new Date(entry.date);
-      const diff = Math.abs(entryDate.getTime() - targetDate.getTime());
+      // We want the entry that is AT or BEFORE the target date (to capture the full period change)
+      // OR just closest absolute difference?
+      // "24h change" means Price(Now) vs Price(Now - 24h).
+      // So we want the entry closest to (Now - 24h).
+
+      const diff = Math.abs(entryDate.getTime() - pastTargetDate.getTime());
 
       if (diff < minDiff) {
         minDiff = diff;
@@ -106,15 +119,30 @@ function calculateVolatilityChanges(
       }
     }
 
-    // Only use if within 2 days of target
-    if (closestEntry && minDiff <= 2 * 24 * 60 * 60 * 1000) {
-      const pastValue =
-        mode === "annualized"
-          ? Number(closestEntry.annualized_volatility) * 100
-          : Number(closestEntry.daily_volatility) * 100;
+    // Backend tolerance might be strict or loose.
+    // If we want to math Sidebar (backend calculated), we should replicate backend logic.
+    // Backend usually does:
+    // SELECT ... WHERE timestamp <= NOW() - INTERVAL '...' ORDER BY timestamp DESC LIMIT 1
+    // This finds the closest data point in the PAST relative to the target window.
+    // My previous logic was absolute diff.
 
-      if (pastValue !== 0) {
-        changes[key] = ((currentValue - pastValue) / pastValue) * 100;
+    if (closestEntry) {
+      // Tolerance check? If closest data is 1 month away for 24h change, it's invalid.
+      // Let's use 2 day tolerance for short periods, and more for long?
+      // Let's stick to 2 days for now as strictly simpler check.
+      if (minDiff <= 2 * 24 * 60 * 60 * 1000 || days > 7) {
+        // For 30d/90d allow larger gap if data is sparse?
+        // Actually, if we use closest absolute, it handles weekends well.
+        const pastValue =
+          mode === "annualized"
+            ? Number(closestEntry.annualized_volatility) * 100
+            : Number(closestEntry.daily_volatility) * 100;
+
+        if (pastValue !== 0) {
+          changes[key] = ((currentValue - pastValue) / pastValue) * 100;
+        } else {
+          changes[key] = null;
+        }
       } else {
         changes[key] = null;
       }
@@ -190,45 +218,66 @@ export function VolatilityPanel({
                     : "N/A"}
                 </p>
                 {riskInfo && (
-                  <Chip color={riskInfo.color} size="sm" variant="flat">
+                  <Chip
+                    size="sm"
+                    style={{
+                      backgroundColor: `${riskInfo.color}33`,
+                      color: riskInfo.color,
+                      border: "none",
+                    }}
+                    variant="flat"
+                  >
                     {riskInfo.level} Risk
                   </Chip>
                 )}
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="flex flex-wrap justify-center sm:justify-end gap-2">
                 {(["24h", "7d", "30d", "90d"] as const).map((key) => {
                   const change = volatilityChanges[key];
+                  const hasValue = typeof change === "number";
+
+                  if (!hasValue) return null;
+
+                  // Green if volatility decreases (negative change), Red if it increases (positive change)
+                  // Standard risk logic: Lower volatility is better.
+                  const isPositive = change > 0;
+                  const color: "success" | "danger" | "default" = isPositive
+                    ? "danger"
+                    : "success";
 
                   return (
-                    <div key={key}>
-                      <p className="text-xs text-default-500">{key}</p>
-                      {change !== null ? (
-                        <Chip
-                          color={getPercentageColor(change)}
-                          size="sm"
-                          startContent={
-                            change > 0 ? (
-                              <TrendingUp size={14} />
-                            ) : (
-                              <TrendingDown size={14} />
-                            )
-                          }
-                          variant="flat"
-                        >
-                          {formatPercentage(change)}
-                        </Chip>
-                      ) : (
-                        <Chip color="default" size="sm" variant="flat">
-                          -
-                        </Chip>
-                      )}
+                    <div
+                      key={key}
+                      className="p-3 flex flex-col items-center justify-center min-w-[80px] gap-2"
+                    >
+                      <span className="text-sm font-medium text-default-500">
+                        {key}
+                      </span>
+                      <Chip
+                        classNames={{
+                          base: "h-7 px-2",
+                        }}
+                        color={color}
+                        size="sm"
+                        startContent={
+                          isPositive ? (
+                            <TrendingUp size={14} />
+                          ) : (
+                            <TrendingDown size={14} />
+                          )
+                        }
+                        variant="flat"
+                      >
+                        {isPositive ? "+" : ""}
+                        {change.toFixed(2)}%
+                      </Chip>
                     </div>
                   );
                 })}
               </div>
-              <div className="flex gap-2 sm:justify-end">
+              <div className="flex gap-2 justify-center sm:justify-end">
                 <Button
                   size="sm"
                   variant={mode === "annualized" ? "solid" : "bordered"}

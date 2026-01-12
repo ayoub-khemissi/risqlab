@@ -712,6 +712,28 @@ api.get('/risk/crypto/:symbol/summary', async (req, res) => {
       });
     }
 
+    // 1. Get Price Data
+    const [latest] = await Database.execute(`
+      SELECT
+        price_usd,
+        percent_change_1h,
+        percent_change_24h,
+        percent_change_7d,
+        percent_change_30d
+      FROM market_data
+      WHERE crypto_id = ?
+      ORDER BY timestamp DESC
+      LIMIT 1
+    `, [crypto.id]);
+
+    const currentPrice = latest[0] ? parseFloat(latest[0].price_usd) : 0;
+    const priceChanges = latest[0] ? {
+      '1h': latest[0].percent_change_1h ? parseFloat(latest[0].percent_change_1h) : null,
+      '24h': latest[0].percent_change_24h ? parseFloat(latest[0].percent_change_24h) : null,
+      '7d': latest[0].percent_change_7d ? parseFloat(latest[0].percent_change_7d) : null,
+      '30d': latest[0].percent_change_30d ? parseFloat(latest[0].percent_change_30d) : null
+    } : null;
+
     const dateFilter = getDateFilter(period);
     const cryptoReturns = await getCryptoLogReturns(crypto.id, dateFilter);
     const indexReturns = await getIndexLogReturns(dateFilter);
@@ -730,14 +752,19 @@ api.get('/risk/crypto/:symbol/summary', async (req, res) => {
 
     const logReturns = cryptoReturns.map(r => parseFloat(r.log_return));
 
-    // Calculate all metrics
+    // 2. Calculate Basic Metrics
     const var95 = calculateVaR(logReturns, 95);
+    const var99 = calculateVaR(logReturns, 99);
+    const cvar99 = calculateCVaR(logReturns, 99);
     const skewness = calculateSkewness(logReturns);
     const kurtosis = calculateKurtosis(logReturns);
 
-    // Calculate beta if we have index data
+    // 3. Calculate Beta/Alpha & SML & Stress Test
     let beta = null;
-    let alpha = null;
+    let alpha = null; // CAPM Alpha (regression intercept)
+    let smlData = null; // SML specific data (Jensen's Alpha)
+    let stressTest = null;
+
     if (indexReturns.length >= 7) {
       const cryptoReturnsByDate = new Map(cryptoReturns.map(r => [r.date.toISOString().split('T')[0], parseFloat(r.log_return)]));
       const indexReturnsByDate = new Map(indexReturns.map(r => [r.date.toISOString().split('T')[0], parseFloat(r.log_return)]));
@@ -755,29 +782,98 @@ api.get('/risk/crypto/:symbol/summary', async (req, res) => {
         const result = calculateBetaAlpha(alignedCrypto, alignedMarket);
         beta = result.beta;
         alpha = Number((result.alpha * 100).toFixed(4));
+
+        // Calculate SML (Jensen's Alpha)
+        const cryptoAnnualReturn = calculateAnnualizedReturn(alignedCrypto);
+        const marketAnnualReturn = calculateAnnualizedReturn(alignedMarket);
+        smlData = calculateSML(beta, cryptoAnnualReturn, marketAnnualReturn, 0);
+
+        // Calculate Stress Test (Covid only)
+        if (currentPrice > 0) {
+          const scenarios = calculateStressTest(beta, currentPrice);
+          const covidScenario = scenarios.find(s => s.id === 'covid-19');
+          if (covidScenario) {
+            stressTest = {
+              newPrice: Number(covidScenario.newPrice.toFixed(2)),
+              priceChange: Number(covidScenario.priceChange.toFixed(2)),
+              impactPercentage: Number(covidScenario.expectedImpact.toFixed(2))
+            };
+          }
+        }
       }
     }
 
-    // Get volatility from existing table
-    const [volatility] = await Database.execute(`
-      SELECT daily_volatility, annualized_volatility
+    // 4. Get Volatility
+    const [volatilityHistory] = await Database.execute(`
+      SELECT date, daily_volatility, annualized_volatility
       FROM crypto_volatility
       WHERE crypto_id = ?
+        AND date >= DATE_SUB(NOW(), INTERVAL 100 DAY)
       ORDER BY date DESC
-      LIMIT 1
     `, [crypto.id]);
+
+    const currentVol = volatilityHistory[0] || null;
+    let volChanges = null;
+
+    if (currentVol) {
+      // Helper to find vol at specific past interval (approximate)
+      const getPastVol = (days) => {
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() - days);
+        // Find closest date in history (assuming sorted DESC)
+        return volatilityHistory.find(v => new Date(v.date) <= targetDate);
+      };
+
+      const vol1d = volatilityHistory[1]; // Yesterday (approx)
+      const vol7d = getPastVol(7);
+      const vol30d = getPastVol(30);
+      const vol90d = getPastVol(90);
+
+      const currentAnnualized = parseFloat(currentVol.annualized_volatility);
+
+      const calcChange = (pastVol) => {
+        if (!pastVol) return null;
+        const pastAnnualized = parseFloat(pastVol.annualized_volatility);
+        return Number((currentAnnualized - pastAnnualized).toFixed(4)); // Absolute change in percentage points (decimal form)
+        // Actually it's better to return difference in % value (e.g. 50% -> 55% is +5%)
+      };
+
+      volChanges = {
+        '24h': calcChange(vol1d),
+        '7d': calcChange(vol7d),
+        '30d': calcChange(vol30d),
+        '90d': calcChange(vol90d)
+      };
+    }
 
     res.json({
       data: {
         crypto: crypto,
         hasData: true,
-        volatility: volatility[0] ? {
-          daily: Number((parseFloat(volatility[0].daily_volatility) * 100).toFixed(2)),
-          annualized: Number((parseFloat(volatility[0].annualized_volatility) * 100).toFixed(2))
+        price: {
+          current: currentPrice,
+          changes: priceChanges
+        },
+        volatility: currentVol ? {
+          daily: Number((parseFloat(currentVol.daily_volatility) * 100).toFixed(2)),
+          annualized: Number((parseFloat(currentVol.annualized_volatility) * 100).toFixed(2)),
+          changes: volChanges ? {
+            '24h': volChanges['24h'] ? Number((volChanges['24h'] * 100).toFixed(2)) : null,
+            '7d': volChanges['7d'] ? Number((volChanges['7d'] * 100).toFixed(2)) : null,
+            '30d': volChanges['30d'] ? Number((volChanges['30d'] * 100).toFixed(2)) : null,
+            '90d': volChanges['90d'] ? Number((volChanges['90d'] * 100).toFixed(2)) : null
+          } : null
         } : null,
         beta,
-        alpha,
+        alpha, // Regression Alpha
+        sml: smlData ? {
+          alpha: smlData.alpha, // Jensen's Alpha
+          isOvervalued: smlData.isOvervalued
+        } : null,
         var95: Number((var95 * 100).toFixed(2)),
+        var99: Number((var99 * 100).toFixed(2)),
+        cvar99: Number((cvar99 * 100).toFixed(2)),
+        stressTest,
         skewness,
         kurtosis,
         period,

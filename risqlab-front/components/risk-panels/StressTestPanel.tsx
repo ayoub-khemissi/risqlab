@@ -78,7 +78,7 @@ const ScenarioButton = memo(function ScenarioButton({
 export function StressTestPanel({ symbol }: StressTestPanelProps) {
   const { data, isLoading, error } = useStressTest(symbol);
   const [selectedScenario, setSelectedScenario] =
-    useState<StressScenarioId | null>(null);
+    useState<StressScenarioId | null>("covid-19");
 
   // Get selected scenario details
   const activeScenario = useMemo(() => {
