@@ -148,7 +148,7 @@ export function BetaPanel({ symbol }: { symbol: string }) {
                     label={{
                       value: "Market Return (%)",
                       position: "bottom",
-                      offset: 5,
+                      offset: 0,
                     }}
                     stroke="#888"
                     tickFormatter={(value) => `${value.toFixed(1)}%`}
@@ -163,12 +163,14 @@ export function BetaPanel({ symbol }: { symbol: string }) {
                       value: `${symbol.toUpperCase()} Return (%)`,
                       angle: -90,
                       position: "insideLeft",
+                      style: { textAnchor: "middle" },
+                      dx: 15,
                     }}
                     stroke="#888"
                     tickFormatter={(value) => `${value.toFixed(1)}%`}
                     tickLine={false}
                     type="number"
-                    width={60}
+                    width={80}
                   />
                   <RechartsTooltip
                     content={({ active, payload }) => {

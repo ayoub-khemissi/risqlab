@@ -11,8 +11,10 @@ export type RiskPanel =
   | "volatility"
   | "stress-test"
   | "var"
+  | "var"
   | "beta"
-  | "distribution"
+  | "skew"
+  | "kurtosis"
   | "sml";
 
 /**
@@ -334,11 +336,18 @@ export const PANEL_CONFIGS: PanelConfig[] = [
     icon: "trending-up",
   },
   {
-    id: "distribution",
-    label: "Skew / Kurtosis",
-    shortLabel: "Distrib.",
-    description: "Asymmetry and tail thickness",
+    id: "skew",
+    label: "Skewness",
+    shortLabel: "Skew",
+    description: "Asymmetry of returns distribution",
     icon: "bar-chart-2",
+  },
+  {
+    id: "kurtosis",
+    label: "Kurtosis",
+    shortLabel: "Kurtosis",
+    description: "Tail risk and extreme values",
+    icon: "bar-chart-vertical",
   },
   {
     id: "sml",

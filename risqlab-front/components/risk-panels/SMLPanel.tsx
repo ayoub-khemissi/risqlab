@@ -1,7 +1,6 @@
 "use client";
 
 import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import {
   ComposedChart,
@@ -9,60 +8,57 @@ import {
   Scatter,
   XAxis,
   YAxis,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
   CartesianGrid,
   ReferenceLine,
 } from "recharts";
+import { Tooltip } from "@heroui/tooltip";
+import { AlertTriangle } from "lucide-react";
 
 import { useSML } from "@/hooks/useRiskMetrics";
-import { RiskPeriod } from "@/types/risk-metrics";
 
 interface SMLPanelProps {
   symbol: string;
-  period: RiskPeriod;
-  onPeriodChange: (period: RiskPeriod) => void;
 }
 
-const PERIODS: RiskPeriod[] = ["7d", "30d", "90d", "all"];
-
-export function SMLPanel({ symbol, period, onPeriodChange }: SMLPanelProps) {
-  const { data, isLoading, error } = useSML(symbol, period);
+export function SMLPanel({ symbol }: SMLPanelProps) {
+  const { data, isLoading, error } = useSML(symbol, "90d");
 
   // Crypto point for scatter
   const cryptoPoint = data
     ? [
-        {
-          beta: data.cryptoBeta,
-          return: data.cryptoActualReturn,
-          name: symbol.toUpperCase(),
-          type: "actual",
-        },
-      ]
+      {
+        beta: data.cryptoBeta,
+        return: data.cryptoActualReturn,
+        name: symbol.toUpperCase(),
+        type: "actual",
+      },
+    ]
     : [];
 
   // Expected point on SML
   const expectedPoint = data
     ? [
-        {
-          beta: data.cryptoBeta,
-          return: data.cryptoExpectedReturn,
-          name: "Expected",
-          type: "expected",
-        },
-      ]
+      {
+        beta: data.cryptoBeta,
+        return: data.cryptoExpectedReturn,
+        name: "Expected",
+        type: "expected",
+      },
+    ]
     : [];
 
   // Market point (beta = 1)
   const marketPoint = data
     ? [
-        {
-          beta: 1,
-          return: data.marketReturn,
-          name: "Market (RisqLab 80)",
-          type: "market",
-        },
-      ]
+      {
+        beta: 1,
+        return: data.marketReturn,
+        name: "Market (RisqLab 80)",
+        type: "market",
+      },
+    ]
     : [];
 
   return (
@@ -129,23 +125,33 @@ export function SMLPanel({ symbol, period, onPeriodChange }: SMLPanelProps) {
       <Card>
         <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-0">
           <div>
-            <h3 className="text-lg font-semibold">Security Market Line</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold">Security Market Line</h3>
+              {data && data.dataPoints < 90 && (
+                <Tooltip
+                  content={
+                    <div className="p-2 max-w-xs">
+                      <div className="font-semibold mb-1">
+                        Less Than 90 Days of Data
+                      </div>
+                      <div className="text-tiny">
+                        Only {data.dataPoints} days of historical data
+                        available. SML calculations are more reliable with at
+                        least 90 days of data.
+                      </div>
+                    </div>
+                  }
+                >
+                  <AlertTriangle
+                    className="text-warning cursor-help"
+                    size={18}
+                  />
+                </Tooltip>
+              )}
+            </div>
             <p className="text-sm text-default-500">
               Expected return vs Beta (systematic risk)
             </p>
-          </div>
-          <div className="flex gap-1">
-            {PERIODS.map((p) => (
-              <Button
-                key={p}
-                isDisabled={isLoading}
-                size="sm"
-                variant={period === p ? "solid" : "bordered"}
-                onPress={() => onPeriodChange(p)}
-              >
-                {p === "all" ? "All" : p}
-              </Button>
-            ))}
           </div>
         </CardHeader>
         <CardBody className="p-4">
@@ -178,7 +184,7 @@ export function SMLPanel({ symbol, period, onPeriodChange }: SMLPanelProps) {
                     label={{
                       value: "Beta (Systematic Risk)",
                       position: "bottom",
-                      offset: 5,
+                      offset: 0,
                     }}
                     stroke="#888"
                     tickLine={false}
@@ -191,13 +197,15 @@ export function SMLPanel({ symbol, period, onPeriodChange }: SMLPanelProps) {
                       value: "Expected Return (%)",
                       angle: -90,
                       position: "insideLeft",
+                      style: { textAnchor: "middle" },
+                      dx: 15,
                     }}
                     stroke="#888"
                     tickFormatter={(value) => `${value}%`}
                     tickLine={false}
-                    width={60}
+                    width={80}
                   />
-                  <Tooltip
+                  <RechartsTooltip
                     content={({ active, payload }) => {
                       if (active && payload && payload.length > 0) {
                         const d = payload[0].payload;

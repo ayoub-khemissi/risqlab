@@ -4,5 +4,6 @@ export { VolatilityPanel } from "./VolatilityPanel";
 export { StressTestPanel } from "./StressTestPanel";
 export { VaRPanel } from "./VaRPanel";
 export { BetaPanel } from "./BetaPanel";
-export { DistributionPanel } from "./DistributionPanel";
+export { SkewPanel } from "./SkewPanel";
+export { KurtosisPanel } from "./KurtosisPanel";
 export { SMLPanel } from "./SMLPanel";

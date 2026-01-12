@@ -34,7 +34,8 @@ const PANEL_ICONS: Record<RiskPanel, React.ReactNode> = {
   "stress-test": <AlertTriangle size={18} />,
   var: <Shield size={18} />,
   beta: <TrendingUp size={18} />,
-  distribution: <BarChart2 size={18} />,
+  skew: <BarChart2 size={18} />,
+  kurtosis: <Activity size={18} />,
   sml: <GitBranch size={18} />,
 };
 
@@ -63,9 +64,13 @@ function formatMetricValue(
         : null;
     case "beta":
       return riskSummary?.beta != null ? riskSummary.beta.toFixed(2) : null;
-    case "distribution":
+    case "skew":
       return riskSummary?.skewness != null
         ? `Skew ${riskSummary.skewness.toFixed(2)}`
+        : null;
+    case "kurtosis":
+      return riskSummary?.kurtosis != null
+        ? `Kurt. ${riskSummary.kurtosis.toFixed(2)}`
         : null;
     case "sml":
       return riskSummary?.alpha != null

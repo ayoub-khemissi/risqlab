@@ -29,7 +29,8 @@ import {
   StressTestPanel,
   VaRPanel,
   BetaPanel,
-  DistributionPanel,
+  SkewPanel,
+  KurtosisPanel,
   SMLPanel,
 } from "@/components/risk-panels";
 import { useRiskSummary, usePriceHistory } from "@/hooks/useRiskMetrics";
@@ -40,7 +41,8 @@ const VALID_PANELS: RiskPanel[] = [
   "stress-test",
   "var",
   "beta",
-  "distribution",
+  "skew",
+  "kurtosis",
   "sml",
 ];
 
@@ -200,22 +202,12 @@ export default function CryptoDetailContent() {
         );
       case "beta":
         return <BetaPanel symbol={symbol} />;
-      case "distribution":
-        return (
-          <DistributionPanel
-            period={period}
-            symbol={symbol}
-            onPeriodChange={setPeriod}
-          />
-        );
+      case "skew":
+        return <SkewPanel symbol={symbol} />;
+      case "kurtosis":
+        return <KurtosisPanel symbol={symbol} />;
       case "sml":
-        return (
-          <SMLPanel
-            period={period}
-            symbol={symbol}
-            onPeriodChange={setPeriod}
-          />
-        );
+        return <SMLPanel symbol={symbol} />;
       default:
         return null;
     }
