@@ -251,19 +251,48 @@ export function generateNormalCurve(mu, sigma, min, max, points = 100) {
 }
 
 /**
- * Calculate stress test scenarios
+ * Calculate stress test scenarios based on historical market crises
  * Impact = Beta × Market Shock
  *
  * @param {number} beta - Crypto beta relative to market
  * @param {number} currentPrice - Current crypto price
- * @param {Array<{ name: string, shock: number }>} scenarios - Stress scenarios
- * @returns {Array<{ name: string, marketShock: number, expectedImpact: number, newPrice: number, priceChange: number }>}
+ * @param {Array<{ id: string, name: string, shock: number, startDate: string, endDate: string, description: string }>} scenarios - Stress scenarios
+ * @returns {Array<{ id: string, name: string, marketShock: number, expectedImpact: number, newPrice: number, priceChange: number, startDate: string, endDate: string, description: string }>}
  */
 export function calculateStressTest(beta, currentPrice, scenarios = null) {
   const defaultScenarios = [
-    { name: 'Mild', shock: -0.10 },       // -10% market correction
-    { name: 'Moderate', shock: -0.25 },   // -25% crash (2022 style)
-    { name: 'Severe', shock: -0.50 }      // -50% black swan
+    {
+      id: 'covid-19',
+      name: 'Covid-19',
+      shock: -0.5042,
+      startDate: '2020-02-20',
+      endDate: '2020-03-13',
+      description: 'Global pandemic market crash'
+    },
+    {
+      id: 'china-mining-ban',
+      name: 'Ban Mining China',
+      shock: -0.2507,
+      startDate: '2021-05-12',
+      endDate: '2021-05-23',
+      description: 'China cryptocurrency mining ban'
+    },
+    {
+      id: 'ust-crash',
+      name: 'Crash UST',
+      shock: -0.0473,
+      startDate: '2022-05-07',
+      endDate: '2022-05-12',
+      description: 'Terra/Luna stablecoin collapse'
+    },
+    {
+      id: 'ftx-crash',
+      name: 'Crash FTX',
+      shock: -0.0264,
+      startDate: '2022-11-05',
+      endDate: '2022-11-09',
+      description: 'FTX exchange collapse'
+    }
   ];
 
   const scenariosToUse = scenarios || defaultScenarios;
@@ -274,11 +303,15 @@ export function calculateStressTest(beta, currentPrice, scenarios = null) {
     const priceChange = newPrice - currentPrice;
 
     return {
+      id: scenario.id,
       name: scenario.name,
-      marketShock: Number((scenario.shock * 100).toFixed(1)),
+      marketShock: Number((scenario.shock * 100).toFixed(2)),
       expectedImpact: Number((expectedImpact * 100).toFixed(2)),
-      newPrice: Number(newPrice.toFixed(2)),
-      priceChange: Number(priceChange.toFixed(2))
+      newPrice: newPrice,
+      priceChange: priceChange,
+      startDate: scenario.startDate,
+      endDate: scenario.endDate,
+      description: scenario.description
     };
   });
 }

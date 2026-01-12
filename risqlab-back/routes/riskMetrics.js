@@ -383,11 +383,12 @@ api.get('/risk/crypto/:symbol/var', async (req, res) => {
 
 /**
  * GET /risk/crypto/:symbol/stress-test
- * Returns stress test scenarios based on beta
+ * Returns stress test scenarios based on beta with price history for charting
  */
 api.get('/risk/crypto/:symbol/stress-test', async (req, res) => {
   try {
     const { symbol } = req.params;
+    const { period = '30d' } = req.query;
 
     const crypto = await getCryptoBySymbol(symbol);
     if (!crypto) {
@@ -414,6 +415,28 @@ api.get('/risk/crypto/:symbol/stress-test', async (req, res) => {
     }
 
     const currentPrice = parseFloat(priceData[0].price_usd);
+
+    // Get price history for the chart
+    const priceDateFilter = getDateFilter(period, 'timestamp');
+    const maxPoints = getMaxDataPoints(period);
+
+    const [priceHistory] = await Database.execute(`
+      SELECT date, price FROM (
+        SELECT
+          timestamp as date,
+          price_usd as price,
+          ROW_NUMBER() OVER (ORDER BY timestamp) as rn,
+          COUNT(*) OVER () as total_count
+        FROM market_data
+        WHERE crypto_id = ?
+          ${priceDateFilter}
+      ) sub
+      WHERE
+        rn = 1
+        OR rn = total_count
+        OR MOD(rn - 1, GREATEST(1, FLOOR(total_count / ?))) = 0
+      ORDER BY date ASC
+    `, [crypto.id, maxPoints]);
 
     // Calculate beta for stress test (use 90d period)
     const dateFilter = getDateFilter('90d');
@@ -445,9 +468,14 @@ api.get('/risk/crypto/:symbol/stress-test', async (req, res) => {
     res.json({
       data: {
         crypto: crypto,
-        currentPrice: Number(currentPrice.toFixed(6)),
+        currentPrice: currentPrice,
         beta: Number(beta.toFixed(4)),
         scenarios,
+        priceHistory: priceHistory.map(p => ({
+          date: p.date,
+          price: parseFloat(p.price)
+        })),
+        period,
         dataPoints: alignedCrypto.length
       }
     });

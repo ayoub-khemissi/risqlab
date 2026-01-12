@@ -136,12 +136,36 @@ export interface VaRResponse {
 // STRESS TEST
 // ============================================================================
 
+/**
+ * Historical crisis scenario identifier
+ */
+export type StressScenarioId =
+  | "covid-19"
+  | "china-mining-ban"
+  | "ust-crash"
+  | "ftx-crash";
+
+/**
+ * Stress scenario with historical data
+ */
 export interface StressScenario {
+  id: StressScenarioId;
   name: string;
   marketShock: number;
   expectedImpact: number;
   newPrice: number;
   priceChange: number;
+  startDate: string;
+  endDate: string;
+  description: string;
+}
+
+/**
+ * Price point for stress test chart
+ */
+export interface StressPricePoint {
+  date: string;
+  price: number;
 }
 
 export interface StressTestData {
@@ -149,12 +173,24 @@ export interface StressTestData {
   currentPrice: number;
   beta: number;
   scenarios: StressScenario[];
+  priceHistory: StressPricePoint[];
+  period: string;
   dataPoints: number;
 }
 
 export interface StressTestResponse {
   data: StressTestData;
 }
+
+/**
+ * Scenario display configuration
+ */
+export const STRESS_SCENARIO_COLORS: Record<StressScenarioId, string> = {
+  "covid-19": "#ef4444",
+  "china-mining-ban": "#f97316",
+  "ust-crash": "#eab308",
+  "ftx-crash": "#8b5cf6",
+};
 
 // ============================================================================
 // DISTRIBUTION (SKEWNESS / KURTOSIS)
@@ -280,7 +316,7 @@ export const PANEL_CONFIGS: PanelConfig[] = [
     id: "stress-test",
     label: "Stress Test",
     shortLabel: "Stress",
-    description: "Stress scenarios -10%, -25%, -50%",
+    description: "Historical crisis scenarios (Covid-19, FTX, etc.)",
     icon: "alert-triangle",
   },
   {

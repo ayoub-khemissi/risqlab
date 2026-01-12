@@ -1,46 +1,156 @@
 "use client";
 
+import { useState, useMemo, memo } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
+import { TrendingDown } from "lucide-react";
 import {
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  Cell,
-  ReferenceLine,
+  CartesianGrid,
+  Legend,
 } from "recharts";
 
 import { useStressTest } from "@/hooks/useRiskMetrics";
 import { formatCryptoPrice } from "@/lib/formatters";
+import {
+  StressScenarioId,
+  STRESS_SCENARIO_COLORS,
+  StressScenario,
+} from "@/types/risk-metrics";
 
 interface StressTestPanelProps {
   symbol: string;
 }
 
-const SCENARIO_COLORS: Record<string, string> = {
-  Mild: "#eab308",
-  Moderate: "#f97316",
-  Severe: "#ef4444",
-};
+// Scenarios that need dark text for better contrast (light background colors)
+const DARK_TEXT_SCENARIOS: StressScenarioId[] = [
+  "covid-19",
+  "china-mining-ban",
+  "ust-crash",
+];
+
+// Isolated button component to prevent chart re-renders on hover
+const ScenarioButton = memo(function ScenarioButton({
+  scenario,
+  isSelected,
+  onSelect,
+}: {
+  scenario: StressScenario;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+  const isActive = isSelected || isHovered;
+  const needsDarkText = DARK_TEXT_SCENARIOS.includes(scenario.id);
+
+  return (
+    <Button
+      className="h-auto py-2 px-4 transition-colors"
+      size="sm"
+      style={{
+        backgroundColor: isActive
+          ? STRESS_SCENARIO_COLORS[scenario.id]
+          : "transparent",
+        borderColor: STRESS_SCENARIO_COLORS[scenario.id],
+        color: isActive ? (needsDarkText ? "#000" : "#fff") : undefined,
+      }}
+      variant="bordered"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onPress={onSelect}
+    >
+      <span className="flex flex-col items-start">
+        <span className="font-medium">{scenario.name}</span>
+        <span className="text-xs opacity-75">
+          {scenario.marketShock.toFixed(1)}% shock
+        </span>
+      </span>
+    </Button>
+  );
+});
 
 export function StressTestPanel({ symbol }: StressTestPanelProps) {
   const { data, isLoading, error } = useStressTest(symbol);
+  const [selectedScenario, setSelectedScenario] =
+    useState<StressScenarioId | null>(null);
 
-  const chartData =
-    data?.scenarios.map((s) => ({
-      name: s.name,
-      impact: s.expectedImpact,
-      newPrice: s.newPrice,
-      priceChange: s.priceChange,
-      marketShock: s.marketShock,
-    })) || [];
+  // Get selected scenario details
+  const activeScenario = useMemo(() => {
+    if (!selectedScenario || !data?.scenarios) return null;
+
+    return data.scenarios.find((s) => s.id === selectedScenario) || null;
+  }, [selectedScenario, data?.scenarios]);
+
+  // Build chart data with stressed price projection
+  const chartData = useMemo(() => {
+    if (!data?.priceHistory) return [];
+
+    return data.priceHistory.map((p, index) => {
+      const baseData: {
+        index: number;
+        timestamp: number;
+        dateLabel: string;
+        price: number;
+        fullDateTime: string;
+        stressedPrice: number | null;
+      } = {
+        index,
+        timestamp: new Date(p.date).getTime(),
+        dateLabel: new Date(p.date).toLocaleDateString("fr-FR", {
+          month: "short",
+          day: "numeric",
+        }),
+        price: p.price,
+        fullDateTime: new Date(p.date).toLocaleString("fr-FR", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        stressedPrice: null,
+      };
+
+      // Calculate stressed price if a scenario is selected
+      if (activeScenario && data.beta) {
+        // Formula: Prix stresse = Prix x (1 + choc x beta)
+        // marketShock is already in percentage (e.g., -50.42), so divide by 100
+        const impactMultiplier =
+          1 + (activeScenario.marketShock / 100) * data.beta;
+
+        baseData.stressedPrice = p.price * impactMultiplier;
+      }
+
+      return baseData;
+    });
+  }, [data?.priceHistory, activeScenario, data?.beta]);
+
+  // Calculate the impact summary for the selected scenario
+  const impactSummary = useMemo(() => {
+    if (!activeScenario || !data) return null;
+
+    const startPrice = data.currentPrice;
+    const endPrice = activeScenario.newPrice;
+    const loss = startPrice - endPrice;
+    const lossPercent = (loss / startPrice) * 100;
+
+    return {
+      startPrice,
+      endPrice,
+      loss,
+      lossPercent,
+    };
+  }, [activeScenario, data]);
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Summary Card */}
+      {/* Summary Card with current price and beta */}
       <Card>
         <CardBody className="p-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -72,167 +182,248 @@ export function StressTestPanel({ symbol }: StressTestPanelProps) {
         </CardBody>
       </Card>
 
-      {/* Chart Card */}
+      {/* Scenario Selection Buttons */}
       <Card>
         <CardHeader>
           <div>
-            <h3 className="text-lg font-semibold">Stress Test Scenarios</h3>
+            <h3 className="text-lg font-semibold">Historical Scenarios</h3>
             <p className="text-sm text-default-500">
-              Expected price impact based on market shocks
+              Select a crisis to simulate its impact on your position
             </p>
           </div>
         </CardHeader>
         <CardBody className="p-4">
-          {isLoading ? (
-            <div className="h-[300px] flex items-center justify-center">
-              <p className="text-default-500">Loading...</p>
-            </div>
-          ) : error ? (
-            <div className="h-[300px] flex items-center justify-center">
-              <p className="text-danger">Error loading data</p>
-            </div>
-          ) : chartData.length === 0 ? (
-            <div className="h-[300px] flex items-center justify-center">
-              <p className="text-default-500">No data available</p>
-            </div>
-          ) : (
-            <>
-              <ResponsiveContainer height={300} width="100%">
-                <BarChart data={chartData} layout="vertical">
-                  <XAxis
-                    domain={["dataMin", 0]}
-                    fontSize={12}
-                    stroke="#888"
-                    tickFormatter={(value) => `${value.toFixed(0)}%`}
-                    type="number"
-                  />
-                  <YAxis
-                    dataKey="name"
-                    fontSize={12}
-                    stroke="#888"
-                    type="category"
-                    width={80}
-                  />
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length > 0) {
-                        const d = payload[0].payload;
+          <div className="flex flex-wrap gap-2">
+            {data?.scenarios.map((scenario) => (
+              <ScenarioButton
+                key={scenario.id}
+                isSelected={selectedScenario === scenario.id}
+                scenario={scenario}
+                onSelect={() =>
+                  setSelectedScenario(
+                    selectedScenario === scenario.id ? null : scenario.id,
+                  )
+                }
+              />
+            ))}
+          </div>
 
-                        return (
-                          <div className="bg-content1 border border-default-200 rounded-lg p-3 shadow-lg">
-                            <p className="font-semibold mb-2">
-                              {d.name} Scenario
-                            </p>
-                            <div className="space-y-1 text-sm">
-                              <p>
-                                <span className="text-default-500">
-                                  Market Shock:{" "}
-                                </span>
-                                {d.marketShock}%
-                              </p>
-                              <p>
-                                <span className="text-default-500">
-                                  Expected Impact:{" "}
-                                </span>
-                                <span className="text-danger">
-                                  {d.impact.toFixed(2)}%
-                                </span>
-                              </p>
-                              <p>
-                                <span className="text-default-500">
-                                  New Price:{" "}
-                                </span>
-                                {formatCryptoPrice(d.newPrice)}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      }
+          {/* Selected scenario details + Impact Summary (merged) */}
+          {activeScenario && impactSummary && (
+            <div
+              className="mt-4 p-4 rounded-lg border-2"
+              style={{
+                borderColor: STRESS_SCENARIO_COLORS[activeScenario.id],
+              }}
+            >
+              {/* Scenario info header */}
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h4 className="font-semibold">{activeScenario.name}</h4>
+                  <p className="text-sm text-default-500">
+                    {activeScenario.description}
+                  </p>
+                  <p className="text-xs text-default-400 mt-1">
+                    {new Date(activeScenario.startDate).toLocaleDateString(
+                      "fr-FR",
+                    )}{" "}
+                    {" \u2192 "}
+                    {new Date(activeScenario.endDate).toLocaleDateString(
+                      "fr-FR",
+                    )}
+                  </p>
+                </div>
+                <Chip color="danger" size="sm" variant="flat">
+                  {activeScenario.marketShock.toFixed(2)}%
+                </Chip>
+              </div>
 
-                      return null;
-                    }}
-                  />
-                  <ReferenceLine stroke="#888" strokeDasharray="3 3" x={0} />
-                  <Bar dataKey="impact" radius={[0, 4, 4, 0]}>
-                    {chartData.map((entry) => (
-                      <Cell
-                        key={entry.name}
-                        fill={SCENARIO_COLORS[entry.name] || "#888"}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-              <p className="text-xs text-default-400 mt-2 text-right">
-                {chartData.length} scenarios
-              </p>
-            </>
+              {/* Impact visualization */}
+              <div className="text-center mb-2">
+                <p className="text-sm text-default-500">
+                  If we relived <strong>{activeScenario.name}</strong>:
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-3 sm:gap-8 py-2">
+                <div className="text-center min-w-0 flex-shrink">
+                  <p className="text-xs text-default-500 mb-1">Current</p>
+                  <p className="text-lg sm:text-2xl font-bold truncate">
+                    {formatCryptoPrice(impactSummary.startPrice)}
+                  </p>
+                </div>
+                <TrendingDown className="text-danger flex-shrink-0" size={24} />
+                <div className="text-center min-w-0 flex-shrink">
+                  <p className="text-xs text-default-500 mb-1">Stressed</p>
+                  <p
+                    className="text-lg sm:text-2xl font-bold truncate"
+                    style={{ color: STRESS_SCENARIO_COLORS[activeScenario.id] }}
+                  >
+                    {formatCryptoPrice(impactSummary.endPrice)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Loss chip */}
+              <div className="text-center mt-2">
+                <Chip color="danger" size="lg" variant="flat">
+                  {impactSummary.lossPercent.toFixed(2)}% loss (
+                  {formatCryptoPrice(impactSummary.loss)})
+                </Chip>
+              </div>
+            </div>
           )}
         </CardBody>
       </Card>
 
-      {/* Scenarios Details */}
-      <Card>
-        <CardHeader>
-          <h3 className="text-lg font-semibold">Scenario Details</h3>
-        </CardHeader>
-        <CardBody className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {data?.scenarios.map((scenario) => (
-              <div
-                key={scenario.name}
-                className="p-4 rounded-lg border border-default-200"
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{
-                      backgroundColor: SCENARIO_COLORS[scenario.name],
-                    }}
-                  />
-                  <span className="font-semibold">{scenario.name}</span>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-default-500">Market Shock</span>
-                    <span>{scenario.marketShock}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-default-500">Your Impact</span>
-                    <span className="text-danger font-medium">
-                      {scenario.expectedImpact.toFixed(2)}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-default-500">New Price</span>
-                    <span className="font-medium">
-                      {formatCryptoPrice(scenario.newPrice)}
-                    </span>
-                  </div>
-                </div>
+      {/* Chart Card - Only shown when scenario selected */}
+      {selectedScenario && (
+        <Card>
+          <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-0">
+            <h3 className="text-lg font-semibold">Price Projection</h3>
+          </CardHeader>
+          <CardBody className="p-4">
+            {isLoading ? (
+              <div className="h-[300px] flex items-center justify-center">
+                <p className="text-default-500">Loading...</p>
               </div>
-            ))}
-          </div>
-        </CardBody>
-      </Card>
+            ) : error ? (
+              <div className="h-[300px] flex items-center justify-center">
+                <p className="text-danger">Error loading data</p>
+              </div>
+            ) : chartData.length === 0 ? (
+              <div className="h-[300px] flex items-center justify-center">
+                <p className="text-default-500">No data available</p>
+              </div>
+            ) : (
+              <div
+                className="transition-opacity"
+                style={{ opacity: isLoading ? 0.5 : 1 }}
+              >
+                <ResponsiveContainer height={300} width="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid opacity={0.1} strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="timestamp"
+                      fontSize={12}
+                      stroke="#888"
+                      tickFormatter={(value) => {
+                        const date = new Date(value);
 
-      {/* Explanation */}
+                        return date.toLocaleDateString("fr-FR", {
+                          day: "numeric",
+                          month: "short",
+                        });
+                      }}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      domain={["auto", "auto"]}
+                      fontSize={12}
+                      stroke="#888"
+                      tickFormatter={(value) => formatCryptoPrice(value)}
+                      tickLine={false}
+                      width={80}
+                    />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length > 0) {
+                          const d = payload[0].payload;
+
+                          return (
+                            <div className="bg-content1 border border-default-200 rounded-lg p-3 shadow-lg">
+                              <p className="text-sm text-default-500 mb-2">
+                                {d.fullDateTime}
+                              </p>
+                              <div className="space-y-1">
+                                <p>
+                                  <span className="text-default-500">
+                                    Actual:{" "}
+                                  </span>
+                                  <span
+                                    className="font-semibold"
+                                    style={{ color: "#3b82f6" }}
+                                  >
+                                    {formatCryptoPrice(d.price)}
+                                  </span>
+                                </p>
+                                {d.stressedPrice !== null && (
+                                  <p>
+                                    <span className="text-default-500">
+                                      Stressed:{" "}
+                                    </span>
+                                    <span
+                                      className="font-semibold"
+                                      style={{
+                                        color:
+                                          STRESS_SCENARIO_COLORS[
+                                            selectedScenario!
+                                          ],
+                                      }}
+                                    >
+                                      {formatCryptoPrice(d.stressedPrice)}
+                                    </span>
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        return null;
+                      }}
+                    />
+                    {/* Actual price line */}
+                    <Line
+                      activeDot={false}
+                      dataKey="price"
+                      dot={false}
+                      isAnimationActive={true}
+                      name="Actual Price"
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                      type="linear"
+                    />
+                    {/* Stressed price line */}
+                    <Line
+                      activeDot={false}
+                      dataKey="stressedPrice"
+                      dot={false}
+                      isAnimationActive={true}
+                      name="Stressed Price"
+                      stroke={STRESS_SCENARIO_COLORS[selectedScenario]}
+                      strokeWidth={2}
+                      type="linear"
+                    />
+                    <Legend />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+            {data && (
+              <p className="text-xs text-default-400 mt-2 text-right">
+                {chartData.length} data points
+              </p>
+            )}
+          </CardBody>
+        </Card>
+      )}
+
+      {/* Explanation Card */}
       <Card>
         <CardBody className="p-4">
           <p className="text-sm text-default-500">
-            <strong>How it works:</strong> The stress test calculates expected
-            price impact using the formula:{" "}
+            <strong>How it works:</strong> The stress test simulates historical
+            market crashes on your position using the formula:{" "}
             <code className="bg-default-100 px-1 rounded">
-              Impact = Beta x Market Shock
+              Stressed Price = Current Price x (1 + Shock x Beta)
             </code>
             . A beta of {data?.beta?.toFixed(2) || "1.0"} means this crypto
-            moves{" "}
             {data?.beta && data.beta > 1
-              ? `${((data.beta - 1) * 100).toFixed(0)}% more`
+              ? ` amplifies market movements by ${((data.beta - 1) * 100).toFixed(0)}%`
               : data?.beta && data.beta < 1
-                ? `${((1 - data.beta) * 100).toFixed(0)}% less`
-                : "exactly like"}{" "}
-            than the market.
+                ? ` dampens market movements by ${((1 - data.beta) * 100).toFixed(0)}%`
+                : " moves exactly like the market"}
+            .
           </p>
         </CardBody>
       </Card>
