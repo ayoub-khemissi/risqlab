@@ -130,7 +130,7 @@ function calculateVolatilityChanges(
       // Tolerance check? If closest data is 1 month away for 24h change, it's invalid.
       // Let's use 2 day tolerance for short periods, and more for long?
       // Let's stick to 2 days for now as strictly simpler check.
-      if (minDiff <= 2 * 24 * 60 * 60 * 1000 || days > 7) {
+      if (minDiff <= 2 * 24 * 60 * 60 * 1000) {
         // For 30d/90d allow larger gap if data is sparse?
         // Actually, if we use closest absolute, it handles weekends well.
         const pastValue =

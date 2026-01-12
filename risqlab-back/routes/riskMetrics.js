@@ -818,7 +818,7 @@ api.get('/risk/crypto/:symbol/summary', async (req, res) => {
     if (currentVol) {
       // Helper to find vol at specific past interval (approximate)
       const getPastVol = (days) => {
-        const targetDate = new Date();
+        const targetDate = new Date(currentVol.date);
         targetDate.setDate(targetDate.getDate() - days);
         // Find closest date in history (assuming sorted DESC)
         return volatilityHistory.find(v => new Date(v.date) <= targetDate);
@@ -834,8 +834,11 @@ api.get('/risk/crypto/:symbol/summary', async (req, res) => {
       const calcChange = (pastVol) => {
         if (!pastVol) return null;
         const pastAnnualized = parseFloat(pastVol.annualized_volatility);
-        return Number((currentAnnualized - pastAnnualized).toFixed(4)); // Absolute change in percentage points (decimal form)
-        // Actually it's better to return difference in % value (e.g. 50% -> 55% is +5%)
+
+        if (pastAnnualized === 0) return null;
+
+        // Return relative percentage change (e.g. 0.05 for 5%)
+        return Number(((currentAnnualized - pastAnnualized) / pastAnnualized).toFixed(4));
       };
 
       volChanges = {
