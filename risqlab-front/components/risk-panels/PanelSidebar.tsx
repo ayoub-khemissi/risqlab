@@ -317,12 +317,10 @@ function getCardData(
         return { value: "N/A" };
 
       return {
-        value: `${Math.abs(riskSummary.var99).toFixed(2)}%`, // Display as positive or negative? Usually VaR is negative return, but user requested value. I'll keep it absolute number often used in risk with label "Loss". Or just raw value.
-        // User image showed "Value at Risk" and "N/A".
-        // Let's stick to raw value but cleaner.
-        subValue: `CVaR 99: ${Math.abs(riskSummary.cvar99).toFixed(2)}%`,
+        value: `${(-riskSummary.var99).toFixed(2)}%`,
+        subValue: `CVaR 99%: ${(-riskSummary.cvar99).toFixed(2)}%`,
         chipLabel: "VaR 99%",
-        chipColor: "warning",
+        chipColor: "default",
       };
 
     case "beta":
