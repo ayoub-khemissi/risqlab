@@ -177,10 +177,10 @@ function getCardData(
 
       // For volatility, increase can be seen as "danger" (higher risk) or just a change.
       // Usually red for increase, green for decrease is good for risk perception.
-      const v24Color = v24 > 0 ? "danger" : "success"; // Increased vol = bad? or just diff. Let's stick to Green=Good (Down), Red=Bad (Up).
-      const v7dColor = v7d > 0 ? "danger" : "success";
-      const v30dColor = v30d > 0 ? "danger" : "success";
-      const v90dColor = v90d > 0 ? "danger" : "success";
+      const v24Color = v24 >= 0 ? "success" : "danger";
+      const v7dColor = v7d >= 0 ? "success" : "danger";
+      const v30dColor = v30d >= 0 ? "success" : "danger";
+      const v90dColor = v90d >= 0 ? "success" : "danger";
 
       // Calculate risk level for annualized volatility
       const volVal = riskSummary.volatility.annualized;

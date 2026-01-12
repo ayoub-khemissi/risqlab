@@ -240,12 +240,10 @@ export function VolatilityPanel({
 
                   if (!hasValue) return null;
 
-                  // Green if volatility decreases (negative change), Red if it increases (positive change)
-                  // Standard risk logic: Lower volatility is better.
-                  const isPositive = change > 0;
+                  const isPositive = change >= 0;
                   const color: "success" | "danger" | "default" = isPositive
-                    ? "danger"
-                    : "success";
+                    ? "success"
+                    : "danger";
 
                   return (
                     <div
@@ -262,7 +260,7 @@ export function VolatilityPanel({
                         color={color}
                         size="sm"
                         startContent={
-                          isPositive ? (
+                          change > 0 ? (
                             <TrendingUp size={14} />
                           ) : (
                             <TrendingDown size={14} />
@@ -270,7 +268,7 @@ export function VolatilityPanel({
                         }
                         variant="flat"
                       >
-                        {isPositive ? "+" : ""}
+                        {change > 0 ? "+" : ""}
                         {change.toFixed(2)}%
                       </Chip>
                     </div>
