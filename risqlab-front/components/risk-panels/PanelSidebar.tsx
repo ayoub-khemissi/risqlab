@@ -387,7 +387,10 @@ export function PanelSidebar({
     <div className="flex flex-col gap-4">
       {/* Mobile: Dropdown Select (Keeping it simple for mobile for now) */}
       <Card className="lg:hidden sticky top-6 z-20">
-        <CardBody className="p-4">
+        <CardBody className="p-4 flex flex-col gap-2">
+          <p className="text-sm font-medium text-default-500 ml-1 text-center">
+            Select your risk metric
+          </p>
           <Select
             aria-label="Select risk panel"
             className="max-w-xs mx-auto"
