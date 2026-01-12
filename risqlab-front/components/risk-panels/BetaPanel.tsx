@@ -1,33 +1,26 @@
 "use client";
 
 import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import {
   Scatter,
   XAxis,
   YAxis,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
   CartesianGrid,
   ReferenceLine,
   Line,
   ComposedChart,
 } from "recharts";
+import { Tooltip } from "@heroui/tooltip";
+import { AlertTriangle } from "lucide-react";
 
 import { useBeta } from "@/hooks/useRiskMetrics";
-import { RiskPeriod, getBetaInterpretation } from "@/types/risk-metrics";
+import { getBetaInterpretation } from "@/types/risk-metrics";
 
-interface BetaPanelProps {
-  symbol: string;
-  period: RiskPeriod;
-  onPeriodChange: (period: RiskPeriod) => void;
-}
-
-const PERIODS: RiskPeriod[] = ["7d", "30d", "90d", "all"];
-
-export function BetaPanel({ symbol, period, onPeriodChange }: BetaPanelProps) {
-  const { data, isLoading, error } = useBeta(symbol, period);
+export function BetaPanel({ symbol }: { symbol: string }) {
+  const { data, isLoading, error } = useBeta(symbol, "all");
 
   const betaInterpretation =
     data && data.beta !== null && data.beta !== undefined
@@ -47,7 +40,7 @@ export function BetaPanel({ symbol, period, onPeriodChange }: BetaPanelProps) {
       {/* Beta Summary Card */}
       <Card>
         <CardBody className="p-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
               <p className="text-sm text-default-500 mb-1">Beta</p>
               <p className="text-4xl font-bold">
@@ -88,15 +81,6 @@ export function BetaPanel({ symbol, period, onPeriodChange }: BetaPanelProps) {
               </p>
               <p className="text-xs text-default-400">Model fit quality</p>
             </div>
-            <div>
-              <p className="text-sm text-default-500 mb-1">Correlation</p>
-              <p className="text-2xl font-bold">
-                {data?.correlation != null
-                  ? data.correlation.toFixed(2)
-                  : "N/A"}
-              </p>
-              <p className="text-xs text-default-400">With RisqLab 80</p>
-            </div>
           </div>
         </CardBody>
       </Card>
@@ -105,23 +89,33 @@ export function BetaPanel({ symbol, period, onPeriodChange }: BetaPanelProps) {
       <Card>
         <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-0">
           <div>
-            <h3 className="text-lg font-semibold">Returns Regression</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold">Returns Regression</h3>
+              {data && data.dataPoints < 365 && (
+                <Tooltip
+                  content={
+                    <div className="p-2 max-w-xs">
+                      <div className="font-semibold mb-1">
+                        Less Than 1 Year of Data
+                      </div>
+                      <div className="text-tiny">
+                        Only {data.dataPoints} days of historical data
+                        available. Beta calculations are more reliable with at
+                        least 365 days of data.
+                      </div>
+                    </div>
+                  }
+                >
+                  <AlertTriangle
+                    className="text-warning cursor-help"
+                    size={18}
+                  />
+                </Tooltip>
+              )}
+            </div>
             <p className="text-sm text-default-500">
               {symbol.toUpperCase()} vs RisqLab 80 Index
             </p>
-          </div>
-          <div className="flex gap-1">
-            {PERIODS.map((p) => (
-              <Button
-                key={p}
-                isDisabled={isLoading}
-                size="sm"
-                variant={period === p ? "solid" : "bordered"}
-                onPress={() => onPeriodChange(p)}
-              >
-                {p === "all" ? "All" : p}
-              </Button>
-            ))}
           </div>
         </CardHeader>
         <CardBody className="p-4">
@@ -176,7 +170,7 @@ export function BetaPanel({ symbol, period, onPeriodChange }: BetaPanelProps) {
                     type="number"
                     width={60}
                   />
-                  <Tooltip
+                  <RechartsTooltip
                     content={({ active, payload }) => {
                       if (active && payload && payload.length > 0) {
                         const d = payload[0].payload;
@@ -351,6 +345,25 @@ export function BetaPanel({ symbol, period, onPeriodChange }: BetaPanelProps) {
               </tbody>
             </table>
           </div>
+        </CardBody>
+      </Card>
+
+      {/* Explanation Card */}
+      <Card>
+        <CardBody className="p-4">
+          <p className="text-sm text-default-500">
+            <strong>How it works:</strong> Beta measures the volatility of an
+            asset relative to the market. It is calculated using the covariance
+            of returns divided by the variance of market returns:{" "}
+            <code className="bg-default-100 px-1 rounded">
+              Beta = Cov(R_crypto, R_market) / Var(R_market)
+            </code>
+            . Alpha is the excess return not explained by beta:{" "}
+            <code className="bg-default-100 px-1 rounded">
+              Alpha = Mean(R_crypto) - Beta * Mean(R_market)
+            </code>
+            .
+          </p>
         </CardBody>
       </Card>
     </div>

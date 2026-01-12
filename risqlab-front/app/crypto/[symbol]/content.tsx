@@ -199,13 +199,7 @@ export default function CryptoDetailContent() {
           />
         );
       case "beta":
-        return (
-          <BetaPanel
-            period={period}
-            symbol={symbol}
-            onPeriodChange={setPeriod}
-          />
-        );
+        return <BetaPanel symbol={symbol} />;
       case "distribution":
         return (
           <DistributionPanel
