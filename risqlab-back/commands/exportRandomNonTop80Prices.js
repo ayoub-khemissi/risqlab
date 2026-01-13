@@ -10,8 +10,8 @@ const __dirname = path.dirname(__filename);
 /**
  * Export historical prices for 3 random cryptos that have NEVER been in the top 80
  * - Selects cryptos that have never appeared in portfolio_volatility_constituents
- * - Only selects cryptos with complete price data for all dates in the window
- * - Retrieves prices from market_data up to D-1
+ * - Only selects cryptos with complete price data for all available dates
+ * - Retrieves ALL prices from market_data up to D-1 (same logic as calculateCryptoVolatility)
  * Output: CSV file with columns:
  *   Symbol, Name, then for each date: Date_Price
  */
@@ -21,37 +21,24 @@ async function exportRandomNonTop80Prices() {
   try {
     log.info('Starting random non-top80 prices export...');
 
-    // 1. Get the latest portfolio volatility record to use its window_days
-    const [pvRecords] = await Database.execute(`
-      SELECT pv.id, pv.date, pv.window_days
-      FROM portfolio_volatility pv
-      INNER JOIN index_config ic ON pv.index_config_id = ic.id
-      WHERE ic.index_name = 'RisqLab 80'
-      ORDER BY pv.date DESC
-      LIMIT 1
+    // 1. Get all distinct dates available in market_data up to D-1
+    const [allDates] = await Database.execute(`
+      SELECT DISTINCT price_date
+      FROM market_data
+      WHERE price_date < CURDATE()
+      ORDER BY price_date ASC
     `);
 
-    if (pvRecords.length === 0) {
-      throw new Error('No portfolio volatility data found');
+    const expectedDateCount = allDates.length;
+    log.info(`Found ${expectedDateCount} distinct dates in market_data (up to D-1)`);
+
+    if (expectedDateCount === 0) {
+      throw new Error('No price data found in market_data');
     }
 
-    const { window_days: windowDays } = pvRecords[0];
-    log.info(`Using ${windowDays} days window (from latest portfolio volatility)`);
-
-    // 2. Count the expected number of dates in the window
-    const [dateCountResult] = await Database.execute(`
-      SELECT COUNT(DISTINCT price_date) as date_count
-      FROM market_data
-      WHERE price_date >= DATE_SUB(DATE_SUB(CURDATE(), INTERVAL 1 DAY), INTERVAL ${windowDays} DAY)
-        AND price_date <= DATE_SUB(CURDATE(), INTERVAL 1 DAY)
-    `);
-
-    const expectedDateCount = dateCountResult[0].date_count;
-    log.info(`Expected ${expectedDateCount} dates in the window`);
-
-    // 3. Get 3 random cryptos that:
+    // 2. Get 3 random cryptos that:
     //    - Have NEVER been in portfolio_volatility_constituents
-    //    - Have prices for ALL dates in the window
+    //    - Have prices for ALL dates available in market_data (up to D-1)
     const [randomCryptos] = await Database.execute(`
       SELECT c.id as crypto_id, c.symbol, c.name
       FROM cryptocurrencies c
@@ -63,12 +50,11 @@ async function exportRandomNonTop80Prices() {
         SELECT COUNT(DISTINCT md.price_date)
         FROM market_data md
         WHERE md.crypto_id = c.id
-          AND md.price_date >= DATE_SUB(DATE_SUB(CURDATE(), INTERVAL 1 DAY), INTERVAL ${windowDays} DAY)
-          AND md.price_date <= DATE_SUB(CURDATE(), INTERVAL 1 DAY)
-      ) = ${expectedDateCount}
+          AND md.price_date < CURDATE()
+      ) = ?
       ORDER BY RAND()
       LIMIT 3
-    `);
+    `, [expectedDateCount]);
 
     if (randomCryptos.length === 0) {
       throw new Error('No cryptos found that have never been in top 80 with complete price data');
@@ -78,7 +64,7 @@ async function exportRandomNonTop80Prices() {
 
     const cryptoIds = randomCryptos.map(c => c.crypto_id);
 
-    // 3. Get historical prices for these cryptos from market_data (D-1 to D-1-window, excludes today)
+    // 3. Get ALL historical prices for these cryptos from market_data (up to D-1)
     const [pricesData] = await Database.execute(`
       SELECT
         md.crypto_id,
@@ -86,8 +72,7 @@ async function exportRandomNonTop80Prices() {
         md.price_usd
       FROM market_data md
       WHERE md.crypto_id IN (${cryptoIds.join(',')})
-        AND md.price_date >= DATE_SUB(DATE_SUB(CURDATE(), INTERVAL 1 DAY), INTERVAL ${windowDays} DAY)
-        AND md.price_date <= DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+        AND md.price_date < CURDATE()
         AND md.timestamp = (
           SELECT MAX(md2.timestamp)
           FROM market_data md2
@@ -148,7 +133,7 @@ async function exportRandomNonTop80Prices() {
     }
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const filename = `Random_NonTop80_Prices_${windowDays}days_${timestamp}.csv`;
+    const filename = `Random_NonTop80_Prices_${sortedDates.length}days_${timestamp}.csv`;
     const filepath = path.join(exportDir, filename);
 
     fs.writeFileSync(filepath, csvContent, 'utf8');
