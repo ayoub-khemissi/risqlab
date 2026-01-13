@@ -42,7 +42,7 @@ async function exportRandomNonTop80Prices() {
     const [dateCountResult] = await Database.execute(`
       SELECT COUNT(DISTINCT price_date) as date_count
       FROM market_data
-      WHERE price_date > DATE_SUB(DATE_SUB(CURDATE(), INTERVAL 1 DAY), INTERVAL ${windowDays} DAY)
+      WHERE price_date >= DATE_SUB(DATE_SUB(CURDATE(), INTERVAL 1 DAY), INTERVAL ${windowDays} DAY)
         AND price_date <= DATE_SUB(CURDATE(), INTERVAL 1 DAY)
     `);
 
@@ -63,7 +63,7 @@ async function exportRandomNonTop80Prices() {
         SELECT COUNT(DISTINCT md.price_date)
         FROM market_data md
         WHERE md.crypto_id = c.id
-          AND md.price_date > DATE_SUB(DATE_SUB(CURDATE(), INTERVAL 1 DAY), INTERVAL ${windowDays} DAY)
+          AND md.price_date >= DATE_SUB(DATE_SUB(CURDATE(), INTERVAL 1 DAY), INTERVAL ${windowDays} DAY)
           AND md.price_date <= DATE_SUB(CURDATE(), INTERVAL 1 DAY)
       ) = ${expectedDateCount}
       ORDER BY RAND()
@@ -86,7 +86,7 @@ async function exportRandomNonTop80Prices() {
         md.price_usd
       FROM market_data md
       WHERE md.crypto_id IN (${cryptoIds.join(',')})
-        AND md.price_date > DATE_SUB(DATE_SUB(CURDATE(), INTERVAL 1 DAY), INTERVAL ${windowDays} DAY)
+        AND md.price_date >= DATE_SUB(DATE_SUB(CURDATE(), INTERVAL 1 DAY), INTERVAL ${windowDays} DAY)
         AND md.price_date <= DATE_SUB(CURDATE(), INTERVAL 1 DAY)
         AND md.timestamp = (
           SELECT MAX(md2.timestamp)
