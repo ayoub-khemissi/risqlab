@@ -296,6 +296,31 @@ CREATE TABLE IF NOT EXISTS `portfolio_volatility_constituents` (
     KEY `idx_crypto` (`crypto_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+DROP TABLE IF EXISTS `ohlcv`;
+CREATE TABLE IF NOT EXISTS `ohlcv` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `crypto_id` INT UNSIGNED NOT NULL,
+    `unit` ENUM('DAY', 'HOUR') NOT NULL DEFAULT 'DAY' COMMENT 'Time granularity: DAY or HOUR',
+    `timestamp` DATETIME NOT NULL COMMENT 'Timestamp of the OHLCV data point',
+    `open` DECIMAL(30, 18) NOT NULL DEFAULT 0 COMMENT 'Opening price',
+    `high` DECIMAL(30, 18) NOT NULL DEFAULT 0 COMMENT 'Highest price',
+    `low` DECIMAL(30, 18) NOT NULL DEFAULT 0 COMMENT 'Lowest price',
+    `close` DECIMAL(30, 18) NOT NULL DEFAULT 0 COMMENT 'Closing price',
+    `volume` DECIMAL(30, 8) NOT NULL DEFAULT 0 COMMENT 'Trading volume',
+    `quote_volume` DECIMAL(40, 8) NOT NULL DEFAULT 0 COMMENT 'Quote volume (in USD)',
+    `volume_top_tier` DECIMAL(30, 8) NOT NULL DEFAULT 0 COMMENT 'Volume from top tier exchanges',
+    `quote_volume_top_tier` DECIMAL(40, 8) NOT NULL DEFAULT 0 COMMENT 'Quote volume from top tier exchanges',
+    `volume_direct` DECIMAL(30, 8) NOT NULL DEFAULT 0 COMMENT 'Direct trading volume',
+    `quote_volume_direct` DECIMAL(40, 8) NOT NULL DEFAULT 0 COMMENT 'Direct quote volume',
+    `volume_top_tier_direct` DECIMAL(30, 8) NOT NULL DEFAULT 0 COMMENT 'Direct volume from top tier exchanges',
+    `quote_volume_top_tier_direct` DECIMAL(40, 8) NOT NULL DEFAULT 0 COMMENT 'Direct quote volume from top tier exchanges',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY `fk_ohlcv_crypto_idx` (`crypto_id`) REFERENCES `cryptocurrencies`(`id`) ON DELETE CASCADE,
+    UNIQUE KEY `idx_crypto_unit_timestamp` (`crypto_id`, `unit`, `timestamp`),
+    KEY `idx_timestamp` (`timestamp`),
+    KEY `idx_unit` (`unit`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 COMMIT;
 
 SET FOREIGN_KEY_CHECKS = 1;

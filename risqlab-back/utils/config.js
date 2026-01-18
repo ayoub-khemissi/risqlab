@@ -25,6 +25,8 @@ const {
   COINMARKETCAP_API_KEY,
   COINMARKETCAP_CRYPTO_FETCH_LIMIT,
 
+  COINDESK_API_KEY,
+
   // eslint-disable-next-line no-undef
 } = process.env;
 
@@ -54,6 +56,8 @@ const Config = {
 
   COINMARKETCAP_API_KEY: COINMARKETCAP_API_KEY,
   COINMARKETCAP_CRYPTO_FETCH_LIMIT: COINMARKETCAP_CRYPTO_FETCH_LIMIT,
+
+  COINDESK_API_KEY: COINDESK_API_KEY,
 };
 
 export default Config;

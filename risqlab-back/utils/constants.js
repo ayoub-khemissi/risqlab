@@ -25,4 +25,15 @@ export default {
     get COINMARKETCAP_CRYPTO_INFO() {
         return `${this.COINMARKETCAP_BASE_URL}/v2/cryptocurrency/info`;
     },
+
+    // CoinDesk Data API
+    get COINDESK_BASE_URL() {
+        return 'https://data-api.coindesk.com';
+    },
+    get COINDESK_OHLCV_DAILY() {
+        return `${this.COINDESK_BASE_URL}/index/cc/v1/historical/days`;
+    },
+    get COINDESK_OHLCV_HOURLY() {
+        return `${this.COINDESK_BASE_URL}/index/cc/v1/historical/hours`;
+    },
 }

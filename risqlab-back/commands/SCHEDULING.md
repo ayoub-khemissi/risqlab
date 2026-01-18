@@ -20,6 +20,13 @@ Each call to a CoinMarketCap API endpoint costs at least 1 credit. Based on the 
 
 6.  **`fetchCryptoMetadata.js`**: This script fetches metadata (logos, descriptions, links) for all cryptocurrencies in the database. The cost depends on the number of assets, but it's typically low (**~5 credits** per full run). This data changes very infrequently.
 
+7.  **`fetchOHLCV.js`**: This script fetches daily OHLCV (Open, High, Low, Close, Volume) data from the **CoinDesk Data API** (separate from CoinMarketCap). It has its own rate limits:
+    *   Per second: 20 requests max
+    *   Per day: 7,500 requests max
+    *   Per month: 11,000 requests max
+
+    On initial run, it fetches up to 365 days of historical data. On subsequent runs, it only fills gaps (missing dates). This script makes **no CoinMarketCap API calls**.
+
 ## Optimized Scheduling Strategy
 
 With 8,640 credits already allocated to the main data pipeline, we have **1,360 credits** remaining to distribute for other tasks.
@@ -34,6 +41,7 @@ Here is the proposed strategy to optimize data freshness without exceeding the m
 | **Global Metrics** | Every 45 minutes | **~960** | This data (dominance, total market cap) is important but less volatile than prices. A 45-minute interval is an excellent trade-off. |
 | **Fear & Greed Index** | Every 3 hours | **240** | The index provides real-time market sentiment. Fetching it 8 times daily ensures consistent updates throughout the day while staying within budget. |
 | **Crypto Metadata** | Once a week | **~20** | Project logos, descriptions, and websites almost never change. A weekly update is more than sufficient. |
+| **OHLCV Data** (CoinDesk API) | Once a day | **0** (CMC) | Fetches historical candlestick data from CoinDesk API. Daily run fills any gaps. Uses separate API quota. |
 | **Total Estimated** | | **~9,950 credits/month** | |
 
 This plan uses approximately 99.5% of the monthly quota, leaving a small buffer (~50 credits) for safety while ensuring high data freshness where it matters most.
@@ -79,6 +87,15 @@ To implement this schedule, open your crontab file by running `crontab -e` in yo
 # 6. Crypto Metadata (logos, descriptions, etc.):
 #    Runs once a week, on Sunday at 3:05 AM.
 5 3 * * 0 cd /home/ubuntu/risqlab/risqlab/risqlab-back && node commands/fetchCryptoMetadata.js
+
+# 7. OHLCV Data: Fetch historical OHLCV data from CoinDesk API.
+#    Uses CoinDesk API (separate from CoinMarketCap quota).
+#
+#    Daily OHLCV (365 days lookback) - runs once a day at 01:00
+0 1 * * * cd /home/ubuntu/risqlab/risqlab/risqlab-back && node commands/fetchOHLCV.js --daily
+#
+#    Hourly OHLCV (90 days lookback) - runs every hour at minute 30
+30 * * * * cd /home/ubuntu/risqlab/risqlab/risqlab-back && node commands/fetchOHLCV.js --hourly
 ```
 
 ### Crontab Notes:
