@@ -119,14 +119,7 @@ async function calculateLogReturnsForCrypto(cryptoId, symbol) {
       continue;
     }
 
-    // Validation 1: Prices must be different
-    if (currentPrice === previousPrice) {
-      log.debug(`${symbol}: Invalid log return for ${currentDate} - identical prices (${currentPrice})`);
-      invalid++;
-      continue;
-    }
-
-    // Validation 2: Dates must be consecutive (previous date = current date - 1 day)
+    // Validation: Dates must be consecutive (previous date = current date - 1 day)
     if (!areConsecutiveDays(previousDate, currentDate)) {
       log.debug(`${symbol}: Invalid log return for ${currentDate} - non-consecutive dates (previous: ${previousDate})`);
       invalid++;
