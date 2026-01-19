@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Select, SelectItem } from "@heroui/select";
@@ -19,6 +20,7 @@ import {
   RiskSummaryData,
 } from "@/types/risk-metrics";
 import { formatCryptoPrice } from "@/lib/formatters";
+import { useBinancePrice } from "@/hooks/useBinancePrices";
 
 interface PanelSidebarProps {
   activePanel: RiskPanel;
@@ -26,6 +28,7 @@ interface PanelSidebarProps {
   currentPrice?: number | null;
   riskSummary?: RiskSummaryData | null;
   isLoading?: boolean;
+  symbol: string;
 }
 
 const PANEL_ICONS: Record<RiskPanel, React.ReactNode> = {
@@ -39,16 +42,33 @@ const PANEL_ICONS: Record<RiskPanel, React.ReactNode> = {
   sml: <GitBranch size={18} />,
 };
 
+// Memoized component for live price display to avoid re-rendering parent
+const LivePriceValue = memo(function LivePriceValue({
+  symbol,
+  initialPrice,
+}: {
+  symbol: string;
+  initialPrice?: number | null;
+}) {
+  const livePrice = useBinancePrice(symbol, initialPrice);
+  const displayPrice = livePrice ?? initialPrice;
+
+  if (!displayPrice) return null;
+
+  return (
+    <span className="text-xs text-foreground font-mono font-semibold ml-2">
+      {formatCryptoPrice(displayPrice)}
+    </span>
+  );
+});
+
 function formatMetricValue(
   panelId: RiskPanel,
-  currentPrice?: number | null,
   riskSummary?: RiskSummaryData | null,
 ): string | null {
-  if (!riskSummary && !currentPrice) return null;
+  if (!riskSummary) return null;
 
   switch (panelId) {
-    case "price":
-      return currentPrice ? formatCryptoPrice(currentPrice) : null;
     case "volatility":
       return riskSummary?.volatility?.annualized != null
         ? `${riskSummary.volatility.annualized.toFixed(2)}%`
@@ -86,6 +106,7 @@ export function PanelSidebar({
   currentPrice,
   riskSummary,
   isLoading,
+  symbol,
 }: PanelSidebarProps) {
   const handleSelectionChange = (keys: "all" | Set<React.Key>) => {
     if (keys !== "all" && keys.size > 0) {
@@ -96,11 +117,25 @@ export function PanelSidebar({
   };
 
   const activeConfig = PANEL_CONFIGS.find((p) => p.id === activePanel);
-  const activeMetricValue = formatMetricValue(
-    activePanel,
-    currentPrice,
-    riskSummary,
-  );
+
+  // Render metric value - use LivePriceValue for price panel
+  const renderMetricValue = (panelId: RiskPanel, isSmall = false) => {
+    if (panelId === "price") {
+      return <LivePriceValue initialPrice={currentPrice} symbol={symbol} />;
+    }
+
+    const metricValue = formatMetricValue(panelId, riskSummary);
+
+    if (!metricValue || isLoading) return null;
+
+    return (
+      <span
+        className={`text-xs font-mono ${isSmall ? "text-default-500 ml-2" : "text-foreground font-semibold ml-2"}`}
+      >
+        {metricValue}
+      </span>
+    );
+  };
 
   return (
     <>
@@ -119,11 +154,7 @@ export function PanelSidebar({
             renderValue={() => (
               <div className="flex items-center justify-between w-full">
                 <span>{activeConfig?.label}</span>
-                {activeMetricValue && !isLoading && (
-                  <span className="text-xs text-default-500 font-mono">
-                    {activeMetricValue}
-                  </span>
-                )}
+                {renderMetricValue(activePanel, true)}
               </div>
             )}
             selectedKeys={[activePanel]}
@@ -131,30 +162,18 @@ export function PanelSidebar({
             startContent={PANEL_ICONS[activePanel]}
             onSelectionChange={handleSelectionChange}
           >
-            {PANEL_CONFIGS.map((panel) => {
-              const metricValue = formatMetricValue(
-                panel.id,
-                currentPrice,
-                riskSummary,
-              );
-
-              return (
-                <SelectItem
-                  key={panel.id}
-                  startContent={PANEL_ICONS[panel.id]}
-                  textValue={panel.label}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <span>{panel.label}</span>
-                    {metricValue && !isLoading && (
-                      <span className="text-xs text-default-500 font-mono ml-2">
-                        {metricValue}
-                      </span>
-                    )}
-                  </div>
-                </SelectItem>
-              );
-            })}
+            {PANEL_CONFIGS.map((panel) => (
+              <SelectItem
+                key={panel.id}
+                startContent={PANEL_ICONS[panel.id]}
+                textValue={panel.label}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span>{panel.label}</span>
+                  {renderMetricValue(panel.id, true)}
+                </div>
+              </SelectItem>
+            ))}
           </Select>
         </CardBody>
       </Card>
@@ -167,33 +186,21 @@ export function PanelSidebar({
           </p>
 
           <div className="flex flex-col gap-1">
-            {PANEL_CONFIGS.map((panel) => {
-              const metricValue = formatMetricValue(
-                panel.id,
-                currentPrice,
-                riskSummary,
-              );
-
-              return (
-                <Button
-                  key={panel.id}
-                  className="justify-between h-auto py-2.5 px-3"
-                  size="sm"
-                  variant={activePanel === panel.id ? "flat" : "light"}
-                  onPress={() => onPanelChange(panel.id)}
-                >
-                  <div className="flex items-center gap-2">
-                    {PANEL_ICONS[panel.id]}
-                    <span>{panel.label}</span>
-                  </div>
-                  {metricValue && !isLoading && (
-                    <span className="text-xs text-foreground font-mono font-semibold ml-2">
-                      {metricValue}
-                    </span>
-                  )}
-                </Button>
-              );
-            })}
+            {PANEL_CONFIGS.map((panel) => (
+              <Button
+                key={panel.id}
+                className="justify-between h-auto py-2.5 px-3"
+                size="sm"
+                variant={activePanel === panel.id ? "flat" : "light"}
+                onPress={() => onPanelChange(panel.id)}
+              >
+                <div className="flex items-center gap-2">
+                  {PANEL_ICONS[panel.id]}
+                  <span>{panel.label}</span>
+                </div>
+                {renderMetricValue(panel.id)}
+              </Button>
+            ))}
           </div>
         </CardBody>
       </Card>

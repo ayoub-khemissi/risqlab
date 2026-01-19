@@ -7,3 +7,4 @@ export { BetaPanel } from "./BetaPanel";
 export { SkewPanel } from "./SkewPanel";
 export { KurtosisPanel } from "./KurtosisPanel";
 export { SMLPanel } from "./SMLPanel";
+export { LivePriceDisplay } from "./LivePriceDisplay";
