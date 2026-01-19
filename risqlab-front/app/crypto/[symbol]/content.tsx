@@ -34,6 +34,7 @@ import {
   SMLPanel,
 } from "@/components/risk-panels";
 import { useRiskSummary, usePriceHistory } from "@/hooks/useRiskMetrics";
+import { useBinancePrice } from "@/hooks/useBinancePrices";
 
 const VALID_PANELS: RiskPanel[] = [
   "price",
@@ -74,6 +75,12 @@ export default function CryptoDetailContent() {
     period,
   );
   const { data: priceData } = usePriceHistory(symbol, period);
+
+  // Live price from Binance WebSocket
+  const livePrice = useBinancePrice(symbol, priceData?.current?.price);
+
+  // Use live price if available, otherwise fall back to API price
+  const currentPrice = livePrice ?? priceData?.current?.price ?? null;
 
   // Update URL when panel changes
   const handlePanelChange = useCallback(
@@ -184,6 +191,7 @@ export default function CryptoDetailContent() {
       case "price":
         return (
           <PricePanel
+            livePrice={livePrice}
             period={period}
             symbol={symbol}
             onPeriodChange={setPeriod}
@@ -351,7 +359,7 @@ export default function CryptoDetailContent() {
         <div className="lg:col-span-1 order-1 lg:order-1">
           <PanelSidebar
             activePanel={activePanel}
-            currentPrice={priceData?.current?.price}
+            currentPrice={currentPrice}
             isLoading={isRiskSummaryLoading}
             riskSummary={riskSummary}
             onPanelChange={handlePanelChange}

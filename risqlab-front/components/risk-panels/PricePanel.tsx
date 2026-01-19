@@ -26,6 +26,7 @@ interface PricePanelProps {
   symbol: string;
   period: RiskPeriod;
   onPeriodChange: (period: RiskPeriod) => void;
+  livePrice?: number | null;
 }
 
 const PERIODS: RiskPeriod[] = ["7d", "30d", "90d", "all"];
@@ -88,8 +89,12 @@ export function PricePanel({
   symbol,
   period,
   onPeriodChange,
+  livePrice,
 }: PricePanelProps) {
   const { data, isLoading, error } = usePriceHistory(symbol, period);
+
+  // Use live price if available, otherwise fall back to API price
+  const displayPrice = livePrice ?? data?.current?.price ?? 0;
 
   const chartData =
     data?.prices.map((p, index) => ({
@@ -111,8 +116,7 @@ export function PricePanel({
 
   // Calculate extra changes (90d)
   const history = data?.prices || [];
-  const currentPrice = data?.current?.price || 0;
-  const computedChanges = calculatePriceChanges(history, currentPrice);
+  const computedChanges = calculatePriceChanges(history, displayPrice);
 
   // Merge API changes with computed changes
   const displayChanges: Record<string, number | null> = {
@@ -123,7 +127,7 @@ export function PricePanel({
   return (
     <div className="flex flex-col gap-4">
       {/* Current Price Card */}
-      {data?.current && (
+      {(data?.current || displayPrice > 0) && (
         <Card>
           <CardBody className="p-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -132,8 +136,8 @@ export function PricePanel({
                   {symbol.toUpperCase()} Price
                 </p>
                 <div className="flex items-center gap-3">
-                  <p className="text-4xl font-bold">
-                    {formatCryptoPrice(data.current.price)}
+                  <p className="text-4xl font-bold tabular-nums">
+                    {formatCryptoPrice(displayPrice)}
                   </p>
                 </div>
               </div>

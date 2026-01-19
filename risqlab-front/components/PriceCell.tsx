@@ -2,7 +2,7 @@
 
 import { memo } from "react";
 
-import { useBinancePrice } from "@/contexts/BinancePricesContext";
+import { useBinancePriceFromContext } from "@/contexts/BinancePricesContext";
 import { formatCryptoPrice } from "@/lib/formatters";
 
 interface PriceCellProps {
@@ -12,11 +12,11 @@ interface PriceCellProps {
 
 // Ce composant re-render UNIQUEMENT quand SON prix change
 function PriceCellComponent({ symbol, fallbackPrice }: PriceCellProps) {
-  const livePrice = useBinancePrice(symbol);
-  const displayPrice = livePrice || fallbackPrice;
+  const livePrice = useBinancePriceFromContext(symbol);
+  const displayPrice = livePrice ?? parseFloat(fallbackPrice);
 
   return (
-    <div className="font-mono" title={`$${parseFloat(displayPrice)}`}>
+    <div className="font-mono" title={`$${displayPrice}`}>
       {formatCryptoPrice(displayPrice)}
     </div>
   );

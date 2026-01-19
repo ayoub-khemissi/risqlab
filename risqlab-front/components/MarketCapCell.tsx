@@ -2,7 +2,7 @@
 
 import { memo } from "react";
 
-import { useBinancePrice } from "@/contexts/BinancePricesContext";
+import { useBinancePriceFromContext } from "@/contexts/BinancePricesContext";
 import { formatUSD } from "@/lib/formatters";
 
 interface MarketCapCellProps {
@@ -17,9 +17,9 @@ function MarketCapCellComponent({
   fallbackPrice,
   circulatingSupply,
 }: MarketCapCellProps) {
-  const livePrice = useBinancePrice(symbol);
-  const displayPrice = livePrice || fallbackPrice;
-  const marketCap = parseFloat(displayPrice) * parseFloat(circulatingSupply);
+  const livePrice = useBinancePriceFromContext(symbol);
+  const displayPrice = livePrice ?? parseFloat(fallbackPrice);
+  const marketCap = displayPrice * parseFloat(circulatingSupply);
 
   return <div className="font-mono">{formatUSD(marketCap.toString())}</div>;
 }

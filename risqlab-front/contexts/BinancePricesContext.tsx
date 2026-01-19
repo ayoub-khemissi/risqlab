@@ -5,7 +5,7 @@ import React, { createContext, useContext, ReactNode, useMemo } from "react";
 import { useBinancePrices } from "@/hooks/useBinancePrices";
 
 interface BinancePricesContextType {
-  prices: Record<string, string>;
+  prices: Record<string, number>;
 }
 
 const BinancePricesContext = createContext<
@@ -45,9 +45,9 @@ export function useBinancePricesContext() {
   return context;
 }
 
-// Hook optionnel pour récupérer le prix d'un seul symbole
-export function useBinancePrice(symbol: string): string | undefined {
+// Hook optionnel pour récupérer le prix d'un seul symbole via le context
+export function useBinancePriceFromContext(symbol: string): number | undefined {
   const { prices } = useBinancePricesContext();
 
-  return prices[symbol];
+  return prices[symbol.toUpperCase()];
 }
