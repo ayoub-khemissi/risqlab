@@ -220,7 +220,7 @@ async function calculatePortfolioVolatilityForDate(indexConfigId, date, timestam
 
 /**
  * Get index constituents for a specific date
- * Uses market_data for price/market cap (last price of the day) for consistency
+ * Uses ohlcv.close for price and market_data for circulating_supply
  */
 async function getConstituentsForDate(indexConfigId, timestamp, date) {
   // Get the list of constituents from index_constituents
@@ -243,22 +243,26 @@ async function getConstituentsForDate(indexConfigId, timestamp, date) {
 
   const cryptoIds = constituents.map(c => c.crypto_id);
 
-  // Get the last price of the day from market_data for each constituent
+  // Get the close price from ohlcv and circulating_supply from market_data
   const [marketData] = await Database.execute(`
     SELECT
-      md.crypto_id,
-      md.price_usd,
+      o.crypto_id,
+      o.close as price_usd,
       md.circulating_supply,
-      (md.price_usd * md.circulating_supply) as market_cap_usd
-    FROM market_data md
-    WHERE md.crypto_id IN (${cryptoIds.join(',')})
-      AND md.price_date = ?
+      (o.close * md.circulating_supply) as market_cap_usd
+    FROM ohlcv o
+    INNER JOIN market_data md ON o.crypto_id = md.crypto_id
+      AND md.price_date = DATE(o.timestamp)
       AND md.timestamp = (
         SELECT MAX(md2.timestamp)
         FROM market_data md2
         WHERE md2.crypto_id = md.crypto_id
           AND md2.price_date = md.price_date
       )
+    WHERE o.crypto_id IN (${cryptoIds.join(',')})
+      AND o.unit = 'DAY'
+      AND DATE(o.timestamp) = ?
+      AND o.close > 0
   `, [date]);
 
   // Build a map of crypto_id -> market data

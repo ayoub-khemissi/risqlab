@@ -12,13 +12,15 @@ async function calculateLogReturns() {
   try {
     log.info('Starting logarithmic returns calculation...');
 
-    // Get all cryptocurrencies with at least 2 days of market data
+    // Get all cryptocurrencies with at least 2 days of OHLCV data
     const [cryptos] = await Database.execute(`
       SELECT DISTINCT c.id, c.symbol, c.name
       FROM cryptocurrencies c
-      INNER JOIN market_data md ON c.id = md.crypto_id
+      INNER JOIN ohlcv o ON c.id = o.crypto_id
+      WHERE o.unit = 'DAY'
+        AND o.close > 0
       GROUP BY c.id, c.symbol, c.name
-      HAVING COUNT(DISTINCT md.price_date) >= 2
+      HAVING COUNT(DISTINCT DATE(o.timestamp)) >= 2
       ORDER BY c.symbol
     `);
 
@@ -78,24 +80,16 @@ function areConsecutiveDays(date1, date2) {
  * @returns {Promise<{inserted: number, skipped: number, invalid: number}>}
  */
 async function calculateLogReturnsForCrypto(cryptoId, symbol) {
-  // Get daily closing prices ordered by date
-  // We use the latest price for each day (at 23:59)
+  // Get daily closing prices from OHLCV table (unit = 'DAY')
   const [prices] = await Database.execute(`
     SELECT
-      md.price_date as date,
-      md.price_usd,
-      md.timestamp
-    FROM market_data md
-    WHERE md.crypto_id = ?
-      AND md.price_usd > 0
-      AND md.timestamp = (
-        SELECT MAX(md2.timestamp)
-        FROM market_data md2
-        WHERE md2.crypto_id = md.crypto_id
-          AND md2.price_date = md.price_date
-          AND md2.price_usd > 0
-      )
-    ORDER BY md.price_date ASC
+      DATE(timestamp) as date,
+      close as price_usd
+    FROM ohlcv
+    WHERE crypto_id = ?
+      AND unit = 'DAY'
+      AND close > 0
+    ORDER BY timestamp ASC
   `, [cryptoId]);
 
   if (prices.length < 2) {
