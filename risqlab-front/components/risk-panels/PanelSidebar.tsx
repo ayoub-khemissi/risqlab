@@ -1,28 +1,22 @@
 "use client";
 
 import { Card, CardBody } from "@heroui/card";
+import { Button } from "@heroui/button";
 import { Select, SelectItem } from "@heroui/select";
-import { Chip } from "@heroui/chip";
 import {
   DollarSign,
   Activity,
   AlertTriangle,
   Shield,
   TrendingUp,
-  TrendingDown,
   BarChart2,
   GitBranch,
 } from "lucide-react";
-
-import { SidebarMetricCard } from "./SidebarMetricCard";
 
 import {
   RiskPanel,
   PANEL_CONFIGS,
   RiskSummaryData,
-  getBetaInterpretation,
-  getSkewnessInterpretation,
-  getKurtosisInterpretation,
 } from "@/types/risk-metrics";
 import { formatCryptoPrice } from "@/lib/formatters";
 
@@ -45,332 +39,44 @@ const PANEL_ICONS: Record<RiskPanel, React.ReactNode> = {
   sml: <GitBranch size={18} />,
 };
 
-type CardData = {
-  value: React.ReactNode;
-  subValue?: React.ReactNode;
-  chipLabel?: string;
-  chipColor?: string;
-};
-
-// Helper to format data for each panel type
-function getCardData(
+function formatMetricValue(
   panelId: RiskPanel,
+  currentPrice?: number | null,
   riskSummary?: RiskSummaryData | null,
-): CardData {
-  const empty: CardData = { value: null };
-
-  if (!riskSummary) return empty;
+): string | null {
+  if (!riskSummary && !currentPrice) return null;
 
   switch (panelId) {
     case "price":
-      if (!riskSummary.price) return empty;
-      const { current, changes } = riskSummary.price;
-      const change1h = changes?.["1h"] ?? 0;
-      const change24h = changes?.["24h"] ?? 0;
-      const change7d = changes?.["7d"] ?? 0;
-
-      const c1hColor = change1h >= 0 ? "success" : "danger";
-      const c24Color = change24h >= 0 ? "success" : "danger";
-      const c7dColor = change7d >= 0 ? "success" : "danger";
-      const c30dColor =
-        changes?.["30d"] != null && changes["30d"] >= 0 ? "success" : "danger";
-
-      return {
-        value: formatCryptoPrice(current), // Current Price
-        subValue: (
-          <div className="grid grid-cols-2 gap-2 mt-2">
-            {/* 1h */}
-            {changes?.["1h"] != null && (
-              <Chip
-                classNames={{
-                  base: "h-6 px-1",
-                }}
-                color={c1hColor}
-                size="sm"
-                startContent={
-                  change1h > 0 ? (
-                    <TrendingUp size={12} />
-                  ) : (
-                    <TrendingDown size={12} />
-                  )
-                }
-                variant="flat"
-              >
-                1h: {change1h > 0 ? "+" : ""}
-                {change1h.toFixed(2)}%
-              </Chip>
-            )}
-
-            {/* 24h */}
-            <Chip
-              classNames={{
-                base: "h-6 px-1",
-              }}
-              color={c24Color}
-              size="sm"
-              startContent={
-                change24h > 0 ? (
-                  <TrendingUp size={12} />
-                ) : (
-                  <TrendingDown size={12} />
-                )
-              }
-              variant="flat"
-            >
-              24h: {change24h > 0 ? "+" : ""}
-              {change24h.toFixed(2)}%
-            </Chip>
-
-            {/* 7d */}
-            <Chip
-              classNames={{
-                base: "h-6 px-1",
-              }}
-              color={c7dColor}
-              size="sm"
-              startContent={
-                change7d > 0 ? (
-                  <TrendingUp size={12} />
-                ) : (
-                  <TrendingDown size={12} />
-                )
-              }
-              variant="flat"
-            >
-              7d: {change7d > 0 ? "+" : ""}
-              {change7d.toFixed(2)}%
-            </Chip>
-
-            {/* 30d */}
-            {changes?.["30d"] != null && (
-              <Chip
-                classNames={{
-                  base: "h-6 px-1",
-                }}
-                color={c30dColor}
-                size="sm"
-                startContent={
-                  changes["30d"] > 0 ? (
-                    <TrendingUp size={12} />
-                  ) : (
-                    <TrendingDown size={12} />
-                  )
-                }
-                variant="flat"
-              >
-                30d: {changes["30d"] > 0 ? "+" : ""}
-                {changes["30d"].toFixed(2)}%
-              </Chip>
-            )}
-          </div>
-        ),
-      };
-
+      return currentPrice ? formatCryptoPrice(currentPrice) : null;
     case "volatility":
-      if (!riskSummary.volatility) return empty;
-      const volChanges = riskSummary.volatility.changes;
-
-      const v24 = volChanges?.["24h"] ?? 0;
-      const v7d = volChanges?.["7d"] ?? 0;
-      const v30d = volChanges?.["30d"] ?? 0;
-      const v90d = volChanges?.["90d"] ?? 0; // New 90d var
-
-      // For volatility, increase can be seen as "danger" (higher risk) or just a change.
-      // Usually red for increase, green for decrease is good for risk perception.
-      const v24Color = v24 >= 0 ? "success" : "danger";
-      const v7dColor = v7d >= 0 ? "success" : "danger";
-      const v30dColor = v30d >= 0 ? "success" : "danger";
-      const v90dColor = v90d >= 0 ? "success" : "danger";
-
-      // Calculate risk level for annualized volatility
-      const volVal = riskSummary.volatility.annualized;
-      let volRisk: { label: string; color: string } = {
-        label: "Low Risk",
-        color: "#16C784", // Green - Low
-      };
-
-      if (volVal >= 60) {
-        volRisk = { label: "Extreme Risk", color: "#EA3943" }; // Red - Extreme
-      } else if (volVal >= 30) {
-        volRisk = { label: "High Risk", color: "#EA580C" }; // Orange - High
-      } else if (volVal >= 10) {
-        volRisk = { label: "Medium Risk", color: "#F3D42F" }; // Yellow - Medium
-      }
-
-      return {
-        value: `${riskSummary.volatility.annualized.toFixed(2)}%`,
-        subValue: (
-          <div className="grid grid-cols-2 gap-2 mt-2">
-            {/* 24h */}
-            {volChanges?.["24h"] != null && (
-              <Chip
-                classNames={{
-                  base: "h-6 px-1",
-                }}
-                color={v24Color}
-                size="sm"
-                startContent={
-                  v24 > 0 ? (
-                    <TrendingUp size={12} />
-                  ) : (
-                    <TrendingDown size={12} />
-                  )
-                }
-                variant="flat"
-              >
-                24h: {v24 > 0 ? "+" : ""}
-                {v24.toFixed(2)}%
-              </Chip>
-            )}
-
-            {/* 7d */}
-            {volChanges?.["7d"] != null && (
-              <Chip
-                classNames={{
-                  base: "h-6 px-1",
-                }}
-                color={v7dColor}
-                size="sm"
-                startContent={
-                  v7d > 0 ? (
-                    <TrendingUp size={12} />
-                  ) : (
-                    <TrendingDown size={12} />
-                  )
-                }
-                variant="flat"
-              >
-                7d: {v7d > 0 ? "+" : ""}
-                {v7d.toFixed(2)}%
-              </Chip>
-            )}
-
-            {/* 30d */}
-            {volChanges?.["30d"] != null && (
-              <Chip
-                classNames={{
-                  base: "h-6 px-1",
-                }}
-                color={v30dColor}
-                size="sm"
-                startContent={
-                  v30d > 0 ? (
-                    <TrendingUp size={12} />
-                  ) : (
-                    <TrendingDown size={12} />
-                  )
-                }
-                variant="flat"
-              >
-                30d: {v30d > 0 ? "+" : ""}
-                {v30d.toFixed(2)}%
-              </Chip>
-            )}
-
-            {/* 90d */}
-            {volChanges?.["90d"] != null && (
-              <Chip
-                classNames={{
-                  base: "h-6 px-1",
-                }}
-                color={v90dColor}
-                size="sm"
-                startContent={
-                  v90d > 0 ? (
-                    <TrendingUp size={12} />
-                  ) : (
-                    <TrendingDown size={12} />
-                  )
-                }
-                variant="flat"
-              >
-                90d: {v90d > 0 ? "+" : ""}
-                {v90d.toFixed(2)}%
-              </Chip>
-            )}
-          </div>
-        ),
-        chipLabel: volRisk.label,
-        chipColor: volRisk.color,
-      };
-
+      return riskSummary?.volatility?.annualized != null
+        ? `${riskSummary.volatility.annualized.toFixed(2)}%`
+        : null;
     case "stress-test":
-      if (!riskSummary.stressTest) return { value: "N/A" };
-      const { newPrice, impactPercentage } = riskSummary.stressTest;
-      const stressColor =
-        impactPercentage >= 0 ? "text-success" : "text-danger";
-
-      return {
-        value: formatCryptoPrice(newPrice),
-        subValue: (
-          <span>
-            Impact:{" "}
-            <span className={stressColor}>{impactPercentage.toFixed(2)}%</span>
-          </span>
-        ),
-        chipLabel: "Covid-19",
-        chipColor: "danger",
-      };
-
+      return riskSummary?.stressTest?.newPrice != null
+        ? formatCryptoPrice(riskSummary.stressTest.newPrice)
+        : null;
     case "var":
-      if (riskSummary.var99 == null || riskSummary.cvar99 == null)
-        return { value: "N/A" };
-
-      return {
-        value: `${(-riskSummary.var99).toFixed(2)}%`,
-        subValue: `CVaR 99%: ${(-riskSummary.cvar99).toFixed(2)}%`,
-        chipLabel: "VaR 99%",
-        chipColor: "default",
-      };
-
+      return riskSummary?.var99 != null
+        ? `${(-riskSummary.var99).toFixed(2)}%`
+        : null;
     case "beta":
-      if (riskSummary.beta == null) return { value: "N/A" };
-      const betaInterp = getBetaInterpretation(riskSummary.beta);
-
-      return {
-        value: riskSummary.beta.toFixed(2),
-        subValue: null,
-        // User asked for "valeur du beta et son chip label". He didn't ask for alpha here??
-        // Wait, "5- beta : la valeur du beta et son chip label".
-        // But requested "8- sml : l'alpha jensen's".
-        // So I can remove Alpha from Beta card to be cleaner if he didn't ask for it.
-        chipLabel: betaInterp.label,
-        chipColor: betaInterp.color,
-      };
-
+      return riskSummary?.beta != null ? riskSummary.beta.toFixed(2) : null;
     case "skew":
-      if (riskSummary.skewness == null) return { value: "N/A" };
-      const skewInterp = getSkewnessInterpretation(riskSummary.skewness);
-
-      return {
-        value: riskSummary.skewness.toFixed(2),
-        chipLabel: skewInterp.label,
-        chipColor: skewInterp.color,
-      };
-
+      return riskSummary?.skewness != null
+        ? riskSummary.skewness.toFixed(2)
+        : null;
     case "kurtosis":
-      if (riskSummary.kurtosis == null) return { value: "N/A" };
-      const kurtInterp = getKurtosisInterpretation(riskSummary.kurtosis);
-
-      return {
-        value: riskSummary.kurtosis.toFixed(2),
-        chipLabel: kurtInterp.label,
-        chipColor: kurtInterp.color,
-      };
-
+      return riskSummary?.kurtosis != null
+        ? riskSummary.kurtosis.toFixed(2)
+        : null;
     case "sml":
-      if (!riskSummary.sml) return { value: "N/A" };
-      const { alpha, isOvervalued } = riskSummary.sml;
-
-      return {
-        value: `${alpha >= 0 ? "+" : ""}${alpha.toFixed(2)}%`,
-        subValue: "Jensen's Alpha",
-        chipLabel: isOvervalued ? "Overvalued" : "Undervalued",
-        chipColor: isOvervalued ? "danger" : "success",
-      };
-
+      return riskSummary?.sml?.alpha != null
+        ? `${riskSummary.sml.alpha >= 0 ? "+" : ""}${riskSummary.sml.alpha.toFixed(2)}%`
+        : null;
     default:
-      return empty;
+      return null;
   }
 }
 
@@ -381,92 +87,68 @@ export function PanelSidebar({
   riskSummary,
   isLoading,
 }: PanelSidebarProps) {
+  const handleSelectionChange = (keys: "all" | Set<React.Key>) => {
+    if (keys !== "all" && keys.size > 0) {
+      const selectedKey = Array.from(keys)[0] as RiskPanel;
+
+      onPanelChange(selectedKey);
+    }
+  };
+
+  const activeConfig = PANEL_CONFIGS.find((p) => p.id === activePanel);
+  const activeMetricValue = formatMetricValue(
+    activePanel,
+    currentPrice,
+    riskSummary,
+  );
+
   return (
-    <div className="flex flex-col gap-4">
-      {/* Mobile: Dropdown Select (Keeping it simple for mobile for now) */}
-      <Card className="lg:hidden sticky top-6 z-20">
-        <CardBody className="p-4 flex flex-col gap-2">
-          <p className="text-sm font-medium text-default-500 ml-1 text-center">
-            Select your risk metric
+    <>
+      {/* Mobile: Select dropdown in card */}
+      <Card className="md:hidden sticky top-4 z-10">
+        <CardBody className="p-3">
+          <p className="text-sm font-semibold text-default-500 mb-3 text-center">
+            Select a risk metric
           </p>
           <Select
-            aria-label="Select risk panel"
-            className="max-w-xs mx-auto"
-            renderValue={(items) => {
-              return items.map((item) => {
-                const panel = PANEL_CONFIGS.find((p) => p.id === item.key);
-
-                if (!panel) return item.textValue;
-
-                let cardData = getCardData(panel.id, riskSummary);
-
-                // Fallback for Price
-                if (panel.id === "price" && !cardData.value && currentPrice) {
-                  cardData.value = formatCryptoPrice(currentPrice);
-                }
-
-                let displayValue = cardData.value;
-
-                // For valid values, simplified display without parens
-                if (displayValue) {
-                  // Just value, no extra text in parens
-                  // But maybe specific logic per panel if value itself needs adjustment?
-                  // User said "Section Name" left, "Value" right.
-                  // For Stress Test, value includes "Covid-19" in my previous logic, I should just show the dollar amount.
-                  // Actually cardData.value IS the formatted string usually.
-                  // The previous logic added " (Covid-19)".
-                  // Now I should just use cardData.value.
-                  // Let's ensure cardData.value is pure.
-                  // getCardData returns string or ReactNode.
-                  // cardData.value is usually the main metric.
-                  // E.g. for Stress Test it is "$45,000".
-                  // For Beta it is "0.85".
-                  // So sticking to cardData.value is correct.
-                }
-
-                return (
-                  <div
-                    key={item.key}
-                    className="flex items-center justify-between w-full gap-2"
-                  >
-                    <div className="flex items-center gap-2 overflow-hidden">
-                      {PANEL_ICONS[panel.id]}
-                      <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">
-                        {panel.label}
-                      </span>
-                    </div>
-                    <span className="font-bold whitespace-nowrap opacity-80 pl-2">
-                      {displayValue}
-                    </span>
-                  </div>
-                );
-              });
+            aria-label="Select risk metric"
+            classNames={{
+              trigger: "bg-default-100",
+              value: "text-small",
             }}
+            renderValue={() => (
+              <div className="flex items-center justify-between w-full">
+                <span>{activeConfig?.label}</span>
+                {activeMetricValue && !isLoading && (
+                  <span className="text-xs text-default-500 font-mono">
+                    {activeMetricValue}
+                  </span>
+                )}
+              </div>
+            )}
             selectedKeys={[activePanel]}
-            size="md"
-            variant="bordered"
-            onChange={(e) => {
-              if (e.target.value) onPanelChange(e.target.value as RiskPanel);
-            }}
+            size="sm"
+            startContent={PANEL_ICONS[activePanel]}
+            onSelectionChange={handleSelectionChange}
           >
             {PANEL_CONFIGS.map((panel) => {
-              let cardData = getCardData(panel.id, riskSummary);
+              const metricValue = formatMetricValue(
+                panel.id,
+                currentPrice,
+                riskSummary,
+              );
 
-              if (panel.id === "price" && !cardData.value && currentPrice) {
-                cardData.value = formatCryptoPrice(currentPrice);
-              }
-
-              // Plain text for the item
               return (
-                <SelectItem key={panel.id} textValue={panel.label}>
-                  <div className="flex items-center justify-between w-full gap-2">
-                    <div className="flex items-center gap-2">
-                      {PANEL_ICONS[panel.id]}
-                      <span className="font-medium">{panel.label}</span>
-                    </div>
-                    {cardData.value && (
-                      <span className="font-bold opacity-70">
-                        {cardData.value}
+                <SelectItem
+                  key={panel.id}
+                  startContent={PANEL_ICONS[panel.id]}
+                  textValue={panel.label}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span>{panel.label}</span>
+                    {metricValue && !isLoading && (
+                      <span className="text-xs text-default-500 font-mono ml-2">
+                        {metricValue}
                       </span>
                     )}
                   </div>
@@ -477,37 +159,44 @@ export function PanelSidebar({
         </CardBody>
       </Card>
 
-      {/* Desktop: Vertical Stack of Cards */}
-      <div className="hidden lg:flex flex-col gap-3 sticky top-6">
-        {PANEL_CONFIGS.map((panel) => {
-          // Special handling for Price panel to use currentPrice prop if riskSummary missing
-          // But riskSummary.price should be populated now.
-          // If riskSummary is null (loading initial), we might fail.
-          // Fallback for price if summary is missing but currentPrice is passed prop
+      {/* Desktop: Expanded button list */}
+      <Card className="hidden md:block sticky top-6">
+        <CardBody className="p-3">
+          <p className="text-sm font-semibold text-default-500 mb-3 px-1">
+            Risk Metrics
+          </p>
 
-          let cardData = getCardData(panel.id, riskSummary);
+          <div className="flex flex-col gap-1">
+            {PANEL_CONFIGS.map((panel) => {
+              const metricValue = formatMetricValue(
+                panel.id,
+                currentPrice,
+                riskSummary,
+              );
 
-          // Fallback for Price value if riskSummary not yet loaded but currentPrice exists
-          if (panel.id === "price" && !cardData.value && currentPrice) {
-            cardData.value = formatCryptoPrice(currentPrice);
-          }
-
-          return (
-            <SidebarMetricCard
-              key={panel.id}
-              chipColor={cardData.chipColor}
-              chipLabel={cardData.chipLabel}
-              icon={PANEL_ICONS[panel.id]}
-              isActive={activePanel === panel.id}
-              isLoading={isLoading}
-              label={panel.label}
-              subValue={cardData.subValue}
-              value={cardData.value}
-              onClick={() => onPanelChange(panel.id)}
-            />
-          );
-        })}
-      </div>
-    </div>
+              return (
+                <Button
+                  key={panel.id}
+                  className="justify-between h-auto py-2.5 px-3"
+                  size="sm"
+                  variant={activePanel === panel.id ? "flat" : "light"}
+                  onPress={() => onPanelChange(panel.id)}
+                >
+                  <div className="flex items-center gap-2">
+                    {PANEL_ICONS[panel.id]}
+                    <span>{panel.label}</span>
+                  </div>
+                  {metricValue && !isLoading && (
+                    <span className="text-xs text-foreground font-mono font-semibold ml-2">
+                      {metricValue}
+                    </span>
+                  )}
+                </Button>
+              );
+            })}
+          </div>
+        </CardBody>
+      </Card>
+    </>
   );
 }
