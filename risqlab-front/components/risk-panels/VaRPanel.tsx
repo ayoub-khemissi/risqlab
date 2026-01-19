@@ -18,6 +18,7 @@ import {
 import { useState, useMemo } from "react";
 
 import { useVaR } from "@/hooks/useRiskMetrics";
+import { useCryptoVolatility } from "@/hooks/useCryptoVolatility";
 import { RiskPeriod } from "@/types/risk-metrics";
 
 interface VaRPanelProps {
@@ -36,7 +37,12 @@ function gaussianPDF(x: number, mean: number, stdDev: number): number {
 
 export function VaRPanel({ symbol }: VaRPanelProps) {
   const { data, isLoading, error } = useVaR(symbol, "all");
+  const { data: volatilityData } = useCryptoVolatility([symbol], "all");
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
+
+  const dailyVolatility = volatilityData[0]?.data?.latest
+    ? Number(volatilityData[0].data.latest.daily_volatility) * 100
+    : null;
 
   const chartData = useMemo(() => {
     if (!data?.histogram) return [];
@@ -290,7 +296,11 @@ export function VaRPanel({ symbol }: VaRPanelProps) {
               </div>
               <div>
                 <p className="text-sm text-default-500">Std Deviation</p>
-                <Chip variant="flat">{data.statistics.stdDev.toFixed(4)}%</Chip>
+                <Chip variant="flat">
+                  {dailyVolatility != null
+                    ? `${dailyVolatility.toFixed(2)}%`
+                    : "N/A"}
+                </Chip>
               </div>
               <div>
                 <p className="text-sm text-default-500">Min Return</p>

@@ -17,6 +17,7 @@ import {
 } from "recharts";
 
 import { useDistribution } from "@/hooks/useRiskMetrics";
+import { useCryptoVolatility } from "@/hooks/useCryptoVolatility";
 import { getSkewnessInterpretation } from "@/types/risk-metrics";
 
 // Gaussian PDF function
@@ -30,6 +31,11 @@ function gaussianPDF(x: number, mean: number, stdDev: number): number {
 export function SkewPanel({ symbol }: { symbol: string }) {
   // Hardcoded to 90d as per requirements
   const { data, isLoading, error } = useDistribution(symbol, "90d");
+  const { data: volatilityData } = useCryptoVolatility([symbol], "90d");
+
+  const dailyVolatility = volatilityData[0]?.data?.latest
+    ? Number(volatilityData[0].data.latest.daily_volatility) * 100
+    : null;
 
   const skewnessInterp =
     data?.skewness != null ? getSkewnessInterpretation(data.skewness) : null;
@@ -108,8 +114,8 @@ export function SkewPanel({ symbol }: { symbol: string }) {
             <div>
               <p className="text-sm text-default-500 mb-1">Std Deviation</p>
               <p className="text-2xl font-bold">
-                {data?.stdDev !== undefined
-                  ? `${data.stdDev.toFixed(4)}%`
+                {dailyVolatility != null
+                  ? `${dailyVolatility.toFixed(2)}%`
                   : "N/A"}
               </p>
             </div>
