@@ -141,46 +141,38 @@ export function PricePanel({
                   </p>
                 </div>
               </div>
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-wrap justify-center sm:justify-end gap-2">
-                  {(["24h", "7d", "30d", "90d"] as const).map((key) => {
-                    const change = displayChanges[key];
-                    const hasValue = typeof change === "number";
+              <div className="flex flex-wrap gap-2">
+                {(["24h", "7d", "30d", "90d"] as const).map((key) => {
+                  const change = displayChanges[key];
+                  const hasValue = typeof change === "number";
 
-                    if (!hasValue) return null;
+                  if (!hasValue) return null;
 
-                    const isPositive = change > 0;
-                    const color = getPercentageColor(change);
+                  const isPositive = change > 0;
+                  const color = getPercentageColor(change);
 
-                    return (
-                      <div
-                        key={key}
-                        className="p-3 flex flex-col items-center justify-center min-w-[80px] gap-2"
-                      >
-                        <span className="text-sm font-medium text-default-500">
-                          {key}
-                        </span>
-                        <Chip
-                          classNames={{
-                            base: "h-7 px-2",
-                          }}
-                          color={color}
-                          size="sm"
-                          startContent={
-                            isPositive ? (
-                              <TrendingUp size={14} />
-                            ) : (
-                              <TrendingDown size={14} />
-                            )
-                          }
-                          variant="flat"
-                        >
-                          {formatPercentage(change)}
-                        </Chip>
-                      </div>
-                    );
-                  })}
-                </div>
+                  return (
+                    <Chip
+                      key={key}
+                      classNames={{
+                        base: "h-7 px-2",
+                      }}
+                      color={color}
+                      size="sm"
+                      startContent={
+                        isPositive ? (
+                          <TrendingUp size={12} />
+                        ) : (
+                          <TrendingDown size={12} />
+                        )
+                      }
+                      variant="flat"
+                    >
+                      <span className="text-xs opacity-70 mr-1">{key}</span>
+                      {formatPercentage(change)}
+                    </Chip>
+                  );
+                })}
               </div>
             </div>
           </CardBody>

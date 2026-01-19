@@ -233,7 +233,7 @@ export function VolatilityPanel({
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              <div className="flex flex-wrap justify-center sm:justify-end gap-2">
+              <div className="flex flex-wrap gap-2">
                 {(["24h", "7d", "30d", "90d"] as const).map((key) => {
                   const change = volatilityChanges[key];
                   const hasValue = typeof change === "number";
@@ -246,36 +246,30 @@ export function VolatilityPanel({
                     : "danger";
 
                   return (
-                    <div
+                    <Chip
                       key={key}
-                      className="p-3 flex flex-col items-center justify-center min-w-[80px] gap-2"
+                      classNames={{
+                        base: "h-7 px-2",
+                      }}
+                      color={color}
+                      size="sm"
+                      startContent={
+                        change > 0 ? (
+                          <TrendingUp size={12} />
+                        ) : (
+                          <TrendingDown size={12} />
+                        )
+                      }
+                      variant="flat"
                     >
-                      <span className="text-sm font-medium text-default-500">
-                        {key}
-                      </span>
-                      <Chip
-                        classNames={{
-                          base: "h-7 px-2",
-                        }}
-                        color={color}
-                        size="sm"
-                        startContent={
-                          change > 0 ? (
-                            <TrendingUp size={14} />
-                          ) : (
-                            <TrendingDown size={14} />
-                          )
-                        }
-                        variant="flat"
-                      >
-                        {change > 0 ? "+" : ""}
-                        {change.toFixed(2)}%
-                      </Chip>
-                    </div>
+                      <span className="text-xs opacity-70 mr-1">{key}</span>
+                      {change > 0 ? "+" : ""}
+                      {change.toFixed(2)}%
+                    </Chip>
                   );
                 })}
               </div>
-              <div className="flex gap-2 justify-center sm:justify-end">
+              <div className="flex gap-2 sm:justify-end">
                 <Button
                   size="sm"
                   variant={mode === "annualized" ? "solid" : "bordered"}
