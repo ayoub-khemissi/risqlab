@@ -7,11 +7,13 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const PRICE_DAYS = 91; // 91 prices to calculate 90 returns
+
 /**
  * Export historical prices for 3 random cryptos that have NEVER been in the top 80
  * - Selects cryptos that have never appeared in portfolio_volatility_constituents
- * - Only selects cryptos with complete price data for all available dates
- * - Retrieves ALL prices from market_data up to D-1 (same logic as calculateCryptoVolatility)
+ * - Only selects cryptos with complete price data for the last 91 days (D-1 to D-91)
+ * - Retrieves closing prices from ohlcv table (unit = 'DAY')
  * Output: CSV file with columns:
  *   Symbol, Name, then for each date: Date_Price
  */
@@ -21,24 +23,55 @@ async function exportRandomNonTop80Prices() {
   try {
     log.info('Starting random non-top80 prices export...');
 
-    // 1. Get all distinct dates available in market_data up to D-1
+    // 1. Get the 91 most recent dates available in ohlcv (D-1 to D-91)
     const [allDates] = await Database.execute(`
-      SELECT DISTINCT price_date
-      FROM market_data
-      WHERE price_date < CURDATE()
-      ORDER BY price_date ASC
+      SELECT DISTINCT DATE(timestamp) as price_date
+      FROM ohlcv
+      WHERE unit = 'DAY'
+        AND DATE(timestamp) < CURDATE()
+      ORDER BY price_date DESC
+      LIMIT ${PRICE_DAYS}
     `);
 
     const expectedDateCount = allDates.length;
-    log.info(`Found ${expectedDateCount} distinct dates in market_data (up to D-1)`);
+    log.info(`Found ${expectedDateCount} distinct dates in ohlcv (last ${PRICE_DAYS} days up to D-1)`);
 
     if (expectedDateCount === 0) {
-      throw new Error('No price data found in market_data');
+      throw new Error('No price data found in ohlcv');
     }
 
-    // 2. Get 3 random cryptos that:
+    if (expectedDateCount < PRICE_DAYS) {
+      log.warn(`Only ${expectedDateCount} days available, expected ${PRICE_DAYS}`);
+    }
+
+    // Get the date range for filtering
+    const minDate = allDates[allDates.length - 1].price_date;
+    const maxDate = allDates[0].price_date;
+
+    // 2. Get Bitcoin first (must have complete data)
+    const [btcResult] = await Database.execute(`
+      SELECT c.id as crypto_id, c.symbol, c.name
+      FROM cryptocurrencies c
+      WHERE (c.cmc_id = 1 OR c.symbol = 'BTC')
+      AND (
+        SELECT COUNT(DISTINCT DATE(o.timestamp))
+        FROM ohlcv o
+        WHERE o.crypto_id = c.id
+          AND o.unit = 'DAY'
+          AND DATE(o.timestamp) >= ?
+          AND DATE(o.timestamp) <= ?
+      ) = ?
+      LIMIT 1
+    `, [minDate, maxDate, expectedDateCount]);
+
+    if (btcResult.length === 0) {
+      throw new Error('Bitcoin not found with complete price data');
+    }
+
+    // 3. Get 2 random cryptos that:
     //    - Have NEVER been in portfolio_volatility_constituents
-    //    - Have prices for ALL dates available in market_data (up to D-1)
+    //    - Have prices for ALL dates in the range (91 days)
+    //    - Have NO zero prices in the range
     const [randomCryptos] = await Database.execute(`
       SELECT c.id as crypto_id, c.symbol, c.name
       FROM cryptocurrencies c
@@ -47,44 +80,54 @@ async function exportRandomNonTop80Prices() {
         FROM portfolio_volatility_constituents pvc
       )
       AND (
-        SELECT COUNT(DISTINCT md.price_date)
-        FROM market_data md
-        WHERE md.crypto_id = c.id
-          AND md.price_date < CURDATE()
+        SELECT COUNT(DISTINCT DATE(o.timestamp))
+        FROM ohlcv o
+        WHERE o.crypto_id = c.id
+          AND o.unit = 'DAY'
+          AND DATE(o.timestamp) >= ?
+          AND DATE(o.timestamp) <= ?
       ) = ?
+      AND NOT EXISTS (
+        SELECT 1
+        FROM ohlcv o2
+        WHERE o2.crypto_id = c.id
+          AND o2.unit = 'DAY'
+          AND DATE(o2.timestamp) >= ?
+          AND DATE(o2.timestamp) <= ?
+          AND o2.close = 0
+      )
       ORDER BY RAND()
-      LIMIT 3
-    `, [expectedDateCount]);
+      LIMIT 2
+    `, [minDate, maxDate, expectedDateCount, minDate, maxDate]);
 
     if (randomCryptos.length === 0) {
       throw new Error('No cryptos found that have never been in top 80 with complete price data');
     }
 
-    log.info(`Selected ${randomCryptos.length} random cryptos: ${randomCryptos.map(c => c.symbol).join(', ')}`);
+    // Combine: Bitcoin first, then 2 random non-top80 cryptos
+    const allCryptos = [btcResult[0], ...randomCryptos];
 
-    const cryptoIds = randomCryptos.map(c => c.crypto_id);
+    log.info(`Selected cryptos: ${allCryptos.map(c => c.symbol).join(', ')}`);
 
-    // 3. Get ALL historical prices for these cryptos from market_data (up to D-1)
+    const cryptoIds = allCryptos.map(c => c.crypto_id);
+
+    // 4. Get closing prices for these cryptos from ohlcv (last 91 days)
     const [pricesData] = await Database.execute(`
       SELECT
-        md.crypto_id,
-        md.price_date,
-        md.price_usd
-      FROM market_data md
-      WHERE md.crypto_id IN (${cryptoIds.join(',')})
-        AND md.price_date < CURDATE()
-        AND md.timestamp = (
-          SELECT MAX(md2.timestamp)
-          FROM market_data md2
-          WHERE md2.crypto_id = md.crypto_id
-            AND md2.price_date = md.price_date
-        )
-      ORDER BY md.price_date ASC
-    `);
+        o.crypto_id,
+        DATE(o.timestamp) as price_date,
+        o.close as price_usd
+      FROM ohlcv o
+      WHERE o.crypto_id IN (${cryptoIds.join(',')})
+        AND o.unit = 'DAY'
+        AND DATE(o.timestamp) >= ?
+        AND DATE(o.timestamp) <= ?
+      ORDER BY o.timestamp ASC
+    `, [minDate, maxDate]);
 
     log.info(`Retrieved ${pricesData.length} price records`);
 
-    // 4. Build a map for quick lookup: crypto_id + date -> price
+    // 5. Build a map for quick lookup: crypto_id + date -> price
     const dataMap = new Map();
     const datesSet = new Set();
 
@@ -99,7 +142,7 @@ async function exportRandomNonTop80Prices() {
 
     const sortedDates = [...datesSet].sort();
 
-    // 5. Build CSV content
+    // 6. Build CSV content
     const formatNumber = (num) => {
       if (num === null || num === undefined) return '';
       return num.toString().replace('.', ',');
@@ -115,7 +158,7 @@ async function exportRandomNonTop80Prices() {
     csvContent += '\n';
 
     // Data rows: one per crypto
-    for (const crypto of randomCryptos) {
+    for (const crypto of allCryptos) {
       csvContent += `${crypto.symbol};${crypto.name}`;
 
       for (const date of sortedDates) {
@@ -126,7 +169,7 @@ async function exportRandomNonTop80Prices() {
       csvContent += '\n';
     }
 
-    // 6. Write to file
+    // 7. Write to file
     const exportDir = path.join(__dirname, '..', 'exports');
     if (!fs.existsSync(exportDir)) {
       fs.mkdirSync(exportDir, { recursive: true });
@@ -141,7 +184,7 @@ async function exportRandomNonTop80Prices() {
     const duration = Date.now() - startTime;
     log.info(`Random non-top80 prices exported successfully to: ${filepath}`);
     log.info(`Export completed in ${duration}ms`);
-    log.info(`Exported ${randomCryptos.length} cryptos x ${sortedDates.length} days`);
+    log.info(`Exported ${allCryptos.length} cryptos x ${sortedDates.length} days`);
 
     return filepath;
 
