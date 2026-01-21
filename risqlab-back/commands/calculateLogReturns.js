@@ -16,7 +16,7 @@ async function calculateLogReturns() {
     const [cryptos] = await Database.execute(`
       SELECT DISTINCT c.id, c.symbol, c.name
       FROM cryptocurrencies c
-      INNER JOIN ohlcv o ON c.id = o.crypto_id
+      INNER JOIN ohlcvs o ON c.id = o.crypto_id
       WHERE o.unit = 'DAY'
         AND o.close > 0
       GROUP BY c.id, c.symbol, c.name
@@ -85,7 +85,7 @@ async function calculateLogReturnsForCrypto(cryptoId, symbol) {
     SELECT
       DATE(timestamp) as date,
       close as price_usd
-    FROM ohlcv
+    FROM ohlcvs
     WHERE crypto_id = ?
       AND unit = 'DAY'
       AND close > 0

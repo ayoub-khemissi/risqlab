@@ -30,10 +30,13 @@ export default {
     get COINDESK_BASE_URL() {
         return 'https://data-api.coindesk.com';
     },
-    get COINDESK_OHLCV_DAILY() {
+    get COINDESK_OHLCVS_DAILY() {
         return `${this.COINDESK_BASE_URL}/index/cc/v1/historical/days`;
     },
-    get COINDESK_OHLCV_HOURLY() {
+    get COINDESK_OHLCVS_HOURLY() {
         return `${this.COINDESK_BASE_URL}/index/cc/v1/historical/hours`;
+    },
+    get COINDESK_SUPPLY_DAILY() {
+        return `${this.COINDESK_BASE_URL}/onchain/v2/historical/supply/days`;
     },
 }

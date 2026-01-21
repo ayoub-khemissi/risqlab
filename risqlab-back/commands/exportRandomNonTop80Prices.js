@@ -13,7 +13,7 @@ const PRICE_DAYS = 91; // 91 prices to calculate 90 returns
  * Export historical prices for 3 random cryptos that have NEVER been in the top 80
  * - Selects cryptos that have never appeared in portfolio_volatility_constituents
  * - Only selects cryptos with complete price data for the last 91 days (D-1 to D-91)
- * - Retrieves closing prices from ohlcv table (unit = 'DAY')
+ * - Retrieves closing prices from ohlcvs table (unit = 'DAY')
  * Output: CSV file with columns:
  *   Symbol, Name, then for each date: Date_Price
  */
@@ -23,10 +23,10 @@ async function exportRandomNonTop80Prices() {
   try {
     log.info('Starting random non-top80 prices export...');
 
-    // 1. Get the 91 most recent dates available in ohlcv (D-1 to D-91)
+    // 1. Get the 91 most recent dates available in ohlcvs (D-1 to D-91)
     const [allDates] = await Database.execute(`
       SELECT DISTINCT DATE(timestamp) as price_date
-      FROM ohlcv
+      FROM ohlcvs
       WHERE unit = 'DAY'
         AND DATE(timestamp) < CURDATE()
       ORDER BY price_date DESC
@@ -34,10 +34,10 @@ async function exportRandomNonTop80Prices() {
     `);
 
     const expectedDateCount = allDates.length;
-    log.info(`Found ${expectedDateCount} distinct dates in ohlcv (last ${PRICE_DAYS} days up to D-1)`);
+    log.info(`Found ${expectedDateCount} distinct dates in ohlcvs (last ${PRICE_DAYS} days up to D-1)`);
 
     if (expectedDateCount === 0) {
-      throw new Error('No price data found in ohlcv');
+      throw new Error('No price data found in ohlcvs');
     }
 
     if (expectedDateCount < PRICE_DAYS) {
@@ -55,7 +55,7 @@ async function exportRandomNonTop80Prices() {
       WHERE (c.cmc_id = 1 OR c.symbol = 'BTC')
       AND (
         SELECT COUNT(DISTINCT DATE(o.timestamp))
-        FROM ohlcv o
+        FROM ohlcvs o
         WHERE o.crypto_id = c.id
           AND o.unit = 'DAY'
           AND DATE(o.timestamp) >= ?
@@ -81,7 +81,7 @@ async function exportRandomNonTop80Prices() {
       )
       AND (
         SELECT COUNT(DISTINCT DATE(o.timestamp))
-        FROM ohlcv o
+        FROM ohlcvs o
         WHERE o.crypto_id = c.id
           AND o.unit = 'DAY'
           AND DATE(o.timestamp) >= ?
@@ -89,7 +89,7 @@ async function exportRandomNonTop80Prices() {
       ) = ?
       AND NOT EXISTS (
         SELECT 1
-        FROM ohlcv o2
+        FROM ohlcvs o2
         WHERE o2.crypto_id = c.id
           AND o2.unit = 'DAY'
           AND DATE(o2.timestamp) >= ?
@@ -111,13 +111,13 @@ async function exportRandomNonTop80Prices() {
 
     const cryptoIds = allCryptos.map(c => c.crypto_id);
 
-    // 4. Get closing prices for these cryptos from ohlcv (last 91 days)
+    // 4. Get closing prices for these cryptos from ohlcvs (last 91 days)
     const [pricesData] = await Database.execute(`
       SELECT
         o.crypto_id,
         DATE(o.timestamp) as price_date,
         o.close as price_usd
-      FROM ohlcv o
+      FROM ohlcvs o
       WHERE o.crypto_id IN (${cryptoIds.join(',')})
         AND o.unit = 'DAY'
         AND DATE(o.timestamp) >= ?

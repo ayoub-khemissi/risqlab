@@ -110,7 +110,7 @@ async function calculatePortfolioVolatilityForDate(indexConfigId, date, timestam
     return { calculated: false };
   }
 
-  // Get constituents for this date (uses market_data for price/market cap)
+  // Get constituents for this date (uses ohlcvs for price and supply)
   const constituents = await getConstituentsForDate(indexConfigId, timestamp, date);
 
   if (constituents.length === 0) {
@@ -220,7 +220,7 @@ async function calculatePortfolioVolatilityForDate(indexConfigId, date, timestam
 
 /**
  * Get index constituents for a specific date
- * Uses ohlcv.close for price and market_data for circulating_supply
+ * Uses ohlcvs for both price (close) and supply_circulating
  */
 async function getConstituentsForDate(indexConfigId, timestamp, date) {
   // Get the list of constituents from index_constituents
@@ -243,50 +243,43 @@ async function getConstituentsForDate(indexConfigId, timestamp, date) {
 
   const cryptoIds = constituents.map(c => c.crypto_id);
 
-  // Get the close price from ohlcv and circulating_supply from market_data
-  const [marketData] = await Database.execute(`
+  // Get the close price and supply_circulating from ohlcvs
+  const [ohlcvsData] = await Database.execute(`
     SELECT
-      o.crypto_id,
-      o.close as price_usd,
-      md.circulating_supply,
-      (o.close * md.circulating_supply) as market_cap_usd
-    FROM ohlcv o
-    INNER JOIN market_data md ON o.crypto_id = md.crypto_id
-      AND md.price_date = DATE(o.timestamp)
-      AND md.timestamp = (
-        SELECT MAX(md2.timestamp)
-        FROM market_data md2
-        WHERE md2.crypto_id = md.crypto_id
-          AND md2.price_date = md.price_date
-      )
-    WHERE o.crypto_id IN (${cryptoIds.join(',')})
-      AND o.unit = 'DAY'
-      AND DATE(o.timestamp) = ?
-      AND o.close > 0
+      crypto_id,
+      close as price_usd,
+      supply_circulating,
+      (close * supply_circulating) as market_cap_usd
+    FROM ohlcvs
+    WHERE crypto_id IN (${cryptoIds.join(',')})
+      AND unit = 'DAY'
+      AND DATE(timestamp) = ?
+      AND close > 0
+      AND supply_circulating > 0
   `, [date]);
 
-  // Build a map of crypto_id -> market data
-  const marketDataMap = new Map();
-  for (const row of marketData) {
-    marketDataMap.set(row.crypto_id, row);
+  // Build a map of crypto_id -> ohlcvs data
+  const ohlcvsDataMap = new Map();
+  for (const row of ohlcvsData) {
+    ohlcvsDataMap.set(row.crypto_id, row);
   }
 
   // Log any missing constituents for debugging
-  const missingConstituents = constituents.filter(c => !marketDataMap.has(c.crypto_id));
+  const missingConstituents = constituents.filter(c => !ohlcvsDataMap.has(c.crypto_id));
   if (missingConstituents.length > 0) {
-    log.warn(`${date}: ${missingConstituents.length} constituents missing market_data: ${missingConstituents.map(c => c.symbol).join(', ')}`);
+    log.warn(`${date}: ${missingConstituents.length} constituents missing ohlcvs data: ${missingConstituents.map(c => c.symbol).join(', ')}`);
   }
 
-  // Combine constituents with their market data
+  // Combine constituents with their ohlcvs data
   return constituents
-    .filter(c => marketDataMap.has(c.crypto_id))
+    .filter(c => ohlcvsDataMap.has(c.crypto_id))
     .map(c => {
-      const md = marketDataMap.get(c.crypto_id);
+      const data = ohlcvsDataMap.get(c.crypto_id);
       return {
         crypto_id: c.crypto_id,
         symbol: c.symbol,
         name: c.name,
-        marketCap: parseFloat(md.market_cap_usd)
+        marketCap: parseFloat(data.market_cap_usd)
       };
     });
 }
