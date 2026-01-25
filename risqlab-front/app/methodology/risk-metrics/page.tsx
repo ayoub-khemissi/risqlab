@@ -18,17 +18,39 @@ import {
 } from "lucide-react";
 
 import { title } from "@/components/primitives";
+import { useScrollSpy } from "@/hooks/useScrollSpy";
+
+const RISK_METRICS_SECTIONS = [
+  "overview",
+  "var",
+  "cvar",
+  "beta",
+  "alpha",
+  "sml",
+  "skewness",
+  "kurtosis",
+  "stress-test",
+  "parameters",
+];
 
 export default function RiskMetricsMethodologyPage() {
   const router = useRouter();
-  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const spyActiveSection = useScrollSpy(RISK_METRICS_SECTIONS);
+  const [clickedSection, setClickedSection] = useState<string | null>(null);
+
+  const activeSection = clickedSection || spyActiveSection;
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
 
     if (element) {
+      setClickedSection(sectionId);
       element.scrollIntoView({ behavior: "smooth", block: "start" });
-      setActiveSection(sectionId);
+
+      // Reset clicked section after transition to let scroll-spy take over
+      setTimeout(() => {
+        setClickedSection(null);
+      }, 1000);
     }
   };
 

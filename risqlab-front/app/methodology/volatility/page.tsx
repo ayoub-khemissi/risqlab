@@ -16,17 +16,39 @@ import {
 } from "lucide-react";
 
 import { title } from "@/components/primitives";
+import { useScrollSpy } from "@/hooks/useScrollSpy";
+
+const VOLATILITY_SECTIONS = [
+  "overview",
+  "glossary",
+  "risk-levels",
+  "parameters",
+  "pipeline",
+  "stage1",
+  "stage2",
+  "stage3",
+  "examples",
+  "diversification",
+];
 
 export default function VolatilityMethodologyPage() {
   const router = useRouter();
-  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const spyActiveSection = useScrollSpy(VOLATILITY_SECTIONS);
+  const [clickedSection, setClickedSection] = useState<string | null>(null);
+
+  const activeSection = clickedSection || spyActiveSection;
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
 
     if (element) {
+      setClickedSection(sectionId);
       element.scrollIntoView({ behavior: "smooth", block: "start" });
-      setActiveSection(sectionId);
+
+      // Reset clicked section after transition to let scroll-spy take over
+      setTimeout(() => {
+        setClickedSection(null);
+      }, 1000);
     }
   };
 
