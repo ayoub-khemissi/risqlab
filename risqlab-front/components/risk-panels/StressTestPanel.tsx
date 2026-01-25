@@ -16,6 +16,8 @@ import {
   Legend,
 } from "recharts";
 
+import { MethodologyLink } from "./MethodologyLink";
+
 import { useStressTest } from "@/hooks/useRiskMetrics";
 import { formatCryptoPrice } from "@/lib/formatters";
 import {
@@ -411,20 +413,23 @@ export function StressTestPanel({ symbol }: StressTestPanelProps) {
       {/* Explanation Card */}
       <Card>
         <CardBody className="p-4">
-          <p className="text-sm text-default-500">
-            <strong>Stress test</strong> simulates historical market crashes on
-            your position using the formula:{" "}
-            <code className="bg-default-100 px-1 rounded">
-              Stressed Price = Current Price x (1 + Shock x Beta)
-            </code>
-            . A beta of {data?.beta?.toFixed(2) || "1.0"} means this crypto
-            {data?.beta && data.beta > 1
-              ? ` amplifies market movements by ${((data.beta - 1) * 100).toFixed(0)}%`
-              : data?.beta && data.beta < 1
-                ? ` dampens market movements by ${((1 - data.beta) * 100).toFixed(0)}%`
-                : " moves exactly like the market"}
-            .
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <p className="text-sm text-default-500 flex-1">
+              <strong>Stress test</strong> simulates historical market crashes
+              on your position using the formula:{" "}
+              <code className="bg-default-100 px-1 rounded">
+                Stressed Price = Current Price x (1 + Shock x Beta)
+              </code>
+              . A beta of {data?.beta?.toFixed(2) || "1.0"} means this crypto
+              {data?.beta && data.beta > 1
+                ? ` amplifies market movements by ${((data.beta - 1) * 100).toFixed(0)}%`
+                : data?.beta && data.beta < 1
+                  ? ` dampens market movements by ${((1 - data.beta) * 100).toFixed(0)}%`
+                  : " moves exactly like the market"}
+              .
+            </p>
+            <MethodologyLink section="stress-test" variant="full" />
+          </div>
         </CardBody>
       </Card>
     </div>
