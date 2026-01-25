@@ -165,6 +165,7 @@ api.get('/risk/crypto/:symbol/price-history', async (req, res) => {
 /**
  * GET /risk/crypto/:symbol/beta
  * Returns beta, alpha, R² against RisqLab 80 Index
+ * Uses historized data when available, falls back to on-the-fly calculation
  */
 api.get('/risk/crypto/:symbol/beta', async (req, res) => {
   try {
@@ -179,12 +180,31 @@ api.get('/risk/crypto/:symbol/beta', async (req, res) => {
       });
     }
 
+    // Map period to window days
+    const windowDaysMap = { '7d': 7, '30d': 30, '90d': 90 };
+    const windowDays = windowDaysMap[period] || 90;
+
+    // Try to get historized stats first (for 90d period)
+    let beta, alpha, rSquared, correlation, dataPoints;
+    let fromHistorized = false;
+
+    if (period === '90d') {
+      const historizedStats = await getHistorizedBetaStats(crypto.id, windowDays);
+      if (historizedStats) {
+        beta = parseFloat(historizedStats.beta);
+        alpha = parseFloat(historizedStats.alpha);
+        rSquared = parseFloat(historizedStats.r_squared);
+        correlation = parseFloat(historizedStats.correlation);
+        dataPoints = historizedStats.num_observations;
+        fromHistorized = true;
+        log.debug(`Using historized beta stats for ${symbol} (date: ${historizedStats.date})`);
+      }
+    }
+
     const dateFilter = getDateFilter(period);
 
-    // Get crypto log returns
+    // Get crypto log returns (always needed for scatter plot)
     const cryptoReturns = await getCryptoLogReturns(crypto.id, dateFilter);
-
-    // Get index log returns
     const indexReturns = await getIndexLogReturns(dateFilter);
 
     if (cryptoReturns.length < 5 || indexReturns.length < 5) {
@@ -203,7 +223,7 @@ api.get('/risk/crypto/:symbol/beta', async (req, res) => {
       });
     }
 
-    // Align dates
+    // Align dates for scatter data
     const cryptoReturnsByDate = new Map(cryptoReturns.map(r => [r.date.toISOString().split('T')[0], parseFloat(r.log_return)]));
     const indexReturnsByDate = new Map(indexReturns.map(r => [r.date.toISOString().split('T')[0], parseFloat(r.log_return)]));
 
@@ -234,10 +254,18 @@ api.get('/risk/crypto/:symbol/beta', async (req, res) => {
       });
     }
 
-    const cryptoReturnArray = alignedData.map(d => d.cryptoReturn);
-    const marketReturnArray = alignedData.map(d => d.marketReturn);
-
-    const { beta, alpha, rSquared, correlation } = calculateBetaAlpha(cryptoReturnArray, marketReturnArray);
+    // If not from historized data, calculate on-the-fly
+    if (!fromHistorized) {
+      const cryptoReturnArray = alignedData.map(d => d.cryptoReturn);
+      const marketReturnArray = alignedData.map(d => d.marketReturn);
+      const result = calculateBetaAlpha(cryptoReturnArray, marketReturnArray);
+      beta = result.beta;
+      alpha = result.alpha;
+      rSquared = result.rSquared;
+      correlation = result.correlation;
+      dataPoints = alignedData.length;
+      log.debug(`Calculated beta on-the-fly for ${symbol}`);
+    }
 
     // Prepare scatter data for visualization
     const scatterData = alignedData.map(d => ({
@@ -247,6 +275,7 @@ api.get('/risk/crypto/:symbol/beta', async (req, res) => {
     }));
 
     // Calculate regression line endpoints for visualization
+    const marketReturnArray = alignedData.map(d => d.marketReturn);
     const marketMin = Math.min(...marketReturnArray) * 100;
     const marketMax = Math.max(...marketReturnArray) * 100;
     const regressionLine = {
@@ -262,17 +291,18 @@ api.get('/risk/crypto/:symbol/beta', async (req, res) => {
       data: {
         crypto: crypto,
         beta,
-        alpha: Number((alpha * 100).toFixed(4)), // As daily percentage
+        alpha: Number((alpha * 100).toFixed(4)),
         rSquared,
         correlation,
         scatterData,
         regressionLine,
         period,
-        dataPoints: alignedData.length
+        dataPoints,
+        fromHistorized
       }
     });
 
-    log.debug(`Calculated beta for ${symbol}: ${beta}`);
+    log.debug(`Beta for ${symbol}: ${beta}, historized=${fromHistorized}`);
   } catch (error) {
     log.error(`Error calculating beta: ${error.message}`);
     res.status(500).json({
@@ -289,6 +319,7 @@ api.get('/risk/crypto/:symbol/beta', async (req, res) => {
 /**
  * GET /risk/crypto/:symbol/var
  * Returns VaR at 95% and 99% confidence levels with histogram data
+ * Uses historized data when available, falls back to on-the-fly calculation
  */
 api.get('/risk/crypto/:symbol/var', async (req, res) => {
   try {
@@ -303,6 +334,32 @@ api.get('/risk/crypto/:symbol/var', async (req, res) => {
       });
     }
 
+    // Map period to window days
+    const windowDaysMap = { '7d': 7, '30d': 30, '90d': 90 };
+    const windowDays = windowDaysMap[period] || 90;
+
+    // Try to get historized stats first (for 90d period)
+    let var95, var99, cvar95, cvar99, meanReturn, stdDev, minReturn, maxReturn, dataPoints;
+    let fromHistorized = false;
+
+    if (period === '90d') {
+      const historizedStats = await getHistorizedVaRStats(crypto.id, windowDays);
+      if (historizedStats) {
+        var95 = parseFloat(historizedStats.var_95);
+        var99 = parseFloat(historizedStats.var_99);
+        cvar95 = parseFloat(historizedStats.cvar_95);
+        cvar99 = parseFloat(historizedStats.cvar_99);
+        meanReturn = parseFloat(historizedStats.mean_return);
+        stdDev = parseFloat(historizedStats.std_dev);
+        minReturn = parseFloat(historizedStats.min_return);
+        maxReturn = parseFloat(historizedStats.max_return);
+        dataPoints = historizedStats.num_observations;
+        fromHistorized = true;
+        log.debug(`Using historized VaR stats for ${symbol} (date: ${historizedStats.date})`);
+      }
+    }
+
+    // Get log returns for histogram (always needed for visualization)
     const dateFilter = getDateFilter(period);
     const returns = await getCryptoLogReturns(crypto.id, dateFilter);
 
@@ -324,12 +381,21 @@ api.get('/risk/crypto/:symbol/var', async (req, res) => {
 
     const logReturns = returns.map(r => parseFloat(r.log_return));
 
-    const var95 = calculateVaR(logReturns, 95);
-    const var99 = calculateVaR(logReturns, 99);
-    const cvar95 = calculateCVaR(logReturns, 95);
-    const cvar99 = calculateCVaR(logReturns, 99);
+    // If not from historized data, calculate on-the-fly
+    if (!fromHistorized) {
+      var95 = calculateVaR(logReturns, 95);
+      var99 = calculateVaR(logReturns, 99);
+      cvar95 = calculateCVaR(logReturns, 95);
+      cvar99 = calculateCVaR(logReturns, 99);
+      meanReturn = mean(logReturns);
+      stdDev = standardDeviation(logReturns);
+      minReturn = Math.min(...logReturns);
+      maxReturn = Math.max(...logReturns);
+      dataPoints = logReturns.length;
+      log.debug(`Calculated VaR on-the-fly for ${symbol}`);
+    }
 
-    // Generate histogram for visualization
+    // Generate histogram for visualization (always from current returns)
     const histogram = generateHistogramBins(logReturns, 30);
 
     // Convert histogram counts to percentages for chart
@@ -357,13 +423,14 @@ api.get('/risk/crypto/:symbol/var', async (req, res) => {
         cvar99: Number((cvar99 * 100).toFixed(4)),
         histogram: histogramData,
         statistics: {
-          mean: Number((mean(logReturns) * 100).toFixed(4)),
-          stdDev: Number((standardDeviation(logReturns) * 100).toFixed(4)),
-          min: Number((Math.min(...logReturns) * 100).toFixed(4)),
-          max: Number((Math.max(...logReturns) * 100).toFixed(4))
+          mean: Number((meanReturn * 100).toFixed(4)),
+          stdDev: Number((stdDev * 100).toFixed(4)),
+          min: Number((minReturn * 100).toFixed(4)),
+          max: Number((maxReturn * 100).toFixed(4))
         },
         period,
-        dataPoints: logReturns.length
+        dataPoints,
+        fromHistorized
       }
     });
 
@@ -517,6 +584,75 @@ async function getHistorizedDistributionStats(cryptoId, windowDays = 90) {
 }
 
 /**
+ * Helper: Get historized VaR stats from database
+ */
+async function getHistorizedVaRStats(cryptoId, windowDays = 90) {
+  const [stats] = await Database.execute(`
+    SELECT
+      var_95,
+      var_99,
+      cvar_95,
+      cvar_99,
+      mean_return,
+      std_dev,
+      min_return,
+      max_return,
+      num_observations,
+      date
+    FROM crypto_var
+    WHERE crypto_id = ?
+      AND window_days = ?
+    ORDER BY date DESC
+    LIMIT 1
+  `, [cryptoId, windowDays]);
+  return stats[0] || null;
+}
+
+/**
+ * Helper: Get historized Beta stats from database
+ */
+async function getHistorizedBetaStats(cryptoId, windowDays = 90) {
+  const [stats] = await Database.execute(`
+    SELECT
+      beta,
+      alpha,
+      r_squared,
+      correlation,
+      num_observations,
+      date
+    FROM crypto_beta
+    WHERE crypto_id = ?
+      AND window_days = ?
+    ORDER BY date DESC
+    LIMIT 1
+  `, [cryptoId, windowDays]);
+  return stats[0] || null;
+}
+
+/**
+ * Helper: Get historized SML stats from database
+ */
+async function getHistorizedSMLStats(cryptoId, windowDays = 90) {
+  const [stats] = await Database.execute(`
+    SELECT
+      beta,
+      expected_return,
+      actual_return,
+      alpha,
+      is_overvalued,
+      market_return,
+      num_observations,
+      date
+    FROM crypto_sml
+    WHERE crypto_id = ?
+      AND window_days = ?
+    ORDER BY date DESC
+    LIMIT 1
+  `, [cryptoId, windowDays]);
+  return stats[0] || null;
+}
+
+/**
  * GET /risk/crypto/:symbol/distribution
  * Returns skewness, kurtosis, and distribution data
  * Uses historized data when available, falls back to on-the-fly calculation
@@ -655,6 +791,7 @@ api.get('/risk/crypto/:symbol/distribution', async (req, res) => {
 /**
  * GET /risk/crypto/:symbol/sml
  * Returns SML positioning data
+ * Uses historized data when available, falls back to on-the-fly calculation
  */
 api.get('/risk/crypto/:symbol/sml', async (req, res) => {
   try {
@@ -669,70 +806,116 @@ api.get('/risk/crypto/:symbol/sml', async (req, res) => {
       });
     }
 
-    const dateFilter = getDateFilter(period);
+    // Map period to window days
+    const windowDaysMap = { '7d': 7, '30d': 30, '90d': 90 };
+    const windowDays = windowDaysMap[period] || 90;
 
-    // Get crypto log returns
-    const cryptoReturns = await getCryptoLogReturns(crypto.id, dateFilter);
-    const indexReturns = await getIndexLogReturns(dateFilter);
+    // Try to get historized stats first (for 90d period)
+    let smlData, marketReturn, dataPoints;
+    let fromHistorized = false;
 
-    if (cryptoReturns.length < 5 || indexReturns.length < 5) {
-      return res.json({
-        data: {
-          crypto: crypto,
-          sml: null,
-          period,
-          dataPoints: 0,
-          msg: 'Insufficient data points for SML calculation'
+    if (period === '90d') {
+      const historizedStats = await getHistorizedSMLStats(crypto.id, windowDays);
+      if (historizedStats) {
+        const beta = parseFloat(historizedStats.beta);
+        const expectedReturn = parseFloat(historizedStats.expected_return) * 100;
+        const actualReturn = parseFloat(historizedStats.actual_return) * 100;
+        const alpha = parseFloat(historizedStats.alpha) * 100;
+        marketReturn = parseFloat(historizedStats.market_return) * 100;
+
+        // Generate SML line points (from beta 0 to beta 2.5)
+        const smlLine = [];
+        for (let b = 0; b <= 2.5; b += 0.1) {
+          const expReturn = b * marketReturn;
+          smlLine.push({
+            beta: Number(b.toFixed(1)),
+            expectedReturn: Number(expReturn.toFixed(2))
+          });
         }
-      });
-    }
 
-    // Align returns
-    const cryptoReturnsByDate = new Map(cryptoReturns.map(r => [r.date.toISOString().split('T')[0], parseFloat(r.log_return)]));
-    const indexReturnsByDate = new Map(indexReturns.map(r => [r.date.toISOString().split('T')[0], parseFloat(r.log_return)]));
-
-    const alignedCrypto = [];
-    const alignedMarket = [];
-    for (const [date, cryptoReturn] of cryptoReturnsByDate) {
-      if (indexReturnsByDate.has(date)) {
-        alignedCrypto.push(cryptoReturn);
-        alignedMarket.push(indexReturnsByDate.get(date));
+        smlData = {
+          cryptoBeta: Number(beta.toFixed(4)),
+          cryptoExpectedReturn: Number(expectedReturn.toFixed(2)),
+          cryptoActualReturn: Number(actualReturn.toFixed(2)),
+          alpha: Number(alpha.toFixed(2)),
+          isOvervalued: historizedStats.is_overvalued === 1,
+          smlLine
+        };
+        dataPoints = historizedStats.num_observations;
+        fromHistorized = true;
+        log.debug(`Using historized SML stats for ${symbol} (date: ${historizedStats.date})`);
       }
     }
 
-    if (alignedCrypto.length < 5) {
-      return res.json({
-        data: {
-          crypto: crypto,
-          sml: null,
-          period,
-          dataPoints: alignedCrypto.length,
-          msg: 'Insufficient overlapping data points'
+    // If not from historized, calculate on-the-fly
+    if (!fromHistorized) {
+      const dateFilter = getDateFilter(period);
+      const cryptoReturns = await getCryptoLogReturns(crypto.id, dateFilter);
+      const indexReturns = await getIndexLogReturns(dateFilter);
+
+      if (cryptoReturns.length < 5 || indexReturns.length < 5) {
+        return res.json({
+          data: {
+            crypto: crypto,
+            sml: null,
+            period,
+            dataPoints: 0,
+            msg: 'Insufficient data points for SML calculation'
+          }
+        });
+      }
+
+      // Align returns
+      const cryptoReturnsByDate = new Map(cryptoReturns.map(r => [r.date.toISOString().split('T')[0], parseFloat(r.log_return)]));
+      const indexReturnsByDate = new Map(indexReturns.map(r => [r.date.toISOString().split('T')[0], parseFloat(r.log_return)]));
+
+      const alignedCrypto = [];
+      const alignedMarket = [];
+      for (const [date, cryptoReturn] of cryptoReturnsByDate) {
+        if (indexReturnsByDate.has(date)) {
+          alignedCrypto.push(cryptoReturn);
+          alignedMarket.push(indexReturnsByDate.get(date));
         }
-      });
+      }
+
+      if (alignedCrypto.length < 5) {
+        return res.json({
+          data: {
+            crypto: crypto,
+            sml: null,
+            period,
+            dataPoints: alignedCrypto.length,
+            msg: 'Insufficient overlapping data points'
+          }
+        });
+      }
+
+      // Calculate beta
+      const { beta } = calculateBetaAlpha(alignedCrypto, alignedMarket);
+
+      // Calculate annualized returns
+      const cryptoAnnualReturn = calculateAnnualizedReturn(alignedCrypto);
+      const marketAnnualReturn = calculateAnnualizedReturn(alignedMarket);
+
+      // Calculate SML data (Rf = 0)
+      smlData = calculateSML(beta, cryptoAnnualReturn, marketAnnualReturn, 0);
+      marketReturn = Number((marketAnnualReturn * 100).toFixed(2));
+      dataPoints = alignedCrypto.length;
+      log.debug(`Calculated SML on-the-fly for ${symbol}`);
     }
-
-    // Calculate beta
-    const { beta } = calculateBetaAlpha(alignedCrypto, alignedMarket);
-
-    // Calculate annualized returns
-    const cryptoAnnualReturn = calculateAnnualizedReturn(alignedCrypto);
-    const marketAnnualReturn = calculateAnnualizedReturn(alignedMarket);
-
-    // Calculate SML data (Rf = 0 as per user decision)
-    const smlData = calculateSML(beta, cryptoAnnualReturn, marketAnnualReturn, 0);
 
     res.json({
       data: {
         crypto: crypto,
         ...smlData,
-        marketReturn: Number((marketAnnualReturn * 100).toFixed(2)),
+        marketReturn,
         period,
-        dataPoints: alignedCrypto.length
+        dataPoints,
+        fromHistorized
       }
     });
 
-    log.debug(`Calculated SML for ${symbol}: beta=${beta}, alpha=${smlData.alpha}%`);
+    log.debug(`SML for ${symbol}: beta=${smlData.cryptoBeta}, alpha=${smlData.alpha}%, historized=${fromHistorized}`);
   } catch (error) {
     log.error(`Error calculating SML: ${error.message}`);
     res.status(500).json({
@@ -803,33 +986,61 @@ api.get('/risk/crypto/:symbol/summary', async (req, res) => {
 
     const logReturns = cryptoReturns.map(r => parseFloat(r.log_return));
 
-    // 2. Calculate Basic Metrics
-    const var95 = calculateVaR(logReturns, 95);
-    const var99 = calculateVaR(logReturns, 99);
-    const cvar99 = calculateCVaR(logReturns, 99);
+    // 2. Calculate Basic Metrics - Try historized first for 90d period
+    let var95, var99, cvar99, skewness, kurtosis;
 
-    // Try to get historized distribution stats for 90d period
-    let skewness, kurtosis;
     if (period === '90d') {
-      const historizedStats = await getHistorizedDistributionStats(crypto.id, 90);
-      if (historizedStats) {
-        skewness = parseFloat(historizedStats.skewness);
-        kurtosis = parseFloat(historizedStats.kurtosis);
+      // Try VaR historized
+      const varStats = await getHistorizedVaRStats(crypto.id, 90);
+      if (varStats) {
+        var95 = parseFloat(varStats.var_95);
+        var99 = parseFloat(varStats.var_99);
+        cvar99 = parseFloat(varStats.cvar_99);
+      }
+      // Try distribution historized
+      const distStats = await getHistorizedDistributionStats(crypto.id, 90);
+      if (distStats) {
+        skewness = parseFloat(distStats.skewness);
+        kurtosis = parseFloat(distStats.kurtosis);
       }
     }
+
     // Fallback to on-the-fly calculation
+    if (var95 === undefined) {
+      var95 = calculateVaR(logReturns, 95);
+      var99 = calculateVaR(logReturns, 99);
+      cvar99 = calculateCVaR(logReturns, 99);
+    }
     if (skewness === undefined) {
       skewness = calculateSkewness(logReturns);
       kurtosis = calculateKurtosis(logReturns);
     }
 
-    // 3. Calculate Beta/Alpha & SML & Stress Test
+    // 3. Calculate Beta/Alpha & SML & Stress Test - Try historized first
     let beta = null;
-    let alpha = null; // CAPM Alpha (regression intercept)
-    let smlData = null; // SML specific data (Jensen's Alpha)
+    let alpha = null;
+    let smlData = null;
     let stressTest = null;
 
-    if (indexReturns.length >= 7) {
+    if (period === '90d') {
+      // Try Beta historized
+      const betaStats = await getHistorizedBetaStats(crypto.id, 90);
+      if (betaStats) {
+        beta = parseFloat(betaStats.beta);
+        alpha = Number((parseFloat(betaStats.alpha) * 100).toFixed(4));
+      }
+      // Try SML historized
+      const smlStats = await getHistorizedSMLStats(crypto.id, 90);
+      if (smlStats) {
+        smlData = {
+          alpha: parseFloat(smlStats.alpha) * 100,
+          isOvervalued: smlStats.is_overvalued === 1
+        };
+      }
+    }
+
+    // Fallback to on-the-fly calculation for Beta/SML if needed
+    if (beta === null && indexReturns.length >= 7) {
       const cryptoReturnsByDate = new Map(cryptoReturns.map(r => [r.date.toISOString().split('T')[0], parseFloat(r.log_return)]));
       const indexReturnsByDate = new Map(indexReturns.map(r => [r.date.toISOString().split('T')[0], parseFloat(r.log_return)]));
 
@@ -847,23 +1058,28 @@ api.get('/risk/crypto/:symbol/summary', async (req, res) => {
         beta = result.beta;
         alpha = Number((result.alpha * 100).toFixed(4));
 
-        // Calculate SML (Jensen's Alpha)
-        const cryptoAnnualReturn = calculateAnnualizedReturn(alignedCrypto);
-        const marketAnnualReturn = calculateAnnualizedReturn(alignedMarket);
-        smlData = calculateSML(beta, cryptoAnnualReturn, marketAnnualReturn, 0);
-
-        // Calculate Stress Test (Covid only)
-        if (currentPrice > 0) {
-          const scenarios = calculateStressTest(beta, currentPrice);
-          const covidScenario = scenarios.find(s => s.id === 'covid-19');
-          if (covidScenario) {
-            stressTest = {
-              newPrice: Number(covidScenario.newPrice.toFixed(2)),
-              priceChange: Number(covidScenario.priceChange.toFixed(2)),
-              impactPercentage: Number(covidScenario.expectedImpact.toFixed(2))
-            };
-          }
+        if (!smlData) {
+          const cryptoAnnualReturn = calculateAnnualizedReturn(alignedCrypto);
+          const marketAnnualReturn = calculateAnnualizedReturn(alignedMarket);
+          const smlResult = calculateSML(beta, cryptoAnnualReturn, marketAnnualReturn, 0);
+          smlData = {
+            alpha: smlResult.alpha,
+            isOvervalued: smlResult.isOvervalued
+          };
         }
+      }
+    }
+
+    // Calculate Stress Test (Covid only) - always needs current price and beta
+    if (currentPrice > 0 && beta !== null) {
+      const scenarios = calculateStressTest(beta, currentPrice);
+      const covidScenario = scenarios.find(s => s.id === 'covid-19');
+      if (covidScenario) {
+        stressTest = {
+          newPrice: Number(covidScenario.newPrice.toFixed(2)),
+          priceChange: Number(covidScenario.priceChange.toFixed(2)),
+          impactPercentage: Number(covidScenario.expectedImpact.toFixed(2))
+        };
       }
     }
 

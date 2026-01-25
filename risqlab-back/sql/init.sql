@@ -348,6 +348,67 @@ CREATE TABLE IF NOT EXISTS `crypto_distribution_stats` (
     KEY `idx_kurtosis` (`kurtosis`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+DROP TABLE IF EXISTS `crypto_var`;
+CREATE TABLE IF NOT EXISTS `crypto_var` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `crypto_id` INT UNSIGNED NOT NULL,
+    `date` DATE NOT NULL COMMENT 'Date for which VaR is calculated',
+    `window_days` INT UNSIGNED NOT NULL DEFAULT 90 COMMENT 'Rolling window size in days',
+    `var_95` DECIMAL(20, 12) NOT NULL COMMENT 'Value at Risk at 95% confidence',
+    `var_99` DECIMAL(20, 12) NOT NULL COMMENT 'Value at Risk at 99% confidence',
+    `cvar_95` DECIMAL(20, 12) NOT NULL COMMENT 'Conditional VaR at 95% confidence',
+    `cvar_99` DECIMAL(20, 12) NOT NULL COMMENT 'Conditional VaR at 99% confidence',
+    `mean_return` DECIMAL(20, 12) NOT NULL COMMENT 'Mean of log returns over the window',
+    `std_dev` DECIMAL(20, 12) NOT NULL COMMENT 'Standard deviation of log returns',
+    `min_return` DECIMAL(20, 12) NOT NULL COMMENT 'Minimum log return in window',
+    `max_return` DECIMAL(20, 12) NOT NULL COMMENT 'Maximum log return in window',
+    `num_observations` INT UNSIGNED NOT NULL COMMENT 'Number of data points used in calculation',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY `fk_var_crypto_idx` (`crypto_id`) REFERENCES `cryptocurrencies`(`id`) ON DELETE CASCADE,
+    UNIQUE KEY `idx_crypto_date_window` (`crypto_id`, `date`, `window_days`),
+    KEY `idx_date` (`date`),
+    KEY `idx_var_95` (`var_95`),
+    KEY `idx_var_99` (`var_99`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `crypto_beta`;
+CREATE TABLE IF NOT EXISTS `crypto_beta` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `crypto_id` INT UNSIGNED NOT NULL,
+    `date` DATE NOT NULL COMMENT 'Date for which beta is calculated',
+    `window_days` INT UNSIGNED NOT NULL DEFAULT 90 COMMENT 'Rolling window size in days',
+    `beta` DECIMAL(20, 12) NOT NULL COMMENT 'Beta coefficient (market sensitivity)',
+    `alpha` DECIMAL(20, 12) NOT NULL COMMENT 'Alpha (regression intercept)',
+    `r_squared` DECIMAL(20, 12) NOT NULL COMMENT 'R-squared (coefficient of determination)',
+    `correlation` DECIMAL(20, 12) NOT NULL COMMENT 'Correlation with market',
+    `num_observations` INT UNSIGNED NOT NULL COMMENT 'Number of aligned data points used',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY `fk_beta_crypto_idx` (`crypto_id`) REFERENCES `cryptocurrencies`(`id`) ON DELETE CASCADE,
+    UNIQUE KEY `idx_crypto_date_window` (`crypto_id`, `date`, `window_days`),
+    KEY `idx_date` (`date`),
+    KEY `idx_beta` (`beta`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `crypto_sml`;
+CREATE TABLE IF NOT EXISTS `crypto_sml` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `crypto_id` INT UNSIGNED NOT NULL,
+    `date` DATE NOT NULL COMMENT 'Date for which SML is calculated',
+    `window_days` INT UNSIGNED NOT NULL DEFAULT 90 COMMENT 'Rolling window size in days',
+    `beta` DECIMAL(20, 12) NOT NULL COMMENT 'Beta used for SML calculation',
+    `expected_return` DECIMAL(20, 12) NOT NULL COMMENT 'Expected return according to CAPM',
+    `actual_return` DECIMAL(20, 12) NOT NULL COMMENT 'Actual annualized return',
+    `alpha` DECIMAL(20, 12) NOT NULL COMMENT 'Jensen Alpha (actual - expected)',
+    `is_overvalued` BOOLEAN NOT NULL COMMENT 'True if actual < expected',
+    `market_return` DECIMAL(20, 12) NOT NULL COMMENT 'Market annualized return',
+    `num_observations` INT UNSIGNED NOT NULL COMMENT 'Number of aligned data points used',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY `fk_sml_crypto_idx` (`crypto_id`) REFERENCES `cryptocurrencies`(`id`) ON DELETE CASCADE,
+    UNIQUE KEY `idx_crypto_date_window` (`crypto_id`, `date`, `window_days`),
+    KEY `idx_date` (`date`),
+    KEY `idx_alpha` (`alpha`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 COMMIT;
 
 SET FOREIGN_KEY_CHECKS = 1;

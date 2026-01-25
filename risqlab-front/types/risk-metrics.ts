@@ -91,6 +91,7 @@ export interface BetaData {
   regressionLine?: RegressionLine;
   period: string;
   dataPoints: number;
+  fromHistorized?: boolean;
   msg?: string;
 }
 
@@ -127,6 +128,7 @@ export interface VaRData {
   statistics?: VaRStatistics;
   period: string;
   dataPoints: number;
+  fromHistorized?: boolean;
   msg?: string;
 }
 
@@ -256,6 +258,7 @@ export interface SMLData {
   marketReturn: number;
   period: string;
   dataPoints: number;
+  fromHistorized?: boolean;
   msg?: string;
 }
 
