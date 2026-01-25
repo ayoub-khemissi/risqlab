@@ -495,8 +495,31 @@ api.get('/risk/crypto/:symbol/stress-test', async (req, res) => {
 // ============================================================================
 
 /**
+ * Helper: Get historized distribution stats from database
+ * Returns the latest stats for the specified window (default 90 days)
+ */
+async function getHistorizedDistributionStats(cryptoId, windowDays = 90) {
+  const [stats] = await Database.execute(`
+    SELECT
+      skewness,
+      kurtosis,
+      mean_return,
+      std_dev,
+      num_observations,
+      date
+    FROM crypto_distribution_stats
+    WHERE crypto_id = ?
+      AND window_days = ?
+    ORDER BY date DESC
+    LIMIT 1
+  `, [cryptoId, windowDays]);
+  return stats[0] || null;
+}
+
+/**
  * GET /risk/crypto/:symbol/distribution
  * Returns skewness, kurtosis, and distribution data
+ * Uses historized data when available, falls back to on-the-fly calculation
  */
 api.get('/risk/crypto/:symbol/distribution', async (req, res) => {
   try {
@@ -511,6 +534,28 @@ api.get('/risk/crypto/:symbol/distribution', async (req, res) => {
       });
     }
 
+    // Map period to window days for historized lookup
+    const windowDaysMap = { '7d': 7, '30d': 30, '90d': 90 };
+    const windowDays = windowDaysMap[period] || 90;
+
+    // Try to get historized stats first (for 90d period)
+    let skewness, kurtosis, mu, sigma, dataPoints;
+    let fromHistorized = false;
+
+    if (period === '90d') {
+      const historizedStats = await getHistorizedDistributionStats(crypto.id, windowDays);
+      if (historizedStats) {
+        skewness = parseFloat(historizedStats.skewness);
+        kurtosis = parseFloat(historizedStats.kurtosis);
+        mu = parseFloat(historizedStats.mean_return);
+        sigma = parseFloat(historizedStats.std_dev);
+        dataPoints = historizedStats.num_observations;
+        fromHistorized = true;
+        log.debug(`Using historized distribution stats for ${symbol} (date: ${historizedStats.date})`);
+      }
+    }
+
+    // Get log returns for histogram generation (always needed for visualization)
     const dateFilter = getDateFilter(period);
     const returns = await getCryptoLogReturns(crypto.id, dateFilter);
 
@@ -531,12 +576,17 @@ api.get('/risk/crypto/:symbol/distribution', async (req, res) => {
 
     const logReturns = returns.map(r => parseFloat(r.log_return));
 
-    const skewness = calculateSkewness(logReturns);
-    const kurtosis = calculateKurtosis(logReturns);
-    const mu = mean(logReturns);
-    const sigma = standardDeviation(logReturns);
+    // If not from historized data, calculate on-the-fly
+    if (!fromHistorized) {
+      skewness = calculateSkewness(logReturns);
+      kurtosis = calculateKurtosis(logReturns);
+      mu = mean(logReturns);
+      sigma = standardDeviation(logReturns);
+      dataPoints = logReturns.length;
+      log.debug(`Calculated distribution on-the-fly for ${symbol}`);
+    }
 
-    // Generate histogram
+    // Generate histogram from current log returns (for visualization)
     const histogram = generateHistogramBins(logReturns, 30);
 
     // Generate normal curve for overlay
@@ -583,11 +633,12 @@ api.get('/risk/crypto/:symbol/distribution', async (req, res) => {
           kurtosis: kurtosis > 1 ? 'leptokurtic' : kurtosis < -1 ? 'platykurtic' : 'mesokurtic'
         },
         period,
-        dataPoints: logReturns.length
+        dataPoints,
+        fromHistorized
       }
     });
 
-    log.debug(`Calculated distribution for ${symbol}: skew=${skewness}, kurt=${kurtosis}`);
+    log.debug(`Distribution for ${symbol}: skew=${skewness}, kurt=${kurtosis}, historized=${fromHistorized}`);
   } catch (error) {
     log.error(`Error calculating distribution: ${error.message}`);
     res.status(500).json({
@@ -756,8 +807,21 @@ api.get('/risk/crypto/:symbol/summary', async (req, res) => {
     const var95 = calculateVaR(logReturns, 95);
     const var99 = calculateVaR(logReturns, 99);
     const cvar99 = calculateCVaR(logReturns, 99);
-    const skewness = calculateSkewness(logReturns);
-    const kurtosis = calculateKurtosis(logReturns);
+
+    // Try to get historized distribution stats for 90d period
+    let skewness, kurtosis;
+    if (period === '90d') {
+      const historizedStats = await getHistorizedDistributionStats(crypto.id, 90);
+      if (historizedStats) {
+        skewness = parseFloat(historizedStats.skewness);
+        kurtosis = parseFloat(historizedStats.kurtosis);
+      }
+    }
+    // Fallback to on-the-fly calculation
+    if (skewness === undefined) {
+      skewness = calculateSkewness(logReturns);
+      kurtosis = calculateKurtosis(logReturns);
+    }
 
     // 3. Calculate Beta/Alpha & SML & Stress Test
     let beta = null;

@@ -12,7 +12,15 @@ Each call to a CoinMarketCap API endpoint costs at least 1 credit. Based on the 
 
 2.  **`calculateRisqLab80.js`**: This script performs internal calculations on the local database to compute the RisqLab80 index. It makes **no external API calls** and therefore consumes no credits.
 
-3.  **`updateVolatility.js`**: This script calculates the volatility for crypto assets and portfolios based on historical data in the database. It makes **no external API calls** and consumes no credits. Given the computational nature of volatility (which requires historical price data), it is scheduled to run **once per day at 2:00 AM** rather than every 15 minutes.
+3.  **`updateVolatility.js`**: This script orchestrates the full risk metrics calculation pipeline:
+    - Logarithmic returns calculation
+    - Individual cryptocurrency volatility
+    - Portfolio volatility
+    - **Distribution statistics (skewness & kurtosis)** via `calculateDistributionStats.js`
+
+    It makes **no external API calls** and consumes no credits. Given the computational nature of these metrics (which require historical price data), it is scheduled to run **once per day at 2:00 AM** rather than every 15 minutes.
+
+    The distribution statistics (skewness & kurtosis) calculation supports **retroactive backfill** - it automatically calculates missing historical values if they weren't computed for certain days.
 
 4.  **`fetchGlobalMetrics.js`**: This script fetches global metrics (e.g., BTC dominance). It consumes **1 credit per call**.
 
@@ -37,7 +45,7 @@ Here is the proposed strategy to optimize data freshness without exceeding the m
 | :--- | :--- | :--- | :--- |
 | **Main Pipeline** (Market Data + Index) | Every 15 minutes | **8,640** | Ensures maximum freshness for market data and the RisqLab80 index, which are the core of the application. |
 | **End-of-Day Snapshot** (Market Data only) | Daily at 23:59 | **90** | Captures a consistent "closing price" for each day, used for volatility calculations and daily exports. |
-| **Volatility Update** | Once a day (2:00 AM) | **0** | Volatility calculations are computationally intensive and based on historical data. Daily updates are sufficient for this metric. No API calls required. |
+| **Volatility & Distribution Stats Update** | Once a day (2:00 AM) | **0** | Volatility, skewness, and kurtosis calculations are computationally intensive and based on historical data. Daily updates are sufficient for these metrics. No API calls required. Supports retroactive backfill. |
 | **Global Metrics** | Every 45 minutes | **~960** | This data (dominance, total market cap) is important but less volatile than prices. A 45-minute interval is an excellent trade-off. |
 | **Fear & Greed Index** | Every 3 hours | **240** | The index provides real-time market sentiment. Fetching it 8 times daily ensures consistent updates throughout the day while staying within budget. |
 | **Crypto Metadata** | Once a week | **~20** | Project logos, descriptions, and websites almost never change. A weekly update is more than sufficient. |
@@ -72,7 +80,8 @@ To implement this schedule, open your crontab file by running `crontab -e` in yo
 #    Captures the "closing price" for daily volatility calculations.
 59 23 * * * cd /home/ubuntu/risqlab/risqlab/risqlab-back && node commands/fetchCryptoMarketData.js
 
-# 3. Volatility Update: Calculate crypto and portfolio volatility.
+# 3. Volatility & Risk Metrics Update: Calculate crypto/portfolio volatility,
+#    skewness, and kurtosis. Supports retroactive backfill for missing dates.
 #    Runs once a day at 02:00 AM (1 hour after OHLCVS data fetch).
 0 2 * * * cd /home/ubuntu/risqlab/risqlab/risqlab-back && node commands/updateVolatility.js
 

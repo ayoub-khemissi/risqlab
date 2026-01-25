@@ -228,6 +228,7 @@ export interface DistributionData {
   interpretation?: DistributionInterpretation;
   period: string;
   dataPoints: number;
+  fromHistorized?: boolean;
   msg?: string;
 }
 

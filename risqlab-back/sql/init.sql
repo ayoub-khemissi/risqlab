@@ -329,6 +329,25 @@ CREATE TABLE IF NOT EXISTS `ohlcvs` (
     KEY `idx_unit` (`unit`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+DROP TABLE IF EXISTS `crypto_distribution_stats`;
+CREATE TABLE IF NOT EXISTS `crypto_distribution_stats` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `crypto_id` INT UNSIGNED NOT NULL,
+    `date` DATE NOT NULL COMMENT 'Date for which distribution stats are calculated',
+    `window_days` INT UNSIGNED NOT NULL DEFAULT 90 COMMENT 'Rolling window size in days',
+    `skewness` DECIMAL(20, 12) NOT NULL COMMENT 'Fisher skewness of log returns',
+    `kurtosis` DECIMAL(20, 12) NOT NULL COMMENT 'Excess kurtosis (Fisher) of log returns',
+    `mean_return` DECIMAL(20, 12) NOT NULL COMMENT 'Mean of log returns over the window',
+    `std_dev` DECIMAL(20, 12) NOT NULL COMMENT 'Standard deviation of log returns',
+    `num_observations` INT UNSIGNED NOT NULL COMMENT 'Number of data points used in calculation',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY `fk_distribution_stats_crypto_idx` (`crypto_id`) REFERENCES `cryptocurrencies`(`id`) ON DELETE CASCADE,
+    UNIQUE KEY `idx_crypto_date_window` (`crypto_id`, `date`, `window_days`),
+    KEY `idx_date` (`date`),
+    KEY `idx_skewness` (`skewness`),
+    KEY `idx_kurtosis` (`kurtosis`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 COMMIT;
 
 SET FOREIGN_KEY_CHECKS = 1;

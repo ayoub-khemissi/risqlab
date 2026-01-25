@@ -2,34 +2,39 @@ import { spawn } from 'child_process';
 import log from '../lib/log.js';
 
 /**
- * Orchestrates the full volatility calculation pipeline
+ * Orchestrates the full volatility and risk metrics calculation pipeline
  * 1. Calculate logarithmic returns
  * 2. Calculate individual crypto volatility
  * 3. Calculate portfolio volatility
+ * 4. Calculate distribution statistics (skewness & kurtosis)
  */
 async function updateVolatility() {
   const startTime = Date.now();
 
   try {
     log.info('='.repeat(60));
-    log.info('Starting Volatility Update Pipeline');
+    log.info('Starting Volatility & Risk Metrics Update Pipeline');
     log.info('='.repeat(60));
 
     // Step 1: Calculate logarithmic returns
-    log.info('\n[1/3] Calculating logarithmic returns...');
+    log.info('\n[1/4] Calculating logarithmic returns...');
     await runCommand('calculateLogReturns.js');
 
     // Step 2: Calculate individual crypto volatility
-    log.info('\n[2/3] Calculating individual cryptocurrency volatility...');
+    log.info('\n[2/4] Calculating individual cryptocurrency volatility...');
     await runCommand('calculateCryptoVolatility.js');
 
     // Step 3: Calculate portfolio volatility
-    log.info('\n[3/3] Calculating portfolio volatility...');
+    log.info('\n[3/4] Calculating portfolio volatility...');
     await runCommand('calculatePortfolioVolatility.js');
+
+    // Step 4: Calculate distribution statistics (skewness & kurtosis)
+    log.info('\n[4/4] Calculating distribution statistics (skewness & kurtosis)...');
+    await runCommand('calculateDistributionStats.js');
 
     const totalDuration = Date.now() - startTime;
     log.info('\n' + '='.repeat(60));
-    log.info(`Volatility Update Pipeline Completed in ${(totalDuration / 1000).toFixed(2)}s`);
+    log.info(`Volatility & Risk Metrics Pipeline Completed in ${(totalDuration / 1000).toFixed(2)}s`);
     log.info('='.repeat(60));
 
   } catch (error) {
