@@ -16,6 +16,8 @@ import {
   CartesianGrid,
 } from "recharts";
 
+import { MethodologyLink } from "./MethodologyLink";
+
 import { useDistribution } from "@/hooks/useRiskMetrics";
 import { useCryptoVolatility } from "@/hooks/useCryptoVolatility";
 import { getKurtosisInterpretation } from "@/types/risk-metrics";
@@ -301,6 +303,21 @@ export function KurtosisPanel({ symbol }: { symbol: string }) {
           ) : (
             <p className="text-default-500">No data available</p>
           )}
+        </CardBody>
+      </Card>
+
+      {/* Explanation */}
+      <Card>
+        <CardBody className="p-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <p className="text-sm text-default-500 flex-1">
+              <strong>Kurtosis</strong> measures the &quot;peakedness&quot; and
+              distribution of tails. A high kurtosis (leptokurtic) indicates a
+              higher probability of extreme outcomes (fat tails), while a low
+              kurtosis (platykurtic) suggests more moderate variations.
+            </p>
+            <MethodologyLink section="kurtosis" variant="full" />
+          </div>
         </CardBody>
       </Card>
     </div>

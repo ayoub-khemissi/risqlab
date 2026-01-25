@@ -16,6 +16,8 @@ import {
 import { Tooltip } from "@heroui/tooltip";
 import { AlertTriangle } from "lucide-react";
 
+import { MethodologyLink } from "./MethodologyLink";
+
 import { useBeta } from "@/hooks/useRiskMetrics";
 import { getBetaInterpretation } from "@/types/risk-metrics";
 
@@ -353,19 +355,22 @@ export function BetaPanel({ symbol }: { symbol: string }) {
       {/* Explanation Card */}
       <Card>
         <CardBody className="p-4">
-          <p className="text-sm text-default-500">
-            <strong>How it works:</strong> Beta measures the volatility of an
-            asset relative to the market. It is calculated using the covariance
-            of returns divided by the variance of market returns:{" "}
-            <code className="bg-default-100 px-1 rounded">
-              Beta = Cov(R_crypto, R_market) / Var(R_market)
-            </code>
-            . Alpha is the excess return not explained by beta:{" "}
-            <code className="bg-default-100 px-1 rounded">
-              Alpha = Mean(R_crypto) - Beta * Mean(R_market)
-            </code>
-            .
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <p className="text-sm text-default-500 flex-1">
+              <strong>How it works:</strong> Beta measures the volatility of an
+              asset relative to the market. It is calculated using the
+              covariance of returns divided by the variance of market returns:{" "}
+              <code className="bg-default-100 px-1 rounded">
+                Beta = Cov(R_crypto, R_market) / Var(R_market)
+              </code>
+              . Alpha is the excess return not explained by beta:{" "}
+              <code className="bg-default-100 px-1 rounded">
+                Alpha = Mean(R_crypto) - Beta * Mean(R_market)
+              </code>
+              .
+            </p>
+            <MethodologyLink section="beta" variant="full" />
+          </div>
         </CardBody>
       </Card>
     </div>

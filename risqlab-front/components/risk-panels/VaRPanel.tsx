@@ -17,6 +17,8 @@ import {
 } from "recharts";
 import { useState, useMemo } from "react";
 
+import { MethodologyLink } from "./MethodologyLink";
+
 import { useVaR } from "@/hooks/useRiskMetrics";
 import { useCryptoVolatility } from "@/hooks/useCryptoVolatility";
 import { RiskPeriod } from "@/types/risk-metrics";
@@ -322,14 +324,17 @@ export function VaRPanel({ symbol }: VaRPanelProps) {
       {/* Explanation */}
       <Card>
         <CardBody className="p-4">
-          <p className="text-sm text-default-500">
-            <strong>Value at Risk (VaR)</strong> estimates the maximum potential
-            loss over a given period at a specific confidence level. A VaR 95%
-            of {data?.var95?.toFixed(2)}% means there&apos;s only a 5% chance of
-            losing more than this amount in a single day.{" "}
-            <strong>CVaR (Expected Shortfall)</strong> measures the average loss
-            when the VaR threshold is exceeded.
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <p className="text-sm text-default-500 flex-1">
+              <strong>Value at Risk (VaR)</strong> estimates the maximum
+              potential loss over a given period at a specific confidence level.
+              A VaR 95% of {data?.var95?.toFixed(2)}% means there&apos;s only a
+              5% chance of losing more than this amount in a single day.{" "}
+              <strong>CVaR (Expected Shortfall)</strong> measures the average
+              loss when the VaR threshold is exceeded.
+            </p>
+            <MethodologyLink section="var" variant="full" />
+          </div>
         </CardBody>
       </Card>
     </div>

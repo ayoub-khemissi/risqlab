@@ -16,6 +16,8 @@ import {
 import { Tooltip } from "@heroui/tooltip";
 import { AlertTriangle } from "lucide-react";
 
+import { MethodologyLink } from "./MethodologyLink";
+
 import { useSML } from "@/hooks/useRiskMetrics";
 
 interface SMLPanelProps {
@@ -371,6 +373,23 @@ export function SMLPanel({ symbol }: SMLPanelProps) {
                 </p>
               </div>
             </div>
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* Explanation */}
+      <Card>
+        <CardBody className="p-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <p className="text-sm text-default-500 flex-1">
+              <strong>Security Market Line (SML)</strong> is a visual
+              representation of the Capital Asset Pricing Model (CAPM). It plots
+              the relationship between an asset&apos;s systematic risk (beta)
+              and its expected return. Assets above the SML are considered
+              undervalued (generating positive alpha), while those below are
+              considered overvalued.
+            </p>
+            <MethodologyLink section="sml" variant="full" />
           </div>
         </CardBody>
       </Card>

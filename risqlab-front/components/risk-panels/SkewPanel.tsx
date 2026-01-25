@@ -16,6 +16,8 @@ import {
   CartesianGrid,
 } from "recharts";
 
+import { MethodologyLink } from "./MethodologyLink";
+
 import { useDistribution } from "@/hooks/useRiskMetrics";
 import { useCryptoVolatility } from "@/hooks/useCryptoVolatility";
 import { getSkewnessInterpretation } from "@/types/risk-metrics";
@@ -301,6 +303,22 @@ export function SkewPanel({ symbol }: { symbol: string }) {
           ) : (
             <p className="text-default-500">No data available</p>
           )}
+        </CardBody>
+      </Card>
+
+      {/* Explanation */}
+      <Card>
+        <CardBody className="p-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <p className="text-sm text-default-500 flex-1">
+              <strong>Skewness</strong> measures the asymmetry of the returns
+              distribution. Positive skewness indicates a higher probability of
+              large gains, while negative skewness indicates a &quot;fat
+              tail&quot; on the left, meaning extreme losses are more likely
+              than modeled by a normal distribution.
+            </p>
+            <MethodologyLink section="skewness" variant="full" />
+          </div>
         </CardBody>
       </Card>
     </div>

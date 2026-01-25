@@ -16,6 +16,8 @@ import {
 } from "recharts";
 import { useState, useMemo } from "react";
 
+import { MethodologyLink } from "./MethodologyLink";
+
 import { RiskPeriod } from "@/types/risk-metrics";
 import { useCryptoVolatility } from "@/hooks/useCryptoVolatility";
 import { CryptoVolatility, VolatilityPeriod } from "@/types/volatility";
@@ -430,6 +432,21 @@ export function VolatilityPanel({
                 Extreme (&gt;{mode === "annualized" ? "60%" : "3%"})
               </span>
             </div>
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* Explanation */}
+      <Card>
+        <CardBody className="p-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <p className="text-sm text-default-500 flex-1">
+              <strong>Volatility</strong> measures the degree of variation of
+              returns over time. High volatility indicates greater price swings,
+              signaling higher risk and uncertainty, while low volatility
+              suggests more stable and predictable price movements.
+            </p>
+            <MethodologyLink section="volatility" variant="full" />
           </div>
         </CardBody>
       </Card>

@@ -2,7 +2,7 @@
 
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
-import { Calculator, TrendingUp, ArrowRight } from "lucide-react";
+import { Calculator, TrendingUp, ArrowRight, Shield } from "lucide-react";
 import Link from "next/link";
 
 import { title } from "@/components/primitives";
@@ -17,7 +17,7 @@ export default function MethodologyPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto w-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto w-full">
         <Card className="hover:shadow-lg transition-shadow">
           <CardBody className="p-8">
             <div className="flex flex-col gap-4">
@@ -71,9 +71,36 @@ export default function MethodologyPage() {
             </div>
           </CardBody>
         </Card>
+
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardBody className="p-8">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-lg bg-danger/10">
+                  <Shield className="w-8 h-8 text-danger" />
+                </div>
+                <h2 className="text-2xl font-bold">Risk Metrics</h2>
+              </div>
+
+              <p className="text-default-600">
+                Learn how we calculate VaR, CVaR, Beta, Alpha, SML, Skewness,
+                and Kurtosis to provide a comprehensive risk profile for each
+                cryptocurrency.
+              </p>
+
+              <div className="mt-4">
+                <Link href="/methodology/risk-metrics">
+                  <Button color="danger" endContent={<ArrowRight size={18} />}>
+                    View Risk Metrics Methodology
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
       </div>
 
-      <Card className="max-w-5xl mx-auto w-full">
+      <Card className="max-w-6xl mx-auto w-full">
         <CardBody className="p-8">
           <h2 className="text-xl font-bold mb-4">Why Transparency Matters</h2>
           <p className="text-default-600 mb-4">
