@@ -412,8 +412,8 @@ export function StressTestPanel({ symbol }: StressTestPanelProps) {
       <Card>
         <CardBody className="p-4">
           <p className="text-sm text-default-500">
-            <strong>How it works:</strong> The stress test simulates historical
-            market crashes on your position using the formula:{" "}
+            <strong>Stress test</strong> simulates historical market crashes on
+            your position using the formula:{" "}
             <code className="bg-default-100 px-1 rounded">
               Stressed Price = Current Price x (1 + Shock x Beta)
             </code>
