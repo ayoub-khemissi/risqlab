@@ -18,9 +18,9 @@ export default function MethodologyPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto w-full">
-        <Card className="hover:shadow-lg transition-shadow">
+        <Card className="hover:shadow-lg transition-shadow h-full">
           <CardBody className="p-8">
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 h-full">
               <div className="flex items-center gap-3">
                 <div className="p-3 rounded-lg bg-primary/10">
                   <Calculator className="w-8 h-8 text-primary" />
@@ -34,7 +34,7 @@ export default function MethodologyPage() {
                 the mathematical formula behind the index level.
               </p>
 
-              <div className="mt-4">
+              <div className="mt-auto pt-4">
                 <Link href="/methodology/index-risqlab">
                   <Button color="primary" endContent={<ArrowRight size={18} />}>
                     View Index Methodology
@@ -45,9 +45,9 @@ export default function MethodologyPage() {
           </CardBody>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow">
+        <Card className="hover:shadow-lg transition-shadow h-full">
           <CardBody className="p-8">
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 h-full">
               <div className="flex items-center gap-3">
                 <div className="p-3 rounded-lg bg-success/10">
                   <TrendingUp className="w-8 h-8 text-success" />
@@ -61,7 +61,7 @@ export default function MethodologyPage() {
                 portfolio-level volatility with covariance matrices.
               </p>
 
-              <div className="mt-4">
+              <div className="mt-auto pt-4">
                 <Link href="/methodology/volatility">
                   <Button color="success" endContent={<ArrowRight size={18} />}>
                     View Volatility Methodology
@@ -72,9 +72,9 @@ export default function MethodologyPage() {
           </CardBody>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow">
+        <Card className="hover:shadow-lg transition-shadow h-full">
           <CardBody className="p-8">
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 h-full">
               <div className="flex items-center gap-3">
                 <div className="p-3 rounded-lg bg-danger/10">
                   <Shield className="w-8 h-8 text-danger" />
@@ -88,7 +88,7 @@ export default function MethodologyPage() {
                 cryptocurrency.
               </p>
 
-              <div className="mt-4">
+              <div className="mt-auto pt-4">
                 <Link href="/methodology/risk-metrics">
                   <Button color="danger" endContent={<ArrowRight size={18} />}>
                     View Risk Metrics Methodology
