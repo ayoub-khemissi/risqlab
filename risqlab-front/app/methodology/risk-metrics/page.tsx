@@ -189,10 +189,11 @@ export default function RiskMetricsMethodologyPage() {
                 risk management practices.
               </p>
               <p className="text-default-600 mb-4">
-                All metrics are calculated using a{" "}
-                <strong>90-day rolling window</strong> of daily logarithmic
-                returns, providing a balance between statistical significance
-                and responsiveness to recent market conditions.
+                Metrics use different calculation windows based on their
+                purpose: <strong>VaR and Beta use 365 days</strong> for more
+                stable risk estimates, while{" "}
+                <strong>Skewness, Kurtosis, and SML use 90 days</strong> to
+                capture recent distribution characteristics.
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                 <div className="text-center p-4 bg-danger/10 rounded-lg">
@@ -264,7 +265,7 @@ export default function RiskMetricsMethodologyPage() {
                     returns:
                   </p>
                   <ol className="list-decimal list-inside text-default-600 space-y-2">
-                    <li>Collect 90 days of daily logarithmic returns</li>
+                    <li>Collect up to 365 days of daily logarithmic returns</li>
                     <li>Sort returns from lowest to highest</li>
                     <li>Find the return at the (100-α) percentile position</li>
                     <li>Report the absolute value as potential loss</li>
@@ -319,7 +320,7 @@ export default function RiskMetricsMethodologyPage() {
                       <strong>Asset:</strong> Bitcoin (BTC)
                     </div>
                     <div>
-                      <strong>Period:</strong> 90 days
+                      <strong>Period:</strong> 365 days
                     </div>
                     <div>
                       <strong>VaR 95%:</strong> 4.5%
@@ -330,7 +331,7 @@ export default function RiskMetricsMethodologyPage() {
                     <div className="pt-2 border-t border-default-200 mt-2 text-default-600">
                       <strong>Interpretation:</strong> With 95% confidence, the
                       daily loss will not exceed 4.5%. Only on 5% of days
-                      (approximately 4-5 days per quarter) should we expect
+                      (approximately 18 days per year) should we expect
                       losses greater than 4.5%.
                     </div>
                   </div>
@@ -1020,14 +1021,29 @@ export default function RiskMetricsMethodologyPage() {
                   </thead>
                   <tbody>
                     <tr className="border-b border-default-200">
-                      <td className="py-3 px-4 font-semibold">Window Period</td>
+                      <td className="py-3 px-4 font-semibold">
+                        VaR / Beta Window
+                      </td>
                       <td className="py-3 px-4">
                         <Chip color="primary" size="sm">
+                          365 days
+                        </Chip>
+                      </td>
+                      <td className="py-3 px-4 text-default-600">
+                        Longer window for stable risk estimates
+                      </td>
+                    </tr>
+                    <tr className="border-b border-default-200">
+                      <td className="py-3 px-4 font-semibold">
+                        Skew / Kurtosis / SML Window
+                      </td>
+                      <td className="py-3 px-4">
+                        <Chip color="warning" size="sm">
                           90 days
                         </Chip>
                       </td>
                       <td className="py-3 px-4 text-default-600">
-                        Rolling window for all risk calculations
+                        Shorter window to capture recent distribution
                       </td>
                     </tr>
                     <tr className="border-b border-default-200">
@@ -1046,7 +1062,7 @@ export default function RiskMetricsMethodologyPage() {
                         Market Benchmark
                       </td>
                       <td className="py-3 px-4">
-                        <Chip color="warning" size="sm">
+                        <Chip color="primary" size="sm">
                           RisqLab 80
                         </Chip>
                       </td>
@@ -1090,7 +1106,7 @@ export default function RiskMetricsMethodologyPage() {
                         </Chip>
                       </td>
                       <td className="py-3 px-4 text-default-600">
-                        All metrics recalculated daily with retroactive backfill
+                        All metrics recalculated daily
                       </td>
                     </tr>
                   </tbody>
