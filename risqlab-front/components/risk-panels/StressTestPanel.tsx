@@ -78,14 +78,123 @@ const ScenarioButton = memo(function ScenarioButton({
   );
 });
 
+// Component for the live price section to prevent re-rendering the whole panel
+const LivePriceSection = memo(function LivePriceSection({
+  symbol,
+  initialPrice,
+}: {
+  symbol: string;
+  initialPrice?: number | null;
+}) {
+  const livePrice = useBinancePrice(symbol, initialPrice);
+  const currentPrice = livePrice ?? initialPrice ?? 0;
+
+  return (
+    <p className="text-4xl font-bold">
+      {currentPrice ? formatCryptoPrice(currentPrice) : "N/A"}
+    </p>
+  );
+});
+
+// Component for the detailed impact visualization to prevent re-rendering the whole panel
+const LiveImpactDetails = memo(function LiveImpactDetails({
+  symbol,
+  activeScenario,
+  initialPrice,
+}: {
+  symbol: string;
+  activeScenario: StressScenario;
+  initialPrice?: number | null;
+}) {
+  const livePrice = useBinancePrice(symbol, initialPrice);
+  const currentPrice = livePrice ?? initialPrice ?? 0;
+
+  // Calculate the impact summary for the selected scenario using live price
+  const impactSummary = useMemo(() => {
+    if (!activeScenario || !currentPrice) return null;
+
+    // Use pre-calculated impact from API to ensure consistency with sidebar summary
+    // Formula: Stressed Price = Current Price x (1 + expectedImpact / 100)
+    const impactMultiplier = 1 + activeScenario.expectedImpact / 100;
+    const stressedPrice = currentPrice * impactMultiplier;
+    const loss = currentPrice - stressedPrice;
+    const lossPercent = (loss / currentPrice) * 100;
+
+    return {
+      startPrice: currentPrice,
+      endPrice: stressedPrice,
+      loss,
+      lossPercent,
+    };
+  }, [activeScenario, currentPrice]);
+
+  if (!impactSummary) return null;
+
+  return (
+    <div
+      className="mt-4 p-4 rounded-lg border-2"
+      style={{
+        borderColor: STRESS_SCENARIO_COLORS[activeScenario.id],
+      }}
+    >
+      {/* Scenario info header */}
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h4 className="font-semibold">{activeScenario.name}</h4>
+          <p className="text-sm text-default-500">
+            {activeScenario.description}
+          </p>
+          <p className="text-xs text-default-400 mt-1">
+            {new Date(activeScenario.startDate).toLocaleDateString("fr-FR")}{" "}
+            {" \u2192 "}
+            {new Date(activeScenario.endDate).toLocaleDateString("fr-FR")}
+          </p>
+        </div>
+        <Chip color="danger" size="sm" variant="flat">
+          {activeScenario.marketShock.toFixed(2)}%
+        </Chip>
+      </div>
+
+      {/* Impact visualization */}
+      <div className="text-center mb-2">
+        <p className="text-sm text-default-500">
+          If we relived <strong>{activeScenario.name}</strong>:
+        </p>
+      </div>
+      <div className="flex items-center justify-center gap-3 sm:gap-8 py-2">
+        <div className="text-center min-w-0 flex-shrink">
+          <p className="text-xs text-default-500 mb-1">Current</p>
+          <p className="text-lg sm:text-2xl font-bold truncate">
+            {formatCryptoPrice(impactSummary.startPrice)}
+          </p>
+        </div>
+        <TrendingDown className="text-danger flex-shrink-0" size={24} />
+        <div className="text-center min-w-0 flex-shrink">
+          <p className="text-xs text-default-500 mb-1">Stressed</p>
+          <p
+            className="text-lg sm:text-2xl font-bold truncate"
+            style={{ color: STRESS_SCENARIO_COLORS[activeScenario.id] }}
+          >
+            {formatCryptoPrice(impactSummary.endPrice)}
+          </p>
+        </div>
+      </div>
+
+      {/* Loss chip */}
+      <div className="text-center mt-2">
+        <Chip color="danger" size="lg" variant="flat">
+          {impactSummary.lossPercent.toFixed(2)}% loss (
+          {formatCryptoPrice(impactSummary.loss)})
+        </Chip>
+      </div>
+    </div>
+  );
+});
+
 export function StressTestPanel({ symbol }: StressTestPanelProps) {
   const { data, isLoading, error } = useStressTest(symbol);
   const [selectedScenario, setSelectedScenario] =
     useState<StressScenarioId | null>("covid-19");
-
-  // Get live price from Binance WebSocket
-  const livePrice = useBinancePrice(symbol, data?.currentPrice);
-  const currentPrice = livePrice ?? data?.currentPrice ?? 0;
 
   // Get selected scenario details
   const activeScenario = useMemo(() => {
@@ -138,25 +247,6 @@ export function StressTestPanel({ symbol }: StressTestPanelProps) {
     });
   }, [data?.priceHistory, activeScenario, data?.beta]);
 
-  // Calculate the impact summary for the selected scenario using live price
-  const impactSummary = useMemo(() => {
-    if (!activeScenario || !data?.beta || !currentPrice) return null;
-
-    // Recalculate stressed price with live price
-    // Formula: Stressed Price = Current Price x (1 + Shock x Beta)
-    const impactMultiplier = 1 + (activeScenario.marketShock / 100) * data.beta;
-    const stressedPrice = currentPrice * impactMultiplier;
-    const loss = currentPrice - stressedPrice;
-    const lossPercent = (loss / currentPrice) * 100;
-
-    return {
-      startPrice: currentPrice,
-      endPrice: stressedPrice,
-      loss,
-      lossPercent,
-    };
-  }, [activeScenario, data?.beta, currentPrice]);
-
   return (
     <div className="flex flex-col gap-4">
       {/* Summary Card with current price and beta */}
@@ -165,9 +255,10 @@ export function StressTestPanel({ symbol }: StressTestPanelProps) {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <p className="text-sm text-default-500 mb-1">Current Price</p>
-              <p className="text-4xl font-bold">
-                {currentPrice ? formatCryptoPrice(currentPrice) : "N/A"}
-              </p>
+              <LivePriceSection
+                initialPrice={data?.currentPrice}
+                symbol={symbol}
+              />
             </div>
             <div>
               <p className="text-sm text-default-500 mb-1">
@@ -217,69 +308,13 @@ export function StressTestPanel({ symbol }: StressTestPanelProps) {
             ))}
           </div>
 
-          {/* Selected scenario details + Impact Summary (merged) */}
-          {activeScenario && impactSummary && (
-            <div
-              className="mt-4 p-4 rounded-lg border-2"
-              style={{
-                borderColor: STRESS_SCENARIO_COLORS[activeScenario.id],
-              }}
-            >
-              {/* Scenario info header */}
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h4 className="font-semibold">{activeScenario.name}</h4>
-                  <p className="text-sm text-default-500">
-                    {activeScenario.description}
-                  </p>
-                  <p className="text-xs text-default-400 mt-1">
-                    {new Date(activeScenario.startDate).toLocaleDateString(
-                      "fr-FR",
-                    )}{" "}
-                    {" \u2192 "}
-                    {new Date(activeScenario.endDate).toLocaleDateString(
-                      "fr-FR",
-                    )}
-                  </p>
-                </div>
-                <Chip color="danger" size="sm" variant="flat">
-                  {activeScenario.marketShock.toFixed(2)}%
-                </Chip>
-              </div>
-
-              {/* Impact visualization */}
-              <div className="text-center mb-2">
-                <p className="text-sm text-default-500">
-                  If we relived <strong>{activeScenario.name}</strong>:
-                </p>
-              </div>
-              <div className="flex items-center justify-center gap-3 sm:gap-8 py-2">
-                <div className="text-center min-w-0 flex-shrink">
-                  <p className="text-xs text-default-500 mb-1">Current</p>
-                  <p className="text-lg sm:text-2xl font-bold truncate">
-                    {formatCryptoPrice(impactSummary.startPrice)}
-                  </p>
-                </div>
-                <TrendingDown className="text-danger flex-shrink-0" size={24} />
-                <div className="text-center min-w-0 flex-shrink">
-                  <p className="text-xs text-default-500 mb-1">Stressed</p>
-                  <p
-                    className="text-lg sm:text-2xl font-bold truncate"
-                    style={{ color: STRESS_SCENARIO_COLORS[activeScenario.id] }}
-                  >
-                    {formatCryptoPrice(impactSummary.endPrice)}
-                  </p>
-                </div>
-              </div>
-
-              {/* Loss chip */}
-              <div className="text-center mt-2">
-                <Chip color="danger" size="lg" variant="flat">
-                  {impactSummary.lossPercent.toFixed(2)}% loss (
-                  {formatCryptoPrice(impactSummary.loss)})
-                </Chip>
-              </div>
-            </div>
+          {/* Selected scenario details + Impact Summary (merged) - Isolated component */}
+          {activeScenario && data && (
+            <LiveImpactDetails
+              activeScenario={activeScenario}
+              initialPrice={data.currentPrice}
+              symbol={symbol}
+            />
           )}
         </CardBody>
       </Card>

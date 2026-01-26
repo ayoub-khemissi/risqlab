@@ -33,7 +33,15 @@ import {
   KurtosisPanel,
   SMLPanel,
 } from "@/components/risk-panels";
-import { useRiskSummary, usePriceHistory } from "@/hooks/useRiskMetrics";
+import {
+  useRiskSummary,
+  usePriceHistory,
+  useVaR,
+  useBeta,
+  useDistribution,
+  useSML,
+  useStressTest,
+} from "@/hooks/useRiskMetrics";
 
 const VALID_PANELS: RiskPanel[] = [
   "price",
@@ -74,6 +82,13 @@ export default function CryptoDetailContent() {
     period,
   );
   const { data: priceData } = usePriceHistory(symbol, period);
+
+  // Fetch specific periods for sidebar consistency (stable vs recent estimates)
+  const { data: var365Data } = useVaR(symbol, "365d");
+  const { data: beta365Data } = useBeta(symbol, "365d");
+  const { data: dist90Data } = useDistribution(symbol, "90d");
+  const { data: sml90Data } = useSML(symbol, "90d");
+  const { data: stressTestData } = useStressTest(symbol);
 
   // Update URL when panel changes
   const handlePanelChange = useCallback(
@@ -200,13 +215,7 @@ export default function CryptoDetailContent() {
       case "stress-test":
         return <StressTestPanel symbol={symbol} />;
       case "var":
-        return (
-          <VaRPanel
-            period={period}
-            symbol={symbol}
-            onPeriodChange={setPeriod}
-          />
-        );
+        return <VaRPanel symbol={symbol} />;
       case "beta":
         return <BetaPanel symbol={symbol} />;
       case "skew":
@@ -351,10 +360,19 @@ export default function CryptoDetailContent() {
         <div className="lg:col-span-1 order-1 lg:order-1">
           <PanelSidebar
             activePanel={activePanel}
+            betaOverride={beta365Data?.beta}
             currentPrice={priceData?.current?.price}
             isLoading={isRiskSummaryLoading}
+            kurtosisOverride={dist90Data?.kurtosis}
             riskSummary={riskSummary}
+            skewnessOverride={dist90Data?.skewness}
+            smlAlphaOverride={sml90Data?.alpha}
+            stressImpactOverride={
+              stressTestData?.scenarios.find((s) => s.id === "covid-19")
+                ?.expectedImpact
+            }
             symbol={symbol}
+            var99Override={var365Data?.var99}
             onPanelChange={handlePanelChange}
           />
         </div>

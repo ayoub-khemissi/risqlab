@@ -170,7 +170,7 @@ api.get('/risk/crypto/:symbol/price-history', async (req, res) => {
 api.get('/risk/crypto/:symbol/beta', async (req, res) => {
   try {
     const { symbol } = req.params;
-    const { period = '90d' } = req.query;
+    const { period = '365d' } = req.query;
 
     const crypto = await getCryptoBySymbol(symbol);
     if (!crypto) {
@@ -324,7 +324,7 @@ api.get('/risk/crypto/:symbol/beta', async (req, res) => {
 api.get('/risk/crypto/:symbol/var', async (req, res) => {
   try {
     const { symbol } = req.params;
-    const { period = '90d' } = req.query;
+    const { period = '365d' } = req.query;
 
     const crypto = await getCryptoBySymbol(symbol);
     if (!crypto) {
@@ -505,8 +505,8 @@ api.get('/risk/crypto/:symbol/stress-test', async (req, res) => {
       ORDER BY date ASC
     `, [crypto.id, maxPoints]);
 
-    // Calculate beta for stress test (use 90d period)
-    const dateFilter = getDateFilter('90d');
+    // Calculate beta for stress test (use 365d period as per requirements)
+    const dateFilter = getDateFilter('365d');
     const cryptoReturns = await getCryptoLogReturns(crypto.id, dateFilter);
     const indexReturns = await getIndexLogReturns(dateFilter);
 
@@ -992,6 +992,15 @@ api.get('/risk/crypto/:symbol/summary', async (req, res) => {
     const cryptoReturns = await getCryptoLogReturns(crypto.id, dateFilter);
     const indexReturns = await getIndexLogReturns(dateFilter);
 
+    // Also fetch 365d returns for VaR/Beta if needed
+    let cryptoReturns365 = cryptoReturns;
+    let indexReturns365 = indexReturns;
+    if (period !== '365d') {
+      const dateFilter365 = getDateFilter('365d');
+      cryptoReturns365 = await getCryptoLogReturns(crypto.id, dateFilter365);
+      indexReturns365 = await getIndexLogReturns(dateFilter365);
+    }
+
     if (cryptoReturns.length < 5) {
       return res.json({
         data: {
@@ -1005,14 +1014,15 @@ api.get('/risk/crypto/:symbol/summary', async (req, res) => {
     }
 
     const logReturns = cryptoReturns.map(r => parseFloat(r.log_return));
+    const logReturns365 = cryptoReturns365.map(r => parseFloat(r.log_return));
 
     // 2. Calculate Basic Metrics with FIXED periods per metric
     // VaR/Beta: 365 days (null = latest entry)
     // Skewness/Kurtosis/SML: 90 days
     let var95, var99, cvar99, skewness, kurtosis;
 
-    // VaR always uses 365 days (null to get latest 365d entry)
-    const varStats = await getHistorizedVaRStats(crypto.id, null);
+    // VaR always uses 365 days
+    const varStats = await getHistorizedVaRStats(crypto.id, 365);
     if (varStats) {
       var95 = parseFloat(varStats.var_95);
       var99 = parseFloat(varStats.var_99);
@@ -1027,10 +1037,10 @@ api.get('/risk/crypto/:symbol/summary', async (req, res) => {
     }
 
     // Fallback to on-the-fly calculation
-    if (var95 === undefined) {
-      var95 = calculateVaR(logReturns, 95);
-      var99 = calculateVaR(logReturns, 99);
-      cvar99 = calculateCVaR(logReturns, 99);
+    if (var95 === undefined && logReturns365.length >= 5) {
+      var95 = calculateVaR(logReturns365, 95);
+      var99 = calculateVaR(logReturns365, 99);
+      cvar99 = calculateCVaR(logReturns365, 99);
     }
     if (skewness === undefined) {
       skewness = calculateSkewness(logReturns);
@@ -1043,8 +1053,8 @@ api.get('/risk/crypto/:symbol/summary', async (req, res) => {
     let smlData = null;
     let stressTest = null;
 
-    // Beta always uses 365 days (null to get latest 365d entry)
-    const betaStats = await getHistorizedBetaStats(crypto.id, null);
+    // Beta always uses 365 days
+    const betaStats = await getHistorizedBetaStats(crypto.id, 365);
     if (betaStats) {
       beta = parseFloat(betaStats.beta);
       alpha = Number((parseFloat(betaStats.alpha) * 100).toFixed(4));
@@ -1060,9 +1070,9 @@ api.get('/risk/crypto/:symbol/summary', async (req, res) => {
     }
 
     // Fallback to on-the-fly calculation for Beta/SML if needed
-    if (beta === null && indexReturns.length >= 7) {
-      const cryptoReturnsByDate = new Map(cryptoReturns.map(r => [r.date.toISOString().split('T')[0], parseFloat(r.log_return)]));
-      const indexReturnsByDate = new Map(indexReturns.map(r => [r.date.toISOString().split('T')[0], parseFloat(r.log_return)]));
+    if (beta === null && indexReturns365.length >= 7) {
+      const cryptoReturnsByDate = new Map(cryptoReturns365.map(r => [r.date.toISOString().split('T')[0], parseFloat(r.log_return)]));
+      const indexReturnsByDate = new Map(indexReturns365.map(r => [r.date.toISOString().split('T')[0], parseFloat(r.log_return)]));
 
       const alignedCrypto = [];
       const alignedMarket = [];
@@ -1078,6 +1088,8 @@ api.get('/risk/crypto/:symbol/summary', async (req, res) => {
         beta = result.beta;
         alpha = Number((result.alpha * 100).toFixed(4));
 
+        // SML fallback still uses the current period returns (usually 90d) if requested, 
+        // but if no smlData from 90d historized, we'll use whatever returns we have.
         if (!smlData) {
           const cryptoAnnualReturn = calculateAnnualizedReturn(alignedCrypto);
           const marketAnnualReturn = calculateAnnualizedReturn(alignedMarket);

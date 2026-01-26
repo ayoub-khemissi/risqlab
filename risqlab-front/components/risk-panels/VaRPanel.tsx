@@ -21,12 +21,9 @@ import { MethodologyLink } from "./MethodologyLink";
 
 import { useVaR } from "@/hooks/useRiskMetrics";
 import { useCryptoVolatility } from "@/hooks/useCryptoVolatility";
-import { RiskPeriod } from "@/types/risk-metrics";
 
 interface VaRPanelProps {
   symbol: string;
-  period: RiskPeriod;
-  onPeriodChange: (period: RiskPeriod) => void;
 }
 
 // Gaussian PDF function

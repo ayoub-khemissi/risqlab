@@ -29,6 +29,12 @@ interface PanelSidebarProps {
   riskSummary?: RiskSummaryData | null;
   isLoading?: boolean;
   symbol: string;
+  var99Override?: number | null;
+  betaOverride?: number | null;
+  skewnessOverride?: number | null;
+  kurtosisOverride?: number | null;
+  smlAlphaOverride?: number | null;
+  stressImpactOverride?: number | null;
 }
 
 const PANEL_ICONS: Record<RiskPanel, React.ReactNode> = {
@@ -62,9 +68,46 @@ const LivePriceValue = memo(function LivePriceValue({
   );
 });
 
+// New component for dynamic stress test display
+const LiveStressTestValue = memo(function LiveStressTestValue({
+  symbol,
+  initialPrice,
+  impactPercentage,
+}: {
+  symbol: string;
+  initialPrice?: number | null;
+  impactPercentage: number;
+}) {
+  const livePrice = useBinancePrice(symbol, initialPrice);
+  const displayPrice = livePrice ?? initialPrice;
+
+  if (!displayPrice) {
+    return (
+      <span className="text-xs text-foreground font-mono font-semibold ml-2">
+        N/A
+      </span>
+    );
+  }
+
+  // Calculate stressed price based on current live price
+  const stressedPrice = displayPrice * (1 + impactPercentage / 100);
+
+  return (
+    <span className="text-xs text-foreground font-mono font-semibold ml-2">
+      {formatCryptoPrice(stressedPrice)}
+    </span>
+  );
+});
+
 function formatMetricValue(
   panelId: RiskPanel,
   riskSummary?: RiskSummaryData | null,
+  var99Override?: number | null,
+  betaOverride?: number | null,
+  skewnessOverride?: number | null,
+  kurtosisOverride?: number | null,
+  smlAlphaOverride?: number | null,
+  stressImpactOverride?: number | null,
 ): string | null {
   if (!riskSummary) return null;
 
@@ -74,26 +117,32 @@ function formatMetricValue(
         ? `${riskSummary.volatility.annualized.toFixed(2)}%`
         : null;
     case "stress-test":
-      return riskSummary?.stressTest?.newPrice != null
-        ? formatCryptoPrice(riskSummary.stressTest.newPrice)
-        : null;
+      const impact =
+        stressImpactOverride ?? riskSummary?.stressTest?.impactPercentage;
+
+      return impact != null ? `${impact.toFixed(2)}%` : null;
     case "var":
-      return riskSummary?.var99 != null
-        ? `${(-riskSummary.var99).toFixed(2)}%`
-        : null;
+      // Use override (365d) if provided, otherwise summary value
+      const varValue = var99Override ?? riskSummary?.var99;
+
+      return varValue != null ? `-${varValue.toFixed(2)}%` : null;
     case "beta":
-      return riskSummary?.beta != null ? riskSummary.beta.toFixed(2) : null;
+      const betaValue = betaOverride ?? riskSummary?.beta;
+
+      return betaValue != null ? betaValue.toFixed(2) : null;
     case "skew":
-      return riskSummary?.skewness != null
-        ? riskSummary.skewness.toFixed(2)
-        : null;
+      const skewValue = skewnessOverride ?? riskSummary?.skewness;
+
+      return skewValue != null ? skewValue.toFixed(2) : null;
     case "kurtosis":
-      return riskSummary?.kurtosis != null
-        ? riskSummary.kurtosis.toFixed(2)
-        : null;
+      const kurtValue = kurtosisOverride ?? riskSummary?.kurtosis;
+
+      return kurtValue != null ? kurtValue.toFixed(2) : null;
     case "sml":
-      return riskSummary?.sml?.alpha != null
-        ? `${riskSummary.sml.alpha >= 0 ? "+" : ""}${riskSummary.sml.alpha.toFixed(2)}%`
+      const smlAlpha = smlAlphaOverride ?? riskSummary?.sml?.alpha;
+
+      return smlAlpha != null
+        ? `${smlAlpha >= 0 ? "+" : ""}${smlAlpha.toFixed(2)}%`
         : null;
     default:
       return null;
@@ -107,6 +156,12 @@ export function PanelSidebar({
   riskSummary,
   isLoading,
   symbol,
+  var99Override,
+  betaOverride,
+  skewnessOverride,
+  kurtosisOverride,
+  smlAlphaOverride,
+  stressImpactOverride,
 }: PanelSidebarProps) {
   const handleSelectionChange = (keys: "all" | Set<React.Key>) => {
     if (keys !== "all" && keys.size > 0) {
@@ -124,7 +179,31 @@ export function PanelSidebar({
       return <LivePriceValue initialPrice={currentPrice} symbol={symbol} />;
     }
 
-    const metricValue = formatMetricValue(panelId, riskSummary);
+    if (
+      panelId === "stress-test" &&
+      (stressImpactOverride || riskSummary?.stressTest)
+    ) {
+      return (
+        <LiveStressTestValue
+          impactPercentage={
+            stressImpactOverride ?? riskSummary!.stressTest!.impactPercentage
+          }
+          initialPrice={currentPrice}
+          symbol={symbol}
+        />
+      );
+    }
+
+    const metricValue = formatMetricValue(
+      panelId,
+      riskSummary,
+      var99Override,
+      betaOverride,
+      skewnessOverride,
+      kurtosisOverride,
+      smlAlphaOverride,
+      stressImpactOverride,
+    );
 
     if (!metricValue || isLoading) return null;
 

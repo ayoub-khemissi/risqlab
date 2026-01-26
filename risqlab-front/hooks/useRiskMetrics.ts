@@ -68,7 +68,7 @@ export function usePriceHistory(symbol: string, period: RiskPeriod = "90d") {
 /**
  * Hook to fetch beta data
  */
-export function useBeta(symbol: string, period: RiskPeriod = "90d") {
+export function useBeta(symbol: string, period: RiskPeriod = "365d") {
   const [data, setData] = useState<BetaData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -114,7 +114,7 @@ export function useBeta(symbol: string, period: RiskPeriod = "90d") {
 /**
  * Hook to fetch VaR data
  */
-export function useVaR(symbol: string, period: RiskPeriod = "90d") {
+export function useVaR(symbol: string, period: RiskPeriod = "365d") {
   const [data, setData] = useState<VaRData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
