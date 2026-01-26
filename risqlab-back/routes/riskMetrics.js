@@ -1006,27 +1006,24 @@ api.get('/risk/crypto/:symbol/summary', async (req, res) => {
 
     const logReturns = cryptoReturns.map(r => parseFloat(r.log_return));
 
-    // Map period to window days
-    const windowDaysMap = { '7d': 7, '30d': 30, '90d': 90, '365d': 365, 'all': null };
-    const windowDays = windowDaysMap[period] ?? null;
-
-    // 2. Calculate Basic Metrics - Try historized first for '365d', 'all' and '90d' periods
+    // 2. Calculate Basic Metrics with FIXED periods per metric
+    // VaR/Beta: 365 days (null = latest entry)
+    // Skewness/Kurtosis/SML: 90 days
     let var95, var99, cvar99, skewness, kurtosis;
 
-    if (period === '365d' || period === 'all' || period === '90d') {
-      // Try VaR historized
-      const varStats = await getHistorizedVaRStats(crypto.id, windowDays);
-      if (varStats) {
-        var95 = parseFloat(varStats.var_95);
-        var99 = parseFloat(varStats.var_99);
-        cvar99 = parseFloat(varStats.cvar_99);
-      }
-      // Try distribution historized
-      const distStats = await getHistorizedDistributionStats(crypto.id, windowDays);
-      if (distStats) {
-        skewness = parseFloat(distStats.skewness);
-        kurtosis = parseFloat(distStats.kurtosis);
-      }
+    // VaR always uses 365 days (null to get latest 365d entry)
+    const varStats = await getHistorizedVaRStats(crypto.id, null);
+    if (varStats) {
+      var95 = parseFloat(varStats.var_95);
+      var99 = parseFloat(varStats.var_99);
+      cvar99 = parseFloat(varStats.cvar_99);
+    }
+
+    // Skewness/Kurtosis always use 90 days
+    const distStats = await getHistorizedDistributionStats(crypto.id, 90);
+    if (distStats) {
+      skewness = parseFloat(distStats.skewness);
+      kurtosis = parseFloat(distStats.kurtosis);
     }
 
     // Fallback to on-the-fly calculation
@@ -1040,29 +1037,26 @@ api.get('/risk/crypto/:symbol/summary', async (req, res) => {
       kurtosis = calculateKurtosis(logReturns);
     }
 
-    // 3. Calculate Beta/Alpha & SML & Stress Test - Try historized first
+    // 3. Calculate Beta/Alpha & SML & Stress Test
     let beta = null;
     let alpha = null;
     let smlData = null;
     let stressTest = null;
 
-    if (period === '365d' || period === 'all' || period === '90d') {
-      // Beta uses 365j (365 for '365d', null for 'all', 90 for '90d')
-      const betaWindowDays = period === '90d' ? 90 : (period === '365d' ? 365 : null);
-      // Try Beta historized
-      const betaStats = await getHistorizedBetaStats(crypto.id, betaWindowDays);
-      if (betaStats) {
-        beta = parseFloat(betaStats.beta);
-        alpha = Number((parseFloat(betaStats.alpha) * 100).toFixed(4));
-      }
-      // SML always uses 90 days
-      const smlStats = await getHistorizedSMLStats(crypto.id, 90);
-      if (smlStats) {
-        smlData = {
-          alpha: parseFloat(smlStats.alpha) * 100,
-          isOvervalued: smlStats.is_overvalued === 1
-        };
-      }
+    // Beta always uses 365 days (null to get latest 365d entry)
+    const betaStats = await getHistorizedBetaStats(crypto.id, null);
+    if (betaStats) {
+      beta = parseFloat(betaStats.beta);
+      alpha = Number((parseFloat(betaStats.alpha) * 100).toFixed(4));
+    }
+
+    // SML always uses 90 days
+    const smlStats = await getHistorizedSMLStats(crypto.id, 90);
+    if (smlStats) {
+      smlData = {
+        alpha: parseFloat(smlStats.alpha) * 100,
+        isOvervalued: smlStats.is_overvalued === 1
+      };
     }
 
     // Fallback to on-the-fly calculation for Beta/SML if needed

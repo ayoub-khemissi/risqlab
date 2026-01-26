@@ -331,8 +331,8 @@ export default function RiskMetricsMethodologyPage() {
                     <div className="pt-2 border-t border-default-200 mt-2 text-default-600">
                       <strong>Interpretation:</strong> With 95% confidence, the
                       daily loss will not exceed 4.5%. Only on 5% of days
-                      (approximately 18 days per year) should we expect
-                      losses greater than 4.5%.
+                      (approximately 18 days per year) should we expect losses
+                      greater than 4.5%.
                     </div>
                   </div>
                 </div>
