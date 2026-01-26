@@ -33,6 +33,7 @@ const PERIOD_MAP: Record<RiskPeriod, VolatilityPeriod> = {
   "7d": "7d",
   "30d": "30d",
   "90d": "90d",
+  "365d": "365d",
   all: "all",
 };
 

@@ -99,7 +99,7 @@ export type RiskLevel = "low" | "medium" | "high" | "extreme";
 /**
  * Period for volatility data
  */
-export type VolatilityPeriod = "24h" | "7d" | "30d" | "90d" | "all";
+export type VolatilityPeriod = "24h" | "7d" | "30d" | "90d" | "365d" | "all";
 
 /**
  * Diversification Benefit Calculation
