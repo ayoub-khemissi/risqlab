@@ -5,7 +5,7 @@
 
 /**
  * Get SQL date filter clause based on period
- * @param {string} period - Period identifier ('24h', '7d', '30d', '90d', 'all')
+ * @param {string} period - Period identifier ('24h', '7d', '30d', '90d', '365d', 'all')
  * @param {string} dateColumn - Column name to filter on (default: 'date')
  * @returns {string} SQL WHERE clause fragment (starts with AND)
  */
@@ -19,6 +19,8 @@ export function getDateFilter(period, dateColumn = 'date') {
       return `AND ${dateColumn} >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)`;
     case '90d':
       return `AND ${dateColumn} >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)`;
+    case '365d':
+      return `AND ${dateColumn} >= DATE_SUB(CURDATE(), INTERVAL 365 DAY)`;
     case 'all':
       return ''; // No date filter for 'all'
     default:

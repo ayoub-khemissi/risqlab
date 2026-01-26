@@ -38,7 +38,7 @@ function gaussianPDF(x: number, mean: number, stdDev: number): number {
 }
 
 export function VaRPanel({ symbol }: VaRPanelProps) {
-  const { data, isLoading, error } = useVaR(symbol, "all");
+  const { data, isLoading, error } = useVaR(symbol, "365d");
   const { data: volatilityData } = useCryptoVolatility([symbol], "all");
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
 

@@ -181,14 +181,14 @@ api.get('/risk/crypto/:symbol/beta', async (req, res) => {
     }
 
     // Map period to window days
-    const windowDaysMap = { '7d': 7, '30d': 30, '90d': 90 };
-    const windowDays = windowDaysMap[period] || 90;
+    const windowDaysMap = { '7d': 7, '30d': 30, '90d': 90, '365d': 365, 'all': null };
+    const windowDays = windowDaysMap[period] ?? null;
 
-    // Try to get historized stats first (for 90d period)
+    // Try to get historized stats first (for '365d', 'all' and '90d' periods)
     let beta, alpha, rSquared, correlation, dataPoints;
     let fromHistorized = false;
 
-    if (period === '90d') {
+    if (period === '365d' || period === 'all' || period === '90d') {
       const historizedStats = await getHistorizedBetaStats(crypto.id, windowDays);
       if (historizedStats) {
         beta = parseFloat(historizedStats.beta);
@@ -197,7 +197,7 @@ api.get('/risk/crypto/:symbol/beta', async (req, res) => {
         correlation = parseFloat(historizedStats.correlation);
         dataPoints = historizedStats.num_observations;
         fromHistorized = true;
-        log.debug(`Using historized beta stats for ${symbol} (date: ${historizedStats.date})`);
+        log.debug(`Using historized beta stats for ${symbol} (date: ${historizedStats.date}, window: ${historizedStats.window_days} days)`);
       }
     }
 
@@ -335,14 +335,14 @@ api.get('/risk/crypto/:symbol/var', async (req, res) => {
     }
 
     // Map period to window days
-    const windowDaysMap = { '7d': 7, '30d': 30, '90d': 90 };
-    const windowDays = windowDaysMap[period] || 90;
+    const windowDaysMap = { '7d': 7, '30d': 30, '90d': 90, '365d': 365, 'all': null };
+    const windowDays = windowDaysMap[period] ?? null;
 
-    // Try to get historized stats first (for 90d period)
+    // Try to get historized stats first (for '365d', 'all' and '90d' periods)
     let var95, var99, cvar95, cvar99, meanReturn, stdDev, minReturn, maxReturn, dataPoints;
     let fromHistorized = false;
 
-    if (period === '90d') {
+    if (period === '365d' || period === 'all' || period === '90d') {
       const historizedStats = await getHistorizedVaRStats(crypto.id, windowDays);
       if (historizedStats) {
         var95 = parseFloat(historizedStats.var_95);
@@ -355,7 +355,7 @@ api.get('/risk/crypto/:symbol/var', async (req, res) => {
         maxReturn = parseFloat(historizedStats.max_return);
         dataPoints = historizedStats.num_observations;
         fromHistorized = true;
-        log.debug(`Using historized VaR stats for ${symbol} (date: ${historizedStats.date})`);
+        log.debug(`Using historized VaR stats for ${symbol} (date: ${historizedStats.date}, window: ${historizedStats.window_days} days)`);
       }
     }
 
@@ -585,9 +585,11 @@ async function getHistorizedDistributionStats(cryptoId, windowDays = 90) {
 
 /**
  * Helper: Get historized VaR stats from database
+ * @param {number} cryptoId - The crypto ID
+ * @param {number|null} windowDays - Window days to filter by, or null for "all" (latest entry regardless of window)
  */
-async function getHistorizedVaRStats(cryptoId, windowDays = 90) {
-  const [stats] = await Database.execute(`
+async function getHistorizedVaRStats(cryptoId, windowDays = null) {
+  let query = `
     SELECT
       var_95,
       var_99,
@@ -598,34 +600,52 @@ async function getHistorizedVaRStats(cryptoId, windowDays = 90) {
       min_return,
       max_return,
       num_observations,
+      window_days,
       date
     FROM crypto_var
     WHERE crypto_id = ?
-      AND window_days = ?
-    ORDER BY date DESC
-    LIMIT 1
-  `, [cryptoId, windowDays]);
+  `;
+  const params = [cryptoId];
+
+  if (windowDays !== null) {
+    query += ' AND window_days = ?';
+    params.push(windowDays);
+  }
+
+  query += ' ORDER BY date DESC LIMIT 1';
+
+  const [stats] = await Database.execute(query, params);
   return stats[0] || null;
 }
 
 /**
  * Helper: Get historized Beta stats from database
+ * @param {number} cryptoId - The crypto ID
+ * @param {number|null} windowDays - Window days to filter by, or null for latest entry regardless of window
  */
-async function getHistorizedBetaStats(cryptoId, windowDays = 90) {
-  const [stats] = await Database.execute(`
+async function getHistorizedBetaStats(cryptoId, windowDays = null) {
+  let query = `
     SELECT
       beta,
       alpha,
       r_squared,
       correlation,
       num_observations,
+      window_days,
       date
     FROM crypto_beta
     WHERE crypto_id = ?
-      AND window_days = ?
-    ORDER BY date DESC
-    LIMIT 1
-  `, [cryptoId, windowDays]);
+  `;
+  const params = [cryptoId];
+
+  if (windowDays !== null) {
+    query += ' AND window_days = ?';
+    params.push(windowDays);
+  }
+
+  query += ' ORDER BY date DESC LIMIT 1';
+
+  const [stats] = await Database.execute(query, params);
   return stats[0] || null;
 }
 
@@ -986,19 +1006,23 @@ api.get('/risk/crypto/:symbol/summary', async (req, res) => {
 
     const logReturns = cryptoReturns.map(r => parseFloat(r.log_return));
 
-    // 2. Calculate Basic Metrics - Try historized first for 90d period
+    // Map period to window days
+    const windowDaysMap = { '7d': 7, '30d': 30, '90d': 90, '365d': 365, 'all': null };
+    const windowDays = windowDaysMap[period] ?? null;
+
+    // 2. Calculate Basic Metrics - Try historized first for '365d', 'all' and '90d' periods
     let var95, var99, cvar99, skewness, kurtosis;
 
-    if (period === '90d') {
+    if (period === '365d' || period === 'all' || period === '90d') {
       // Try VaR historized
-      const varStats = await getHistorizedVaRStats(crypto.id, 90);
+      const varStats = await getHistorizedVaRStats(crypto.id, windowDays);
       if (varStats) {
         var95 = parseFloat(varStats.var_95);
         var99 = parseFloat(varStats.var_99);
         cvar99 = parseFloat(varStats.cvar_99);
       }
       // Try distribution historized
-      const distStats = await getHistorizedDistributionStats(crypto.id, 90);
+      const distStats = await getHistorizedDistributionStats(crypto.id, windowDays);
       if (distStats) {
         skewness = parseFloat(distStats.skewness);
         kurtosis = parseFloat(distStats.kurtosis);
@@ -1022,14 +1046,16 @@ api.get('/risk/crypto/:symbol/summary', async (req, res) => {
     let smlData = null;
     let stressTest = null;
 
-    if (period === '90d') {
+    if (period === '365d' || period === 'all' || period === '90d') {
+      // Beta uses 365j (365 for '365d', null for 'all', 90 for '90d')
+      const betaWindowDays = period === '90d' ? 90 : (period === '365d' ? 365 : null);
       // Try Beta historized
-      const betaStats = await getHistorizedBetaStats(crypto.id, 90);
+      const betaStats = await getHistorizedBetaStats(crypto.id, betaWindowDays);
       if (betaStats) {
         beta = parseFloat(betaStats.beta);
         alpha = Number((parseFloat(betaStats.alpha) * 100).toFixed(4));
       }
-      // Try SML historized
+      // SML always uses 90 days
       const smlStats = await getHistorizedSMLStats(crypto.id, 90);
       if (smlStats) {
         smlData = {

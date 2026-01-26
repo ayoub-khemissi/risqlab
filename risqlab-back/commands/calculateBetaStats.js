@@ -2,13 +2,13 @@ import Database from '../lib/database.js';
 import log from '../lib/log.js';
 import { calculateBetaAlpha } from '../utils/riskMetrics.js';
 
-const DEFAULT_WINDOW_DAYS = 90;
+const MAX_WINDOW_DAYS = 365;
 const MINIMUM_WINDOW_DAYS = 7;
 
 /**
  * Calculate and store Beta/Alpha statistics for cryptocurrencies
- * Uses a rolling window approach (default: 90 days)
- * Supports retroactive calculation for missing dates
+ * Uses up to 365 days of historical data
+ * Stores one entry per crypto per date
  */
 async function calculateBetaStats() {
   const startTime = Date.now();
@@ -143,45 +143,38 @@ async function calculateBetaForCrypto(cryptoId, symbol, indexReturnsByDate) {
     return { inserted: 0, skipped: 0 };
   }
 
-  let inserted = 0;
-  let skipped = 0;
+  // Use last 365 days max
+  const recentDates = allDates.slice(-MAX_WINDOW_DAYS);
+  const windowDays = recentDates.length;
+  const latestDateStr = recentDates[recentDates.length - 1];
+  const latestDate = cryptoReturnsByDate.get(latestDateStr).date;
 
-  for (let i = MINIMUM_WINDOW_DAYS - 1; i < allDates.length; i++) {
-    const currentDateStr = allDates[i];
-    const currentDate = cryptoReturnsByDate.get(currentDateStr).date;
-    const actualWindowDays = Math.min(i + 1, DEFAULT_WINDOW_DAYS);
+  // Check if we already have stats for this date with same window size
+  const [existing] = await Database.execute(
+    'SELECT id FROM crypto_beta WHERE crypto_id = ? AND date = ? AND window_days = ?',
+    [cryptoId, latestDate, windowDays]
+  );
 
-    const [existing] = await Database.execute(
-      'SELECT id FROM crypto_beta WHERE crypto_id = ? AND date = ? AND window_days = ?',
-      [cryptoId, currentDate, actualWindowDays]
-    );
-
-    if (existing.length > 0) {
-      skipped++;
-      continue;
-    }
-
-    // Get window of aligned returns
-    const windowDates = allDates.slice(i - actualWindowDays + 1, i + 1);
-    const cryptoReturns = windowDates.map(d => cryptoReturnsByDate.get(d).return);
-    const marketReturns = windowDates.map(d => indexReturnsByDate.get(d));
-
-    const { beta, alpha, rSquared, correlation } = calculateBetaAlpha(cryptoReturns, marketReturns);
-
-    await Database.execute(`
-      INSERT INTO crypto_beta
-      (crypto_id, date, window_days, beta, alpha, r_squared, correlation, num_observations)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `, [cryptoId, currentDate, actualWindowDays, beta, alpha, rSquared, correlation, windowDates.length]);
-
-    inserted++;
+  if (existing.length > 0) {
+    log.debug(`${symbol}: Beta stats already exist for ${latestDateStr} (${windowDays} days), skipping`);
+    return { inserted: 0, skipped: 1 };
   }
 
-  if (inserted > 0) {
-    log.debug(`${symbol}: Calculated ${inserted} Beta points, skipped ${skipped}`);
-  }
+  // Get aligned returns for the window
+  const cryptoReturns = recentDates.map(d => cryptoReturnsByDate.get(d).return);
+  const marketReturns = recentDates.map(d => indexReturnsByDate.get(d));
 
-  return { inserted, skipped };
+  const { beta, alpha, rSquared, correlation } = calculateBetaAlpha(cryptoReturns, marketReturns);
+
+  await Database.execute(`
+    INSERT INTO crypto_beta
+    (crypto_id, date, window_days, beta, alpha, r_squared, correlation, num_observations)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `, [cryptoId, latestDate, windowDays, beta, alpha, rSquared, correlation, windowDays]);
+
+  log.debug(`${symbol}: Calculated Beta stats for ${latestDateStr} using ${windowDays} data points`);
+
+  return { inserted: 1, skipped: 0 };
 }
 
 calculateBetaStats()
