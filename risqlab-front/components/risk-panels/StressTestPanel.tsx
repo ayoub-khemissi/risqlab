@@ -19,6 +19,7 @@ import {
 import { MethodologyLink } from "./MethodologyLink";
 
 import { useStressTest } from "@/hooks/useRiskMetrics";
+import { useBinancePrice } from "@/hooks/useBinancePrices";
 import { formatCryptoPrice } from "@/lib/formatters";
 import {
   StressScenarioId,
@@ -82,6 +83,10 @@ export function StressTestPanel({ symbol }: StressTestPanelProps) {
   const [selectedScenario, setSelectedScenario] =
     useState<StressScenarioId | null>("covid-19");
 
+  // Get live price from Binance WebSocket
+  const livePrice = useBinancePrice(symbol, data?.currentPrice);
+  const currentPrice = livePrice ?? data?.currentPrice ?? 0;
+
   // Get selected scenario details
   const activeScenario = useMemo(() => {
     if (!selectedScenario || !data?.scenarios) return null;
@@ -133,22 +138,24 @@ export function StressTestPanel({ symbol }: StressTestPanelProps) {
     });
   }, [data?.priceHistory, activeScenario, data?.beta]);
 
-  // Calculate the impact summary for the selected scenario
+  // Calculate the impact summary for the selected scenario using live price
   const impactSummary = useMemo(() => {
-    if (!activeScenario || !data) return null;
+    if (!activeScenario || !data?.beta || !currentPrice) return null;
 
-    const startPrice = data.currentPrice;
-    const endPrice = activeScenario.newPrice;
-    const loss = startPrice - endPrice;
-    const lossPercent = (loss / startPrice) * 100;
+    // Recalculate stressed price with live price
+    // Formula: Stressed Price = Current Price x (1 + Shock x Beta)
+    const impactMultiplier = 1 + (activeScenario.marketShock / 100) * data.beta;
+    const stressedPrice = currentPrice * impactMultiplier;
+    const loss = currentPrice - stressedPrice;
+    const lossPercent = (loss / currentPrice) * 100;
 
     return {
-      startPrice,
-      endPrice,
+      startPrice: currentPrice,
+      endPrice: stressedPrice,
       loss,
       lossPercent,
     };
-  }, [activeScenario, data]);
+  }, [activeScenario, data?.beta, currentPrice]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -159,7 +166,7 @@ export function StressTestPanel({ symbol }: StressTestPanelProps) {
             <div>
               <p className="text-sm text-default-500 mb-1">Current Price</p>
               <p className="text-4xl font-bold">
-                {data ? formatCryptoPrice(data.currentPrice) : "N/A"}
+                {currentPrice ? formatCryptoPrice(currentPrice) : "N/A"}
               </p>
             </div>
             <div>
