@@ -157,14 +157,13 @@ export function calculateKurtosis(values) {
     return 0;
   }
 
-  // Calculate fourth central moment
+  // Calculate sum of fourth powers (not divided by n - the formula handles normalization)
   let m4 = 0;
   for (const val of values) {
     m4 += Math.pow((val - mu) / sigma, 4);
   }
-  m4 /= n;
 
-  // Apply bias correction for sample excess kurtosis
+  // Apply bias correction for sample excess kurtosis (Fisher's formula)
   const kurtosis = ((n + 1) * n / ((n - 1) * (n - 2) * (n - 3))) * m4 -
                    (3 * (n - 1) * (n - 1)) / ((n - 2) * (n - 3));
 
