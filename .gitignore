@@ -3,3 +3,6 @@
 
 # CoinRisqLab 80 index exports
 exports
+
+# Next.js build output
+.next/
