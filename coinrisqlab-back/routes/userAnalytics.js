@@ -280,8 +280,6 @@ api.get('/user/portfolios/:id/performance', authenticateUser, async (req, res) =
       period = '30d';
     }
 
-    const dateFilter = getDateFilter(period, 'snapshot_date');
-
     // Portfolio time-weighted return series (replays transactions, isolates
     // price effect from capital flows — see utils/userPortfolioPerformance.js)
     const twr = await computePortfolioTWR(portfolioId, period);
@@ -345,19 +343,26 @@ api.get('/user/portfolios/:id/performance', authenticateUser, async (req, res) =
       benchmark24hReturn = prev > 0 ? ((latest - prev) / prev) * 100 : 0;
     }
 
-    // Clip the index series to start on the same day as the portfolio
-    // series so both chips read over the same window — otherwise a
-    // 5-day-old portfolio would show its 5d return next to a 30d index
-    // return, which is not a fair comparison.
+    // Index anchoring — Method 1: the CoinRisqLab 80 line reflects its TRUE
+    // performance over the SELECTED PERIOD, identical for every portfolio.
+    // We therefore rebase it on the period's own start (the full range fetched
+    // above), NOT on the portfolio's creation date. This way the index value
+    // on a given date is the same whatever portfolio you look at.
+    //
+    // Exception: 'all'. Its window IS the portfolio's lifetime, so there is no
+    // fixed period start — we clip the index to the portfolio's first day so
+    // both lines cover the same span.
     const portfolioStartDate = twr.series.length > 0 ? twr.series[0].date : null;
     const toIsoDate = (d) =>
       d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10);
-    const clippedIndex = (portfolioStartDate
-      ? indexHistory.filter((h) => toIsoDate(h.snapshot_date) >= portfolioStartDate)
-      : indexHistory).map((h) => ({
-        date: toIsoDate(h.snapshot_date),
-        index_level: parseFloat(h.index_level),
-      }));
+    const indexRows =
+      period === 'all' && portfolioStartDate
+        ? indexHistory.filter((h) => toIsoDate(h.snapshot_date) >= portfolioStartDate)
+        : indexHistory;
+    const clippedIndex = indexRows.map((h) => ({
+      date: toIsoDate(h.snapshot_date),
+      index_level: parseFloat(h.index_level),
+    }));
 
     const indexNormalized =
       clippedIndex.length > 0

@@ -392,11 +392,14 @@ export default function PortfolioAnalyticsPage() {
               <ResponsiveContainer height="100%" width="100%">
                 <LineChart
                   data={(() => {
-                    // Compounded performance comparison: both series rebased to
-                    // 0% on the LATEST common start date, so the two lines
-                    // begin at the same x and y values and diverge based on
-                    // their actual performance — no more orphan benchmark line
-                    // spanning months while the portfolio shows a 2-day stub.
+                    // Method 1 — the CoinRisqLab 80 line shows the index's TRUE
+                    // performance over the selected period, identical for every
+                    // portfolio. Each series arrives base-100 at its OWN first
+                    // day (the index on the period start, the portfolio on its
+                    // first active day), so we plot each as a % move from its
+                    // own base WITHOUT forcing a shared anchor. For a portfolio
+                    // younger than the period, the index spans the full window
+                    // while the portfolio line starts at its creation date.
                     const pSeries = (performance.portfolio || []) as Array<{
                       date: string;
                       value: number;
@@ -406,11 +409,7 @@ export default function PortfolioAnalyticsPage() {
                       value: number;
                     }>;
 
-                    if (pSeries.length === 0 || bSeries.length === 0) return [];
-
-                    const pFirst = new Date(pSeries[0].date).getTime();
-                    const bFirst = new Date(bSeries[0].date).getTime();
-                    const commonStart = Math.max(pFirst, bFirst);
+                    if (pSeries.length === 0 && bSeries.length === 0) return [];
 
                     const pMap = new Map<string, number>(
                       pSeries.map((p) => [p.date, p.value]),
@@ -418,31 +417,15 @@ export default function PortfolioAnalyticsPage() {
                     const bMap = new Map<string, number>(
                       bSeries.map((b) => [b.date, b.value]),
                     );
+                    const pBase = pSeries.length > 0 ? pSeries[0].value : null;
+                    const bBase = bSeries.length > 0 ? bSeries[0].value : null;
 
-                    // Intersection of dates from commonStart onward
-                    const dateSet = new Set<string>();
-
-                    pSeries.forEach((p) => {
-                      if (new Date(p.date).getTime() >= commonStart) {
-                        dateSet.add(p.date);
-                      }
-                    });
-                    bSeries.forEach((b) => {
-                      if (new Date(b.date).getTime() >= commonStart) {
-                        dateSet.add(b.date);
-                      }
-                    });
-                    const dates = Array.from(dateSet).sort();
-
-                    if (dates.length === 0) return [];
-
-                    // Re-base both at the common start date — pick the closest
-                    // available value at or after commonStart.
-                    const baseDate = dates[0];
-                    const pBase = pMap.get(baseDate);
-                    const bBase = bMap.get(baseDate);
-
-                    if (!pBase || !bBase) return [];
+                    const dates = Array.from(
+                      new Set<string>([
+                        ...pSeries.map((p) => p.date),
+                        ...bSeries.map((b) => b.date),
+                      ]),
+                    ).sort();
 
                     return dates.map((date) => {
                       const pVal = pMap.get(date);
@@ -450,8 +433,10 @@ export default function PortfolioAnalyticsPage() {
 
                       return {
                         date,
-                        portfolio: pVal != null ? (pVal / pBase - 1) * 100 : null,
-                        benchmark: bVal != null ? (bVal / bBase - 1) * 100 : null,
+                        portfolio:
+                          pVal != null && pBase ? (pVal / pBase - 1) * 100 : null,
+                        benchmark:
+                          bVal != null && bBase ? (bVal / bBase - 1) * 100 : null,
                       };
                     });
                   })()}
