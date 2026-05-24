@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Key } from "react";
+import { useState, useEffect, useMemo, Key } from "react";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Select, SelectItem } from "@heroui/select";
@@ -14,6 +14,7 @@ import {
 import { Autocomplete, AutocompleteItem } from "@heroui/autocomplete";
 
 import { API_BASE_URL } from "@/config/constants";
+import { formatQuantity } from "@/lib/formatters";
 
 interface CryptoOption {
   id: number;
@@ -22,11 +23,21 @@ interface CryptoOption {
   image_url: string | null;
 }
 
+/** Minimal shape we need from a holding to power the "Max" / held-balance hint. */
+interface HeldPosition {
+  crypto_id: number;
+  quantity: number | string;
+}
+
 interface RecordTransactionModalProps {
   portfolioId: number;
   isOpen: boolean;
   onClose: () => void;
   onRecorded: () => void;
+  /** Current holdings — used to show the held balance and the "Max" button on sells. */
+  holdings?: HeldPosition[];
+  /** Pre-select this crypto when the modal opens (e.g. opened from a holding row). */
+  presetCryptoId?: number | null;
 }
 
 export function RecordTransactionModal({
@@ -34,6 +45,8 @@ export function RecordTransactionModal({
   isOpen,
   onClose,
   onRecorded,
+  holdings = [],
+  presetCryptoId = null,
 }: RecordTransactionModalProps) {
   const [allCryptos, setAllCryptos] = useState<CryptoOption[]>([]);
   const [selectedKey, setSelectedKey] = useState<Key | null>(null);
@@ -70,6 +83,45 @@ export function RecordTransactionModal({
     fetchAll();
   }, [isOpen, allCryptos.length]);
 
+  // Reset the form each time the modal opens, pre-selecting the crypto of the
+  // holding row it was opened from (so a sell starts on the right asset).
+  useEffect(() => {
+    if (!isOpen) return;
+    setSelectedKey(presetCryptoId != null ? String(presetCryptoId) : null);
+    setType("buy");
+    setQuantity("");
+    setPriceUsd("");
+    setFeeUsd("");
+    setNotes("");
+    setError("");
+  }, [isOpen, presetCryptoId]);
+
+  // Exact held quantity for the selected crypto (DB precision), or null when
+  // the asset isn't held. Drives the "Held: …" hint and the "Max" button.
+  const heldQty = useMemo(() => {
+    if (selectedKey == null) return null;
+    const h = holdings.find((p) => p.crypto_id === Number(selectedKey));
+
+    if (!h) return null;
+    const q = Number(h.quantity);
+
+    return q > 0 ? q : null;
+  }, [selectedKey, holdings]);
+
+  const canSellMax = type === "sell" && heldQty != null;
+
+  // Fill the exact held quantity as a clean dot-decimal string: toFixed(8)
+  // matches the DECIMAL(_,8) storage precision and strips any float noise,
+  // then trailing zeros are trimmed (139.65318534, 0.005468, 100, …).
+  const fillMax = () => {
+    if (heldQty == null) return;
+    setQuantity(heldQty.toFixed(8).replace(/\.?0+$/, ""));
+  };
+
+  // Accept a French decimal comma too — parseFloat("139,65") would otherwise
+  // stop at the comma and silently drop the fractional part.
+  const toNum = (s: string) => parseFloat(s.replace(",", "."));
+
   const handleSubmit = async () => {
     if (!selectedKey || !quantity || !priceUsd) {
       setError("Crypto, quantity, and price are required");
@@ -90,9 +142,9 @@ export function RecordTransactionModal({
           body: JSON.stringify({
             crypto_id: Number(selectedKey),
             type,
-            quantity: parseFloat(quantity),
-            price_usd: parseFloat(priceUsd),
-            fee_usd: feeUsd ? parseFloat(feeUsd) : 0,
+            quantity: toNum(quantity),
+            price_usd: toNum(priceUsd),
+            fee_usd: feeUsd ? toNum(feeUsd) : 0,
             timestamp: new Date().toISOString().slice(0, 19).replace("T", " "),
             notes: notes || null,
           }),
@@ -161,6 +213,7 @@ export function RecordTransactionModal({
             )}
           </Autocomplete>
           <Select
+            isRequired
             label="Type"
             selectedKeys={[type]}
             onSelectionChange={(keys) => {
@@ -176,25 +229,46 @@ export function RecordTransactionModal({
           <div className="grid grid-cols-2 gap-4">
             <Input
               isRequired
+              description={
+                type === "sell" && heldQty != null
+                  ? `Held: ${formatQuantity(heldQty)}`
+                  : undefined
+              }
+              endContent={
+                canSellMax ? (
+                  <Button
+                    className="h-6 min-w-0 px-2 text-xs"
+                    color="primary"
+                    size="sm"
+                    variant="flat"
+                    onPress={fillMax}
+                  >
+                    Max
+                  </Button>
+                ) : undefined
+              }
+              inputMode="decimal"
               label="Quantity"
               placeholder="0.00"
-              type="number"
+              type="text"
               value={quantity}
               onValueChange={setQuantity}
             />
             <Input
               isRequired
+              inputMode="decimal"
               label="Price (USD)"
               placeholder="0.00"
-              type="number"
+              type="text"
               value={priceUsd}
               onValueChange={setPriceUsd}
             />
           </div>
           <Input
+            inputMode="decimal"
             label="Fee (USD)"
             placeholder="0.00"
-            type="number"
+            type="text"
             value={feeUsd}
             onValueChange={setFeeUsd}
           />

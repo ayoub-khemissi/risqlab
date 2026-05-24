@@ -88,6 +88,25 @@ export function formatCryptoPrice(value: number | string): string {
 }
 
 /**
+ * Format a crypto QUANTITY (not a price). Reveals the full stored precision —
+ * holdings/transactions are DECIMAL(40,8), so we show up to 8 fraction digits
+ * and trim trailing zeros. Without this, a holding like 139.65318534 displayed
+ * as "139.6532" (toFixed(4)) can never be fully sold: the rounded value either
+ * overshoots the held amount (rejected) or leaves invisible dust that keeps the
+ * line "open". Thousands separators keep large balances (e.g. PEPE) readable.
+ */
+export function formatQuantity(value: number | string): string {
+  const num = typeof value === "string" ? parseFloat(value) : value;
+
+  if (!isFinite(num)) return "0";
+
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 8,
+  }).format(num);
+}
+
+/**
  * Format a number with commas every 3 digits
  */
 export function formatNumber(value: number | string): string {

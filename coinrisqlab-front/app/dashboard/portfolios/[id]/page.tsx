@@ -32,7 +32,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
 import { API_BASE_URL } from "@/config/constants";
 import { useUserAuth } from "@/lib/user-auth-context";
-import { formatCryptoPrice } from "@/lib/formatters";
+import { formatCryptoPrice, formatQuantity } from "@/lib/formatters";
 import {
   BinancePricesProvider,
   useBinancePricesContext,
@@ -301,6 +301,8 @@ function PortfolioDetailContent({
   const { prices } = useBinancePricesContext();
   const [tab, setTab] = useState("holdings");
   const [isMobile, setIsMobile] = useState(false);
+  // Crypto pre-selected when the tx modal is opened from a holding row.
+  const [txPresetCryptoId, setTxPresetCryptoId] = useState<number | null>(null);
 
   // Edit holding modal state
   const editHoldingModal = useDisclosure();
@@ -626,7 +628,7 @@ function PortfolioDetailContent({
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>{Number(h.quantity).toFixed(4)}</TableCell>
+                  <TableCell>{formatQuantity(h.quantity)}</TableCell>
                   <TableCell>
                     <span className="font-mono">
                       {isClosed ? "—" : formatCryptoPrice(h.avg_buy_price)}
@@ -683,6 +685,7 @@ function PortfolioDetailContent({
                         size="sm"
                         variant="light"
                         onPress={() => {
+                          setTxPresetCryptoId(h.crypto_id);
                           txModal.onOpen();
                         }}
                       >
@@ -765,7 +768,7 @@ function PortfolioDetailContent({
                       {t.type}
                     </Chip>
                   </TableCell>
-                  <TableCell>{Number(t.quantity).toFixed(4)}</TableCell>
+                  <TableCell>{formatQuantity(t.quantity)}</TableCell>
                   <TableCell>${Number(t.price_usd).toFixed(2)}</TableCell>
                   <TableCell>
                     ${(t.quantity * t.price_usd).toFixed(2)}
@@ -818,8 +821,10 @@ function PortfolioDetailContent({
         onClose={addModal.onClose}
       />
       <RecordTransactionModal
+        holdings={holdings}
         isOpen={txModal.isOpen}
         portfolioId={portfolioId}
+        presetCryptoId={txPresetCryptoId}
         onClose={txModal.onClose}
         onRecorded={() => {
           fetchHoldings();
